@@ -18,4 +18,4 @@ jobs:
         with:
           workspaces: bots/vector
       - name: Verify Vector 0.11 SDK Bot adapter
-        run: cargo check --manifest-path bots/vector/Cargo.toml --locked
+        run: cargo check --manifest-path bots/vector/Cargo.toml
