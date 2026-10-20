@@ -1,0 +1,37 @@
+name: Publish Poker WebXDC preview
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: poker-preview-release
+  cancel-in-progress: false
+
+jobs:
+  release-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm test
+      - run: npm run build
+      - run: unzip -t dist/poker.xdc
+      - name: Create or update preview prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view poker-preview >/dev/null 2>&1; then
+            gh release create poker-preview \
+              --target "${GITHUB_SHA}" \
+              --title "Poker lobby preview — NOT a playable poker match" \
+              --notes "Development-only Vector/WebXDC lobby. No dealing, betting or authenticated private hands. Do not use for any real-money play." \
+              --prerelease
+          fi
+          gh release upload poker-preview dist/poker.xdc --clobber
+          echo "Preview download: https://github.com/${GITHUB_REPOSITORY}/releases/download/poker-preview/poker.xdc" >> "${GITHUB_STEP_SUMMARY}"
