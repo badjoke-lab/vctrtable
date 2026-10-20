@@ -44,3 +44,7 @@ The additional message-envelope boundary (packages/poker/message-boundary.js) co
 `packages/poker/dealer-journal.js`, `dealer-store.js`, and `persistent-dealer.js` implement server-side, deterministic replay after process restart, AES-256-GCM encrypted storage with externally provided key, and persistence-before-acknowledgment. The engine survives mid-hand crashes without broadcasting hidden cards. `npm test` includes crash-recovery, pause and tamper tests. See [dealer recovery](docs/DEALER-RECOVERY.md).
 
 **Not a Vector SDK connector yet.** The Vector Rust Bot-to-Node dealer bridge, authenticated sender identity, encrypted private-hand delivery, secure single-writer deployment and eventual multi-human test remain open work. No user setup needed for this development milestone.
+
+## Vector SDK DM dealer bridge (development)
+
+A new Rust **Vector SDK 0.11.0** bot (`bots/vector/`) receives authenticated NIP-17 DMs and forwards them over private local stdin/stdout to the Node trusted dealer (`bots/poker/dealer-worker.mjs`). Recipient-specific state is returned by individual encrypted DMs; secrets are not written to WebXDC group updates. The Node worker has a real-process regression test. See [Vector SDK adapter](docs/VECTOR-SDK-ADAPTER.md). **The WebXDC table UI is NOT wired to this bridge yet, and no real relay connection/real user test has been performed.**
