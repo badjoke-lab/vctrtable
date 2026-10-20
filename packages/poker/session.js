@@ -12,12 +12,12 @@ export function createSession(config){
 }
 function next(session,event){
  // Commit to journal only after the game engine accepts the operation.
+ if(session.journal.events.length>=MAX_EVENTS)throw new Error('Session journal limit reached');
  if(event.kind==='start') startHand(session.table,{deck:event.deck});
  else if(event.kind==='act')act(session.table,event.playerId,event.action,event.target);
  else if(event.kind==='rebuy')rebuyPlayer(session.table,event.playerId);
  else throw new Error('Unsupported journal event');
  assertConservation(session.table);
- if(session.journal.events.length>=MAX_EVENTS)throw new Error('Session journal limit reached');
  session.journal.events.push(structuredClone(event));
  return session.table;
 }
