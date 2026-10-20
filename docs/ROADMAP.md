@@ -75,3 +75,7 @@ Implement in-memory dealer orchestration for authenticated caller *assumptions*,
 Implemented encrypted-at-rest local trusted-dealer journal and deterministic recovery of shuffled decks, turn revisions, previous command receipts, pauses and deadlines. ACK only after persistent save; a disk failure disables new actions until restart. Tests cover encrypted file corruption, wrong key, complete and partial hand recovery, timeout replay and single-process sequential writes.
 
 Remaining: live Rust SDK adapter with NIP identity verification, Rust↔Node process boundary (or engine port), audited recipient encryption, production exclusive-write lease, deployed bot identity/key storage, and deferred real Vector multi-user tests.
+
+## Vector SDK DM adapter milestone
+
+Rust SDK v0.11.0 `VectorBot::on_message` + `bot.dm(npub).send` integrated into a local Node dealer over pipes. Trusted author comes from SDK DM metadata, not JSON. The Node worker receives commands, persists them, and returns recipient-scoped snapshots; a 1-second trusted tick drives action deadlines. Dedicated per-player DM resync is possible. Test with child process and fake identities, compile Rust through a CI check. Currently the WebXDC client is NOT connected to DM transport; raw JSON in DMs is developer-only. Real end-to-end Vector multiplayer is deferred as requested.
