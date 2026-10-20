@@ -48,3 +48,7 @@ The additional message-envelope boundary (packages/poker/message-boundary.js) co
 ## Vector SDK DM dealer bridge (development)
 
 A new Rust **Vector SDK 0.11.0** bot (`bots/vector/`) receives authenticated NIP-17 DMs and forwards them over private local stdin/stdout to the Node trusted dealer (`bots/poker/dealer-worker.mjs`). Recipient-specific state is returned by individual encrypted DMs; secrets are not written to WebXDC group updates. The Node worker has a real-process regression test. See [Vector SDK adapter](docs/VECTOR-SDK-ADAPTER.md). **The WebXDC table UI is NOT wired to this bridge yet, and no real relay connection/real user test has been performed.**
+
+## Manual Bot DM poker seat (development only)
+
+The new `dm.html` inside `poker.xdc` renders a complete **per-player seat** using manually imported JSON DM snapshots: own cards, public board, pots, stacks, legal actions, settings approval, pause voting, rebuy and resync. It can generate versioned Bot DM commands for copying into an authenticated 1:1 Vector DM. It **cannot** automatically exchange DMs from inside a standard WebXDC sandbox. Private snapshots are held only in memory; they are never shared through `sendUpdate()`. Import checks the intended recipient ID, but cannot cryptographically verify the sender of manually pasted text. See [the WebXDC/DM transport decision](docs/WEBXDC-DM-BRIDGE.md). The existing `qa.html` remains the recommended one-person full-game tester.
