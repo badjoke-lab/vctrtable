@@ -36,6 +36,7 @@ export function commandJson({roomId,revision,op,random=globalThis.crypto}={}){
  if(op.type==="votePause"&&(!integer(op.pauseId,1,Number.MAX_SAFE_INTEGER)||typeof op.approve!=="boolean"))bad("INVALID_VOTE");
  if(op.type==="requestPause"&&!["pause","resume"].includes(op.mode))bad("INVALID_PAUSE_MODE");
  if(op.type==="act"&&op.action==="raise"&&!integer(op.target,1,Number.MAX_SAFE_INTEGER))bad("INVALID_RAISE");
+ if(own(op,"actorId")||own(op,"verifiedActorId")||own(op,"now"))bad("UNTRUSTED_COMMAND_FIELDS");
  if(!random||typeof random.getRandomValues!=="function")bad("SECURE_RANDOMNESS_REQUIRED");
  const buf=new Uint8Array(16);random.getRandomValues(buf);
  const requestId=Array.from(buf,x=>x.toString(16).padStart(2,"0")).join("");
@@ -53,7 +54,7 @@ export function parseSeatSnapshot(raw,{roomId,playerId,minimumRevision=-1}={}){
     packet.revision<minimumRevision||!packet.state||packet.state.roomId!==roomId||
     packet.state.revision!==packet.revision||!Array.isArray(packet.state.members)||
     !packet.state.members.some(p=>p?.id===playerId)||!packet.private||
-    typeof packet.private!=="object")bad("SNAPSHOT_NOT_FOR_THIS_SEAT");
+    typeof packet.private!=="object"||packet.private.recipientId!==playerId)bad("SNAPSHOT_NOT_FOR_THIS_SEAT");
  if(own(packet,"deck")||own(packet.state,"deck")||own(packet.state,"ownHole"))bad("UNEXPECTED_SECRET_FIELD");
  const {ownHole,legal}=packet.private;
  checkCards(ownHole);
