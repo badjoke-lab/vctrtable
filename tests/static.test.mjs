@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
-const scripts=['apps/poker/main.js','apps/poker/qa.js','packages/poker/engine.js','packages/poker/hand.js','packages/poker/session.js','packages/poker/dealer-room.js','packages/poker/message-boundary.js','packages/poker/dealer-journal.js','packages/poker/dealer-store.js','packages/poker/persistent-dealer.js'];
+const scripts=['apps/poker/main.js','apps/poker/qa.js','apps/poker/dm.js','packages/poker/dm-seat.js','packages/poker/engine.js','packages/poker/hand.js','packages/poker/session.js','packages/poker/dealer-room.js','packages/poker/message-boundary.js','packages/poker/dealer-journal.js','packages/poker/dealer-store.js','packages/poker/persistent-dealer.js'];
 for(const f of scripts)test('JavaScript syntax: '+f,()=>{
  assert.doesNotThrow(()=>execFileSync(process.execPath,['--check',f],{encoding:'utf8'}));
 });
@@ -27,5 +27,17 @@ test('dealer recovery remains server side and never enters WebXDC package',()=>{
  for(const path of ['packages/poker/dealer-journal.js','packages/poker/dealer-store.js','packages/poker/persistent-dealer.js']){
   const src=readFileSync(path,'utf8');
   assert.equal(src.includes('sendUpdate('),false);
+ }
+});
+
+test('Private DM seat only uses offline manual handoff',()=>{
+ const build=readFileSync('scripts/build.mjs','utf8');
+ for(const file of ['dm.html','dm.css','dm.js','dm-seat.js'])assert.ok(build.includes(file),'Missing '+file);
+ const html=readFileSync('apps/poker/dm.html','utf8');
+ for(const id of ['identity','room','inbox','outbox','import','copy','sync','fold','raise','pause'])assert.ok(html.includes('id="'+id+'"'));
+ for(const file of ['apps/poker/dm.js','packages/poker/dm-seat.js']){
+  const src=readFileSync(file,'utf8');
+  assert.ok(!src.includes('sendUpdate('),'No private cards may reach shared status updates');
+  assert.ok(!src.includes('localStorage.'),'Private DM snapshots must never persist in browser storage');
  }
 });

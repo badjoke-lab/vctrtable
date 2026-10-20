@@ -76,7 +76,7 @@ function stateDeliveries(dealer,players){
       protocol:1,kind:"vctrtable-poker-state",roomId:out.publicPacket.roomId,
       revision:out.publicPacket.revision,
       state:out.publicPacket.state,
-      private:{ownHole:p.ownHole,legal:p.legal}
+      private:{recipientId:p.recipientId,ownHole:p.ownHole,legal:p.legal}
     })
   }))};
 }

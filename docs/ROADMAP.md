@@ -79,3 +79,7 @@ Remaining: live Rust SDK adapter with NIP identity verification, Rust↔Node pro
 ## Vector SDK DM adapter milestone
 
 Rust SDK v0.11.0 `VectorBot::on_message` + `bot.dm(npub).send` integrated into a local Node dealer over pipes. Trusted author comes from SDK DM metadata, not JSON. The Node worker receives commands, persists them, and returns recipient-scoped snapshots; a 1-second trusted tick drives action deadlines. Dedicated per-player DM resync is possible. Test with child process and fake identities, compile Rust through a CI check. Currently the WebXDC client is NOT connected to DM transport; raw JSON in DMs is developer-only. Real end-to-end Vector multiplayer is deferred as requested.
+
+## Manual WebXDC/Vector DM UI milestone
+
+A per-player table view in `dm.html` displays imported, recipient-specific Bot state and creates actions for manual sending via Vector's 1:1 Bot DM. It supports gameplay and consent controls, English/Japanese UI, rejects cross-seat/stale/malformed snapshots, and does not broadcast secrets or persist the DM contents. The actual standardized WebXDC API has no automatic recipient-specific DM receive bridge; `sendToChat` only invokes a user-mediated chat compose action. Therefore true in-app automatic SDK ↔ Mini App messaging remains a **verified integration blocker** and cannot be marked complete. Continue developer-only simulator/CI tests; do not require multi-human testing yet.
