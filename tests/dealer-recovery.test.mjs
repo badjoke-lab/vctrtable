@@ -63,7 +63,7 @@ test("timer expiry is replayable and duplicate command requests are idempotent a
  assert.equal(d.room.table.hand.players.filter(p=>p.inHand&&!p.folded).length,2);
  const restored=DealerJournal.replay(d.document(),{deckFactory});
  assert.deepEqual(restored.room.publicState(),d.room.publicState());
- assert.equal(restored.command(original).replayed,true);
+ assert.equal(restored.command({...original,now:11000}).replayed,true);
  assert.equal(restored.room.revision,d.room.revision);
 });
 test("stale request that triggers timeout is journaled even if command is rejected",()=>{
