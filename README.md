@@ -38,3 +38,9 @@ Heads-up dealing order and odd-chip distribution (first surviving winner to the 
 A server-side, transport-independent authoritative dealer is under development in packages/poker/dealer-room.js. It enforces authenticated-caller *contracts* (identity is supplied by a future trusted SDK adapter), session-wide rule approvals, revision checking, turn authority, timeouts, unanimous indefinite pause/resume and strict public/private state separation. See docs/DEALER-PROTOCOL.md. It has no Vector SDK transport adapter, private message channel or persistence yet, and must not be presented as secure online PvP.
 
 The additional message-envelope boundary (packages/poker/message-boundary.js) constructs separate public and per-recipient payloads. This is tested locally but **does not implement actual SDK messaging or encryption**. A verified Vector transport adapter remains a mandatory precondition for real PvP.
+
+## Durable trusted dealer (Node backend, in progress)
+
+`packages/poker/dealer-journal.js`, `dealer-store.js`, and `persistent-dealer.js` implement server-side, deterministic replay after process restart, AES-256-GCM encrypted storage with externally provided key, and persistence-before-acknowledgment. The engine survives mid-hand crashes without broadcasting hidden cards. `npm test` includes crash-recovery, pause and tamper tests. See [dealer recovery](docs/DEALER-RECOVERY.md).
+
+**Not a Vector SDK connector yet.** The Vector Rust Bot-to-Node dealer bridge, authenticated sender identity, encrypted private-hand delivery, secure single-writer deployment and eventual multi-human test remain open work. No user setup needed for this development milestone.
