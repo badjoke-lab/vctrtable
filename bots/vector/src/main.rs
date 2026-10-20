@@ -10,13 +10,14 @@ use std::process::Stdio;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::io::{AsyncBufReadExt,AsyncWriteExt,BufReader};
-use tokio::process::{ChildStdin,ChildStdout,Command};
+use tokio::process::{Child,ChildStdin,ChildStdout,Command};
 use tokio::sync::Mutex;
 use vector_sdk::VectorBot;
 
 type DynError = Box<dyn Error + Send + Sync>;
 
 struct DealerChild {
+    _child: Child,
     stdin: ChildStdin,
     stdout: BufReader<ChildStdout>,
 }
@@ -60,7 +61,7 @@ async fn spawn_dealer() -> Result<DealerChild,DynError> {
     let mut child=child;
     let stdin=child.stdin.take().ok_or("missing dealer stdin")?;
     let stdout=child.stdout.take().ok_or("missing dealer stdout")?;
-    let mut io=DealerChild{stdin,stdout:BufReader::new(stdout)};
+    let mut io=DealerChild{_child:child,stdin,stdout:BufReader::new(stdout)};
     let mut ready=String::new();
     let size=io.stdout.read_line(&mut ready).await?;
     if size==0||size>4096{return Err("dealer failed to initialize".into());}
@@ -68,7 +69,7 @@ async fn spawn_dealer() -> Result<DealerChild,DynError> {
     if ready.get("kind").and_then(Value::as_str)!=Some("ready")||ready.get("ok").and_then(Value::as_bool)!=Some(true){
         return Err("dealer not ready".into());
     }
-    // child pipes own the process, and the bot has only one dealer worker.
+    // Child handle remains owned by DealerChild: kill_on_drop protects worker lifetime.
     Ok(io)
 }
 
