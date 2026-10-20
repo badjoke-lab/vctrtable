@@ -59,3 +59,9 @@ Standard WebXDC sendUpdate sends to all peers and is not a secure channel for pr
 The project is now being tested by one person; coordinated multi-user Vector testing is deliberately postponed until near completion. A self-contained QA interface exercises 2–6-seat poker using scripted opponents, client-local card state and the production-intended rules engine. It supports dealing, standard betting actions, blinds, streets, side pots, chip accounting, rebuy between hands, and a local action timer. The QA pause button *simulates* unanimous agreement and does not authenticate live remote votes.
 
 Blocking later PvP tasks remain: secure per-recipient hole cards, authenticated action sender, authoritative dealer and turn ordering, reconnect and resync, hand replay, and multi-client tests. Do not broadcast any secrets. The QA simulation is not real PvP and not an AI-chat product.
+
+## Additional milestone — deterministic local session replay and correctness
+
+Before any multi-human test, provide explicit local QA save/load/delete. Journal complete private deck order and actions locally to allow deterministic restoration; never send the journal to the shared WebXDC room or any external service. Action-clock resets on restore. Add golden tests for the heads-up first-card recipient and for ties with odd chips (seat left of dealer), plus short all-in non-reopening and mid-hand recovery.
+
+**Still not implemented:** secure Vector player identities, trusted dealer/private card transport, actual network turn clocks/consent, full reconnect, real multiplayer and translation provider.
