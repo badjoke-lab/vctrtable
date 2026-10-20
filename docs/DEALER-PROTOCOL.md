@@ -33,3 +33,9 @@ Cards from players who have not folded are shown only after a completed conteste
 5. Independent verification of dealer honesty or trustless dealing. Current model requires trusting the dealer.
 
 The tests simulate 2–6 seats **inside a single Node process**. They do not prove that Vector's actual network path is secure or functional.
+
+## Request and message-envelope boundary (second local step)
+
+The message-boundary.js module parses client requests without a client-supplied identity or timestamp. A trusted SDK adapter must pass verifiedActorId and serverNow in a separate trusted context. The return value separates a single public broadcast packet from an array of recipient-specific private envelopes. These envelopes are plain objects and are **not encrypted**. The caller must send each privately to a verified intended recipient, never into WebXDC's group status channel. The tests simulate this separation in one process; no live Vector transport is claimed.
+
+The method assertPacketRouting rejects common mistakes in destination lists and obvious private-field presence in group snapshots. It is defense in depth, **not a security proof**. The real transport is still unimplemented.
