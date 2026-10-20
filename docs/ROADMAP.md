@@ -53,3 +53,9 @@ Season/competitive mode (later): possible fixed defaults include 2,000 chips, 10
 ## Protocol concern
 
 Standard WebXDC sendUpdate sends to all peers and is not a secure channel for private hole cards; its UI-supplied sender ID is not itself proof of authorship. This early lobby is for developer validation of harmless state only. Fair dealing and move authentication remain blocking work.
+
+## Solo QA gameplay implementation (additional milestone)
+
+The project is now being tested by one person; coordinated multi-user Vector testing is deliberately postponed until near completion. A self-contained QA interface exercises 2–6-seat poker using scripted opponents, client-local card state and the production-intended rules engine. It supports dealing, standard betting actions, blinds, streets, side pots, chip accounting, rebuy between hands, and a local action timer. The QA pause button *simulates* unanimous agreement and does not authenticate live remote votes.
+
+Blocking later PvP tasks remain: secure per-recipient hole cards, authenticated action sender, authoritative dealer and turn ordering, reconnect and resync, hand replay, and multi-client tests. Do not broadcast any secrets. The QA simulation is not real PvP and not an AI-chat product.

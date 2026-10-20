@@ -22,6 +22,7 @@
 <label><span data-i18n="timer">Action limit in seconds (0 = unlimited)</span><input id="timer" type="number" min="0" max="3600" step="1" value="30" required></label>
 </div><label class="check"><input id="rebuy" type="checkbox" checked> <span data-i18n="rebuy">Allow chip rebuy between hands</span></label><button type="submit" data-i18n="propose">Propose rules</button></form><div id="proposal" aria-live="polite"></div></section>
 <section><h2 data-i18n="pause">Pause agreement</h2><p data-i18n="pauseHelp">Pause/resume requires unanimous approval. No gameplay timer exists in this prototype.</p><div id="pause-status" aria-live="polite"></div><button id="pause-request">Request pause</button></section>
+<section class="qa-entry"><h2>Solo test / 1人用テスト</h2><p>Test poker rules on one device with scripted seats; this is NOT online PvP. / 1台の端末でゲームの進行・操作を確認できます。実際の対人対戦ではありません。</p><a href="qa.html" style="display:inline-block;background:#48d49d;color:#072719;border-radius:8px;padding:12px;font-weight:700;text-decoration:none">Open local poker test / テスト卓を開く →</a></section>
 <section><h2 data-i18n="chat">Table chat</h2><div class="messages" id="messages" role="log"></div><form id="chat-form"><input id="text" maxlength="500" required><button type="submit" data-i18n="send">Send</button></form><p data-i18n="translation">Original messages only; translation will be added after privacy review.</p></section>
 <footer data-i18n="footer">No real-money wagering. Poker hands are not active yet.</footer>
 </main>
