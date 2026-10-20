@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Poker seat — Vector DM developer bridge</title>
+<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="qa.css"><link rel="stylesheet" href="dm.css">
+<script type="module" src="dm.js"></script>
+</head>
+<body>
+<main>
+<header><div><small>VCTRTABLE / POKER</small><h1 data-t="title">Poker seat (developer bridge)</h1></div><label><span data-t="language">Language</span><select id="language"><option value="en">English</option><option value="ja">日本語</option></select></label></header>
+<div class="warning" data-t="warning">Developer-only manual bridge. No automatic Vector DM connection. Never paste private hands into a group chat or shared update.</div>
+<p><a href="index.html" data-t="back">← Lobby</a></p>
+<section>
+<h2 data-t="connection">Bot DM setup</h2>
+<p data-t="help">Enter the agreed room ID and your public Vector npub. The bot identity must be verified in Vector itself.</p>
+<div class="grid">
+<label><span data-t="room">Room ID</span><input id="room" maxlength="128" autocomplete="off" spellcheck="false" placeholder="room-1"></label>
+<label><span data-t="identity">Your public npub (not nsec)</span><input id="identity" maxlength="128" autocomplete="off" spellcheck="false" placeholder="npub1..."></label>
+</div>
+<p data-t="privacy">Copy an action only into the dealer Bot's 1-to-1 Vector DM. Copy the Bot's JSON reply back here. This browser cannot verify who sent pasted JSON; check the sender in Vector.</p>
+</section>
+<section>
+<h2 data-t="table">Table</h2>
+<div class="between"><strong id="phase">—</strong><strong id="pot">—</strong></div>
+<div id="seats" class="qa-players"></div>
+<div class="qa-board"><p data-t="board">Board</p><div id="board" class="qa-cards"></div></div>
+<div class="qa-hero"><p data-t="hand">Your hand</p><div id="hole" class="qa-cards"></div></div>
+<p id="status" class="status" role="status"></p>
+</section>
+<section>
+<h2 data-t="controls">Make a move</h2>
+<div id="setup-controls">
+<p data-t="proposalHelp">Before a table starts, propose the rules. All seats must approve.</p>
+<div class="grid">
+<label><span data-t="chips">Initial chips</span><input id="chips" type="number" min="3" value="1000"></label>
+<label><span data-t="sb">Small blind</span><input id="sb" type="number" min="1" value="5"></label>
+<label><span data-t="bb">Big blind</span><input id="bb" type="number" min="2" value="10"></label>
+<label><span data-t="timer">Action seconds (0 = unlimited)</span><input id="timer" type="number" min="0" max="3600" value="30"></label>
+</div>
+<label class="check"><input type="checkbox" id="rebuy" checked><span data-t="rebuy">Allow rebuy between hands</span></label>
+</div>
+<div class="dm-actions">
+<button id="propose" data-t="propose">Propose rules</button>
+<button id="approve" data-t="approve">Approve rules</button>
+<button id="start" data-t="start">Start next hand</button>
+<button id="rebuy-btn" data-t="rebuyBtn">Rebuy</button>
+</div>
+<div class="dm-actions">
+<button id="fold" data-t="fold">Fold</button>
+<button id="check" data-t="check">Check</button>
+<button id="call" data-t="call">Call</button>
+<label class="dm-raise"><span data-t="raiseTo">Raise to</span><input id="raise-to" type="number" min="1" step="1"></label>
+<button id="raise" data-t="raise">Raise</button>
+<button id="allin" data-t="allin">All-in</button>
+</div>
+<div class="dm-actions">
+<button id="pause" data-t="pause">Request pause</button>
+<button id="pause-yes" data-t="pauseYes">Approve pause / resume</button>
+<button id="pause-no" data-t="pauseNo">Reject request</button>
+<button id="sync" data-t="sync">Request state sync</button>
+</div>
+</section>
+<section>
+<h2 data-t="outbound">1. Copy action to Bot DM</h2>
+<p data-t="outboundHelp">An action creates a JSON DM below. Sending is always a separate, manual step.</p>
+<textarea id="outbox" readonly rows="5" spellcheck="false" aria-label="Bot DM JSON"></textarea>
+<div class="dm-actions"><button id="copy" data-t="copy">Copy command</button><button id="select" class="secondary" data-t="select">Select text</button></div>
+<h2 data-t="inbound">2. Paste Bot's reply</h2>
+<p data-t="inboundHelp">Paste the complete JSON from your private DM with the verified dealer Bot. It will not be broadcast or saved.</p>
+<textarea id="inbox" rows="6" spellcheck="false" aria-label="Private Bot DM response"></textarea>
+<div class="dm-actions"><button id="import" data-t="import">Import reply</button><button id="clear" class="secondary" data-t="clear">Clear imported text</button></div>
+<p id="feedback" role="alert"></p>
+</section>
+<footer data-t="footer">Development-only seat UI. Real Vector connection and encrypted in-app delivery remain unverified.</footer>
+</main>
+</body>
+</html>
