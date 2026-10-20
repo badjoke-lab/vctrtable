@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>vctrtable Poker</title>
+<link rel="stylesheet" href="style.css">
+<script src="webxdc.js"></script>
+<script src="main.js" defer></script>
+</head>
+<body>
+<main>
+<header><div><small>VCTRTABLE / POKER</small><h1 data-i18n="title">Poker table</h1></div><label><span data-i18n="language">Language</span><select id="locale"><option value="en">English</option><option value="ja">日本語</option></select></label></header>
+<div class="warning" data-i18n="warning">Lobby prototype only — no dealing, betting or authenticated PvP. No real-money play.</div>
+<section><div class="between"><h2 data-i18n="players">Players</h2><span id="transport"></span></div><div id="seats" class="seats"></div><button id="join" data-i18n="join">Join</button></section>
+<section><h2 data-i18n="rules">Agree on table rules</h2><p data-i18n="rulesHelp">Each seated player must approve the same proposal.</p>
+<form id="rules-form"><div class="grid">
+<label><span data-i18n="chips">Starting chips</span><input id="chips" type="number" min="1" max="100000000" step="1" value="1000" required></label>
+<label><span data-i18n="sb">Small blind</span><input id="sb" type="number" min="1" max="100000000" step="1" value="5" required></label>
+<label><span data-i18n="bb">Big blind</span><input id="bb" type="number" min="2" max="100000000" step="1" value="10" required></label>
+<label><span data-i18n="timer">Action limit in seconds (0 = unlimited)</span><input id="timer" type="number" min="0" max="3600" step="1" value="30" required></label>
+</div><label class="check"><input id="rebuy" type="checkbox" checked> <span data-i18n="rebuy">Allow chip rebuy between hands</span></label><button type="submit" data-i18n="propose">Propose rules</button></form><div id="proposal" aria-live="polite"></div></section>
+<section><h2 data-i18n="pause">Pause agreement</h2><p data-i18n="pauseHelp">Pause/resume requires unanimous approval. No gameplay timer exists in this prototype.</p><div id="pause-status" aria-live="polite"></div><button id="pause-request">Request pause</button></section>
+<section><h2 data-i18n="chat">Table chat</h2><div class="messages" id="messages" role="log"></div><form id="chat-form"><input id="text" maxlength="500" required><button type="submit" data-i18n="send">Send</button></form><p data-i18n="translation">Original messages only; translation will be added after privacy review.</p></section>
+<footer data-i18n="footer">No real-money wagering. Poker hands are not active yet.</footer>
+</main>
+</body>
+</html>
