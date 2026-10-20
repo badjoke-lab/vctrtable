@@ -82,12 +82,18 @@ test('QA journal rejects forged, truncated and out-of-turn actions',()=>{
  source.events[0].deck[0]=source.events[0].deck[1];
  assert.throws(()=>restoreSession(JSON.stringify(source)),/52-card/);
 });
-test('journal permits rebuy only on a completed hand and only for busted seat',()=>{
+test('journal rebuy restores through actual all-in bust',()=>{
  const x=createSession({players:seats(),startingChips:100,smallBlind:1,bigBlind:2,rebuy:true});
  startSessionHand(x,fullDeck());
  assert.throws(()=>sessionRebuy(x,'p0'),/between hands/);
- sessionAction(x,legalActions(x.table).playerId,'fold');
- assert.throws(()=>sessionRebuy(x,'p0'),/busted/);
- x.table.players[0].stack=0;x.table.minted=100; // artificial QA balance edit is NOT recorded in journal
- assert.throws(()=>restoreSession(serializeSession(x)).table.players[0].stack===0?new Error('unexpected'):new Error('Expected distinct reconstructed balances'),/Expected distinct/);
+ const l=legalActions(x.table);sessionAction(x,l.playerId,'raise',100);
+ const response=legalActions(x.table);sessionAction(x,response.playerId,'call');
+ assert.equal(x.table.hand.status,'complete');
+ const broke=x.table.players.find(p=>p.stack===0);
+ assert.ok(broke,'An all-in heads-up showdown must bust one of the two seats with this deck');
+ sessionRebuy(x,broke.id);
+ assert.equal(x.table.players.find(p=>p.id===broke.id).stack,100);
+ assert.deepEqual(restoreSession(serializeSession(x)).table,x.table);
+ const y=createSession({players:seats(),startingChips:100,smallBlind:1,bigBlind:2,rebuy:false});
+ assert.throws(()=>sessionRebuy(y,'p0'),/disallowed/);
 });
