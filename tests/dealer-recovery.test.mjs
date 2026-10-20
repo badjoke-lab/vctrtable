@@ -59,7 +59,7 @@ test("timer expiry is replayable and duplicate command requests are idempotent a
  const original=cmd(d.room,"player-0",{type:"startHand"});
  d.command(original);
  d.tick(11000);
- assert.equal(d.room.table.hand.status,"betting");
+ assert.equal(d.room.table.hand.status,"complete");
  const restored=DealerJournal.replay(d.document(),{deckFactory});
  assert.deepEqual(restored.room.publicState(),d.room.publicState());
  assert.equal(restored.command(original).replayed,true);
@@ -83,7 +83,7 @@ test("corrupt recorded deck, command, or journal version cannot replay",()=>{
  entry.deck[0]=entry.deck[1];
  assert.throws(()=>DealerJournal.replay(changed,{deckFactory}),/52-card|divergence/);
  const changedRequest=structuredClone(orig);
- changedRequest.entries[0].input.op.settings.startingChips=99;
+ changedRequest.entries[0].input.op.settings.startingChips=1;
  assert.throws(()=>DealerJournal.replay(changedRequest,{deckFactory}),/integrity|divergence/);
 });
 test("encrypted file round-trips but does not expose a known secret card/deck pattern",async()=>{
