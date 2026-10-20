@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
-const scripts=['apps/poker/main.js','apps/poker/qa.js','packages/poker/engine.js','packages/poker/hand.js','packages/poker/session.js','packages/poker/dealer-room.js','packages/poker/message-boundary.js'];
+const scripts=['apps/poker/main.js','apps/poker/qa.js','packages/poker/engine.js','packages/poker/hand.js','packages/poker/session.js','packages/poker/dealer-room.js','packages/poker/message-boundary.js','packages/poker/dealer-journal.js','packages/poker/dealer-store.js','packages/poker/persistent-dealer.js'];
 for(const f of scripts)test('JavaScript syntax: '+f,()=>{
  assert.doesNotThrow(()=>execFileSync(process.execPath,['--check',f],{encoding:'utf8'}));
 });
@@ -19,4 +19,13 @@ test('dealer room cannot directly invoke any WebXDC shared transport',()=>{
  assert.ok(!dealer.includes('window.webxdc'));
  assert.ok(dealer.includes('publicState()'));
  assert.ok(dealer.includes('privateState(actorId)'));
+});
+
+test('dealer recovery remains server side and never enters WebXDC package',()=>{
+ const build=readFileSync('scripts/build.mjs','utf8');
+ for(const serverOnly of ['dealer-journal.js','dealer-store.js','persistent-dealer.js'])assert.equal(build.includes(serverOnly),false);
+ for(const path of ['packages/poker/dealer-journal.js','packages/poker/dealer-store.js','packages/poker/persistent-dealer.js']){
+  const src=readFileSync(path,'utf8');
+  assert.equal(src.includes('sendUpdate('),false);
+ }
 });
