@@ -59,7 +59,8 @@ test("timer expiry is replayable and duplicate command requests are idempotent a
  const original=cmd(d.room,"player-0",{type:"startHand"});
  d.command(original);
  d.tick(11000);
- assert.equal(d.room.table.hand.status,"complete");
+ assert.equal(d.room.table.hand.status,"betting");
+ assert.equal(d.room.table.hand.players.filter(p=>p.inHand&&!p.folded).length,2);
  const restored=DealerJournal.replay(d.document(),{deckFactory});
  assert.deepEqual(restored.room.publicState(),d.room.publicState());
  assert.equal(restored.command(original).replayed,true);
