@@ -57,6 +57,7 @@ test("real local Node dealer IPC keeps own hole cards recipient-scoped and survi
  assert.equal(group.includes('"deck"'),false);
  for(let i=0;i<own.length;i++){
   assert.equal(reply.deliveries[i].to,players[i].id);
+  assert.equal(own[i].private.recipientId,players[i].id);
   assert.equal(own[i].private.ownHole.length,2);
   for(let j=0;j<own.length;j++)if(i!==j)
    assert.ok(own[i].private.ownHole.every(card=>!own[j].private.ownHole.includes(card)));
