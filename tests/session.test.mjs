@@ -3,9 +3,8 @@ import assert from 'node:assert/strict';
 import {fullDeck,createTable,startHand,legalActions,act,assertConservation} from '../packages/poker/engine.js';
 import {createSession,startSessionHand,sessionAction,sessionRebuy,serializeSession,restoreSession} from '../packages/poker/session.js';
 const seats=(n=2)=>Array.from({length:n},(_,i)=>({id:'p'+i,name:'Player '+i}));
-function forcedBoard(cards){
+function forcedBoard(cards,locations=[7,8,9,11,13]){
  const deck=fullDeck();
- const locations=[7,8,9,11,13];
  for(let i=0;i<cards.length;i++){const pos=deck.indexOf(cards[i]);[deck[locations[i]],deck[pos]]=[deck[pos],deck[locations[i]]];}
  return deck;
 }
@@ -84,7 +83,7 @@ test('QA journal rejects forged, truncated and out-of-turn actions',()=>{
 });
 test('journal rebuy restores through actual all-in bust',()=>{
  const x=createSession({players:seats(),startingChips:100,smallBlind:1,bigBlind:2,rebuy:true});
- startSessionHand(x,forcedBoard(['AS','KD','QH','7S','2D']));
+ startSessionHand(x,forcedBoard(['2D','KD','QH','7S','9D'],[5,6,7,9,11]));
  assert.throws(()=>sessionRebuy(x,'p0'),/between hands/);
  const l=legalActions(x.table);sessionAction(x,l.playerId,'raise',100);
  const response=legalActions(x.table);sessionAction(x,response.playerId,'call');
