@@ -241,6 +241,7 @@ export class AuthoritativeRoom {
     if(!this.members.some(p=>p.id===actorId))fail("UNAUTHENTICATED_PLAYER");
     const state=this.publicState();
     const p=this.table?.hand?.players.find(p=>p.id===actorId);
-    return {...state,privateFor:actorId,ownHole:p?[...p.hole]:[],legal:!this.paused&&legalActions(this.table)?.playerId===actorId?legalActions(this.table):null};
+    const legal=!this.paused&&this.table?legalActions(this.table):null;
+    return {...state,privateFor:actorId,ownHole:p?[...p.hole]:[],legal:legal?.playerId===actorId?legal:null};
   }
 }
