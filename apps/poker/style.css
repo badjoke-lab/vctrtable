@@ -1,0 +1,19 @@
+:root{color-scheme:dark;font-family:system-ui,-apple-system,sans-serif;background:#0b1517;color:#f1f9f5}
+*{box-sizing:border-box}body{margin:0}main{max-width:750px;margin:auto;padding:20px 14px 36px}
+header,.between{display:flex;justify-content:space-between;align-items:center;gap:12px}header small{letter-spacing:.15em;color:#8cbaa9}h1{margin:3px 0 8px;font-size:30px}h2{font-size:18px;margin:0 0 12px}
+section{padding:16px;background:#132629;border:1px solid #2b4d4a;border-radius:14px;margin:12px 0}
+p,footer{font-size:13px;color:#aecac0;line-height:1.5}
+.warning{margin:14px 0;padding:12px;background:#49301a;border:1px solid #906135;color:#ffe2b0;border-radius:10px;font-size:13px}
+button{cursor:pointer;border:0;border-radius:8px;padding:10px 13px;background:#48d49d;color:#092719;font-size:14px;font-weight:700}
+button:disabled{opacity:.45;cursor:default}button.secondary{background:#2b5751;color:#e6fff4;margin:5px 0}
+input:not([type=checkbox]),select{width:100%;padding:9px;background:#0c1e20;border:1px solid #45736c;border-radius:7px;color:#fff;font:inherit}
+label{font-size:12px;color:#b8d8cd}label span{display:block;margin-bottom:5px}header label{min-width:100px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+.check{display:flex;gap:8px;align-items:center;margin:10px 0}.check span{margin:0}
+.seats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.seat{border-radius:20px;background:#225045;padding:8px 10px;font-size:13px}
+.status{background:#1b3739;border-radius:8px;margin:12px 0;padding:12px;font-size:13px;line-height:1.7}
+.messages{min-height:90px;max-height:250px;overflow:auto;background:#081a1c;border:1px solid #315650;padding:10px;border-radius:8px}
+.message{border-bottom:1px solid #32514c;padding:8px 0;overflow-wrap:anywhere}.message:last-child{border:0}.message small{display:block;color:#8cbbad}
+#chat-form{display:flex;gap:8px;margin:10px 0}#chat-form input{min-width:0}
+footer{text-align:center;padding:18px}#transport{font-size:11px;color:#7bdaa6}
+@media(max-width:440px){.grid{grid-template-columns:1fr}h1{font-size:24px}main{padding:12px 10px}}
