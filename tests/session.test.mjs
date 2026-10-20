@@ -84,7 +84,7 @@ test('QA journal rejects forged, truncated and out-of-turn actions',()=>{
 });
 test('journal rebuy restores through actual all-in bust',()=>{
  const x=createSession({players:seats(),startingChips:100,smallBlind:1,bigBlind:2,rebuy:true});
- startSessionHand(x,fullDeck());
+ startSessionHand(x,forcedBoard(['AS','KD','QH','7S','2D']));
  assert.throws(()=>sessionRebuy(x,'p0'),/between hands/);
  const l=legalActions(x.table);sessionAction(x,l.playerId,'raise',100);
  const response=legalActions(x.table);sessionAction(x,response.playerId,'call');
