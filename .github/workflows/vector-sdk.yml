@@ -1,0 +1,21 @@
+name: Vector SDK DM adapter build
+on:
+  pull_request:
+    paths:
+      - 'bots/vector/**'
+      - '.github/workflows/vector-sdk.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cargo-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: bots/vector
+      - name: Verify Vector 0.11 SDK Bot adapter
+        run: cargo check --manifest-path bots/vector/Cargo.toml
