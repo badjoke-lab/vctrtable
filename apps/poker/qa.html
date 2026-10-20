@@ -19,6 +19,15 @@
 <label><span data-l10n="seconds">Your action timer (0 = unlimited)</span><input id="qa-seconds" type="number" min="0" max="3600" value="30" required></label>
 </div><label class="check"><input type="checkbox" checked id="qa-rebuy"><span data-l10n="rebuy">Allow rebuy when out of chips</span></label>
 <button type="submit" data-l10n="start">Start local session</button></form></section>
+<section id="qa-storage">
+<h2 data-l10n="saveTitle">Local QA session</h2>
+<p data-l10n="saveWarning">Save only on this device. The saved test journal includes all hidden cards and full deck order; it is NOT encrypted or shared with Vector. Resuming restarts the local action clock.</p>
+<div class="qa-end">
+<button type="button" id="qa-save" data-l10n="save">Save session</button>
+<button type="button" id="qa-load" class="secondary" data-l10n="load">Resume saved session</button>
+<button type="button" id="qa-delete" class="secondary" data-l10n="deleteSave">Delete saved session</button>
+</div><p id="qa-storage-notice" role="status"></p>
+</section>
 <section id="qa-table" hidden>
 <div class="between"><h2 id="qa-round">Hand</h2><strong id="qa-pot">Pot 0</strong></div>
 <div id="qa-players" class="qa-players"></div>

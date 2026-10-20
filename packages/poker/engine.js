@@ -30,7 +30,7 @@ function revealNext(h){
  h.pending=roundSeats(h);h.turn=nextPending(h,h.button);
  h.events.push({kind:'street',street:h.streetName,board:[...h.board]});
 }
-const clockwise=(h,ids)=>[...ids].sort((a,b)=>((a-h.button+h.players.length)%h.players.length)-((b-h.button+h.players.length)%h.players.length));
+const clockwise=(h,ids)=>[...ids].sort((a,b)=>((a-h.button-1+h.players.length)%h.players.length)-((b-h.button-1+h.players.length)%h.players.length));
 function settle(h){
  if(h.status==='complete')return;
  const live=h.players.map((p,i)=>p.inHand&&!p.folded?i:-1).filter(i=>i>=0);
@@ -75,7 +75,8 @@ export function startHand(table,{deck}={}){
  const h={number:++table.handNumber,players:table.players.map(p=>({id:p.id,name:p.name,stack:p.stack,hole:[],inHand:p.stack>0,folded:false,street:0,total:0})),button:table.button,smallBlind:table.settings.smallBlind,bigBlind:table.settings.bigBlind,board:[],deck:deck?[...deck]:shuffleDeck(),streetName:'preflop',currentBet:table.settings.bigBlind,lastFullRaise:table.settings.bigBlind,acted:[],pending:[],turn:-1,status:'betting',pots:[],awards:[],events:[]};
  const sb=nextFrom(h.players,h.button,p=>p.inHand),sbSeat=eligible.length===2?h.button:sb,bb=nextFrom(h.players,sbSeat,p=>p.inHand);
  h.sbSeat=sbSeat;h.bbSeat=bb;
- for(let round=0;round<2;round++)for(let step=1;step<=h.players.length;step++){const i=(h.button+step)%h.players.length;if(h.players[i].inHand)h.players[i].hole.push(draw(h));}
+ const firstToDeal=eligible.length===2?h.button:nextFrom(h.players,h.button,p=>p.inHand);
+ for(let round=0;round<2;round++)for(let step=0;step<h.players.length;step++){const i=(firstToDeal+step)%h.players.length;if(h.players[i].inHand)h.players[i].hole.push(draw(h));}
  const paidSmall=pay(h.players[sbSeat],h.smallBlind),paidBig=pay(h.players[bb],h.bigBlind);
  h.events.push({kind:'blinds',sb:sbSeat,bb,paidSmall,paidBig});
  h.pending=roundSeats(h);h.turn=nextPending(h,bb);table.hand=h;progress(h);syncStacks(table);return h;
