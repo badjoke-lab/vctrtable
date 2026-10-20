@@ -32,3 +32,7 @@ Use **Open local poker test** from the packaged WebXDC Mini App to play complete
 On the test table, **Save session** writes an explicit opt-in journal to this device's browser localStorage; **Resume saved session** reconstructs the hand by replaying recorded moves, and **Delete saved session** removes the journal. Resume restarts the local action clock, not a networked turn clock. The journal includes the **entire private deck order and all players' cards**. It is not encrypted and should never be shared or treated as a live PvP record. No autosave or WebXDC broadcast is used.
 
 Heads-up dealing order and odd-chip distribution (first surviving winner to the dealer's left) now have regression tests. This remains an offline QA table, not authenticated network poker.
+
+## Trusted dealer prototype
+
+A server-side, transport-independent authoritative dealer is under development in packages/poker/dealer-room.js. It enforces authenticated-caller *contracts* (identity is supplied by a future trusted SDK adapter), session-wide rule approvals, revision checking, turn authority, timeouts, unanimous indefinite pause/resume and strict public/private state separation. See docs/DEALER-PROTOCOL.md. It has no Vector SDK transport adapter, private message channel or persistence yet, and must not be presented as secure online PvP.
