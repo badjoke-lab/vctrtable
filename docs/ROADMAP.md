@@ -65,3 +65,7 @@ Blocking later PvP tasks remain: secure per-recipient hole cards, authenticated 
 Before any multi-human test, provide explicit local QA save/load/delete. Journal complete private deck order and actions locally to allow deterministic restoration; never send the journal to the shared WebXDC room or any external service. Action-clock resets on restore. Add golden tests for the heads-up first-card recipient and for ties with odd chips (seat left of dealer), plus short all-in non-reopening and mid-hand recovery.
 
 **Still not implemented:** secure Vector player identities, trusted dealer/private card transport, actual network turn clocks/consent, full reconnect, real multiplayer and translation provider.
+
+## PvP dealer protocol milestone (local-only simulation)
+
+Implement in-memory dealer orchestration for authenticated caller *assumptions*, per-session unanimous settings, revisioned commands, idempotent requests, dealer-managed turn deadlines, unanimous no-limit pauses, redacted public snapshots and per-player private snapshots. Test 2–6 simulated seats in one process. Then add a **separate, verifiably authenticated Vector SDK Bot adapter** and persistence; real multi-user testing remains deferred. The in-memory core by itself does not prove network confidentiality or authentication. See DEALER-PROTOCOL.md.
