@@ -69,3 +69,9 @@ Before any multi-human test, provide explicit local QA save/load/delete. Journal
 ## PvP dealer protocol milestone (local-only simulation)
 
 Implement in-memory dealer orchestration for authenticated caller *assumptions*, per-session unanimous settings, revisioned commands, idempotent requests, dealer-managed turn deadlines, unanimous no-limit pauses, redacted public snapshots and per-player private snapshots. Test 2–6 simulated seats in one process. Then add a **separate, verifiably authenticated Vector SDK Bot adapter** and persistence; real multi-user testing remains deferred. The in-memory core by itself does not prove network confidentiality or authentication. See DEALER-PROTOCOL.md.
+
+## Durable dealer checkpoint (single-developer, no Vector accounts needed)
+
+Implemented encrypted-at-rest local trusted-dealer journal and deterministic recovery of shuffled decks, turn revisions, previous command receipts, pauses and deadlines. ACK only after persistent save; a disk failure disables new actions until restart. Tests cover encrypted file corruption, wrong key, complete and partial hand recovery, timeout replay and single-process sequential writes.
+
+Remaining: live Rust SDK adapter with NIP identity verification, Rust↔Node process boundary (or engine port), audited recipient encryption, production exclusive-write lease, deployed bot identity/key storage, and deferred real Vector multi-user tests.
