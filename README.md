@@ -36,3 +36,5 @@ Heads-up dealing order and odd-chip distribution (first surviving winner to the 
 ## Trusted dealer prototype
 
 A server-side, transport-independent authoritative dealer is under development in packages/poker/dealer-room.js. It enforces authenticated-caller *contracts* (identity is supplied by a future trusted SDK adapter), session-wide rule approvals, revision checking, turn authority, timeouts, unanimous indefinite pause/resume and strict public/private state separation. See docs/DEALER-PROTOCOL.md. It has no Vector SDK transport adapter, private message channel or persistence yet, and must not be presented as secure online PvP.
+
+The additional message-envelope boundary (packages/poker/message-boundary.js) constructs separate public and per-recipient payloads. This is tested locally but **does not implement actual SDK messaging or encryption**. A verified Vector transport adapter remains a mandatory precondition for real PvP.
