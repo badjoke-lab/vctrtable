@@ -133,7 +133,11 @@ async fn main() -> Result<(),DynError> {
             let Ok(request)=serde_json::from_str::<Value>(text) else {return;};
             let next={
                 let mut proc=dealer.lock().await;
-                proc.request(json!({"kind":"command","sender":author,"request":request})).await
+                if request.get("kind").and_then(Value::as_str)==Some("sync") {
+                    proc.request(json!({"kind":"sync","sender":author})).await
+                } else {
+                    proc.request(json!({"kind":"command","sender":author,"request":request})).await
+                }
             };
             match next {
                 Ok(reply)=>send_deliveries(&bot,reply,Some(&author)).await,
