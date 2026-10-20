@@ -19,7 +19,7 @@ const toWire=(r,i)=>{
  return JSON.stringify({
   protocol:1,kind:"vctrtable-poker-state",roomId:x.publicPacket.roomId,
   revision:x.publicPacket.revision,state:x.publicPacket.state,
-  private:{ownHole:recipient.ownHole,legal:recipient.legal}
+  private:{recipientId:recipient.recipientId,ownHole:recipient.ownHole,legal:recipient.legal}
  });
 };
 test("builds valid wire DM, uses secure random ID, includes no actor/seed",()=>{
@@ -33,6 +33,7 @@ test("builds valid wire DM, uses secure random ID, includes no actor/seed",()=>{
 test("refuses unsafe or invalid client requests",()=>{
  const base={roomId:"room-1",revision:0,random:fakeRng};
  assert.throws(()=>commandJson({...base,op:{type:"act",action:"wager"}}),/UNKNOWN_ACTION/);
+ assert.throws(()=>commandJson({...base,op:{type:"act",action:"fold",actorId:"npub1fake"}}),/UNTRUSTED_COMMAND_FIELDS/);
  assert.throws(()=>commandJson({...base,op:{type:"act",action:"raise",target:0}}),/INVALID_RAISE/);
  assert.throws(()=>commandJson({...base,random:null,op:{type:"startHand"}}),/SECURE_RANDOMNESS/);
  assert.throws(()=>commandJson({...base,op:{type:"propose",settings:{startingChips:10,smallBlind:12,bigBlind:20,rebuy:false,actionSeconds:0}}}),/INVALID_RULES/);
@@ -51,6 +52,7 @@ test("rejects cross-player, cross-room, old and future-conflicting snapshots",()
  assert.throws(()=>parseSeatSnapshot(raw,{roomId:"room-2",playerId:ids[0]}),/SNAPSHOT_NOT_FOR_THIS_SEAT/);
  assert.throws(()=>parseSeatSnapshot(raw,{roomId:"room-1",playerId:"npub1outsider"}),/SNAPSHOT_NOT_FOR_THIS_SEAT/);
  assert.throws(()=>parseSeatSnapshot(raw,{roomId:"room-1",playerId:ids[0],minimumRevision:4}),/SNAPSHOT_NOT_FOR_THIS_SEAT/);
+ assert.throws(()=>parseSeatSnapshot(toWire(r,1),{roomId:"room-1",playerId:ids[0]}),/SNAPSHOT_NOT_FOR_THIS_SEAT/);
  const x=JSON.parse(raw);x.private.legal={...x.private.legal,playerId:ids[1]};
  assert.throws(()=>parseSeatSnapshot(JSON.stringify(x),{roomId:"room-1",playerId:ids[0]}),/INVALID_SEAT_ACTIONS/);
 });
