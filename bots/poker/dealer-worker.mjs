@@ -12,6 +12,8 @@ import {PersistentDealer} from "../../packages/poker/persistent-dealer.js";
 import {parsePlayerRequest,makeOutboundPackets,assertPacketRouting} from "../../packages/poker/message-boundary.js";
 import readline from "node:readline";
 import {Buffer} from "node:buffer";
+import {fileURLToPath} from "node:url";
+import path from "node:path";
 
 const MAX_LINE_BYTES=16*1024;
 const ensure=x=>{if(!x)throw new Error("Missing dealer configuration");return x;};
@@ -35,6 +37,10 @@ export async function makeHandler({dealer,players}){
   const roster=new Set(players.map(p=>p.id));
   return async function handle(input){
     if(!input||typeof input!=="object"||Array.isArray(input))return {ok:false,code:"INVALID_INPUT"};
+    if(input.kind==="sync"&&bounded(input.sender)&&roster.has(input.sender)){
+      const all=stateDeliveries(dealer,players);
+      return {...all,deliveries:all.deliveries.filter(p=>p.to===input.sender)};
+    }
     if(input.kind==="tick"){
       const before=dealer.revision;
       await dealer.tick(Date.now());
@@ -98,6 +104,6 @@ export async function main(){
     process.stdout.write(JSON.stringify(response)+"\n");
   }
 }
-if(process.argv[1]&&new URL(import.meta.url).pathname===process.argv[1]){
+if(process.argv[1]&&fileURLToPath(import.meta.url)===path.resolve(process.argv[1])){
   main().catch(()=>{process.stderr.write("Dealer initialization failed\n");process.exitCode=1;});
 }
