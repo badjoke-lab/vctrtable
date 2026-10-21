@@ -58,3 +58,21 @@ test('mobile six-seat QA and both chat modes are bundled for WebXDC',()=>{
  for(const file of ['apps/poker/qa.js','apps/poker/cards.js','apps/poker/chat-view.js'])
   assert.ok(!readFileSync(file,'utf8').includes('sendUpdate('),'Offline QA must not broadcast secrets');
 });
+
+test('Vector opens the new mobile solo game, with old lobby preserved separately',()=>{
+ const root=readFileSync('apps/poker/index.html','utf8');
+ const lobby=readFileSync('apps/poker/lobby.html','utf8');
+ const qa=readFileSync('apps/poker/qa.html','utf8');
+ const dm=readFileSync('apps/poker/dm.html','utf8');
+ const build=readFileSync('scripts/build.mjs','utf8');
+ assert.ok(root.includes('class="poker-arena"'));
+ assert.ok(root.includes('id="qa-chat-mode"'));
+ assert.ok(root.includes('src="qa.js"'));
+ assert.ok(root.includes('href="lobby.html"'));
+ assert.ok(!root.includes('id="join"'),'old lobby must not be app entry point');
+ assert.ok(lobby.includes('id="join"'),'shared non-secret lobby remains accessible');
+ assert.ok(lobby.includes('href="qa.html"'),'solo QA remains available from lobby');
+ assert.ok(qa.includes('href="lobby.html"'));
+ assert.ok(dm.includes('href="lobby.html"'));
+ assert.ok(build.includes('"lobby.html"'),'lobby included in released .xdc');
+});

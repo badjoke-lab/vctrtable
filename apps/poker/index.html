@@ -4,28 +4,118 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>vctrtable Poker</title>
-<link rel="stylesheet" href="style.css">
-<script src="webxdc.js"></script>
-<script src="main.js" defer></script>
+<title>vctrtable Poker — Solo QA</title>
+<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="qa.css">
+<script type="module" src="qa.js"></script>
 </head>
 <body>
-<main>
-<header><div><small>VCTRTABLE / POKER</small><h1 data-i18n="title">Poker table</h1></div><label><span data-i18n="language">Language</span><select id="locale"><option value="en">English</option><option value="ja">日本語</option></select></label></header>
-<div class="warning" data-i18n="warning">Lobby prototype only — no dealing, betting or authenticated PvP. No real-money play.</div>
-<section><div class="between"><h2 data-i18n="players">Players</h2><span id="transport"></span></div><div id="seats" class="seats"></div><button id="join" data-i18n="join">Join</button></section>
-<section><h2 data-i18n="rules">Agree on table rules</h2><p data-i18n="rulesHelp">Each seated player must approve the same proposal.</p>
-<form id="rules-form"><div class="grid">
-<label><span data-i18n="chips">Starting chips</span><input id="chips" type="number" min="1" max="100000000" step="1" value="1000" required></label>
-<label><span data-i18n="sb">Small blind</span><input id="sb" type="number" min="1" max="100000000" step="1" value="5" required></label>
-<label><span data-i18n="bb">Big blind</span><input id="bb" type="number" min="2" max="100000000" step="1" value="10" required></label>
-<label><span data-i18n="timer">Action limit in seconds (0 = unlimited)</span><input id="timer" type="number" min="0" max="3600" step="1" value="30" required></label>
-</div><label class="check"><input id="rebuy" type="checkbox" checked> <span data-i18n="rebuy">Allow chip rebuy between hands</span></label><button type="submit" data-i18n="propose">Propose rules</button></form><div id="proposal" aria-live="polite"></div></section>
-<section><h2 data-i18n="pause">Pause agreement</h2><p data-i18n="pauseHelp">Pause/resume requires unanimous approval. No gameplay timer exists in this prototype.</p><div id="pause-status" aria-live="polite"></div><button id="pause-request">Request pause</button></section>
-<section class="qa-entry"><h2>Solo test / 1人用テスト</h2><p>Test poker rules on one device with scripted seats; this is NOT online PvP. / 1台の端末でゲームの進行・操作を確認できます。実際の対人対戦ではありません。</p><a href="qa.html" style="display:inline-block;background:#48d49d;color:#072719;border-radius:8px;padding:12px;font-weight:700;text-decoration:none">Open local poker test / テスト卓を開く →</a></section>
-<section><h2>Bot DM seat / Bot DM操作席</h2><p>Development bridge: create actions, send them in the dealer Bot’s private DM, then import that DM reply. Automatic Mini App / Bot transport is not implemented. / 操作の送信と返信の取り込みは手動です。秘密の手札を共有更新へ流しません。</p><a href="dm.html" style="display:inline-block;background:#48d49d;color:#072719;border-radius:8px;padding:12px;font-weight:700;text-decoration:none">Open Bot DM seat / Bot DM操作画面 →</a></section>
-<section><h2 data-i18n="chat">Table chat</h2><div class="messages" id="messages" role="log"></div><form id="chat-form"><input id="text" maxlength="500" required><button type="submit" data-i18n="send">Send</button></form><p data-i18n="translation">Original messages only; translation will be added after privacy review.</p></section>
-<footer data-i18n="footer">No real-money wagering. Poker hands are not active yet.</footer>
+<main class="qa-main qa-mobile">
+<header class="qa-topbar">
+  <div><small>VCTRTABLE / POKER</small><h1 data-l10n="title">Poker</h1></div>
+  <label class="qa-lang"><span data-l10n="language">Language</span><select id="qa-language"><option value="en">English</option><option value="ja">日本語</option></select></label>
+</header>
+<div class="qa-mode-banner"><span data-l10n="testLabel">LOCAL QA · scripted opponents · not live PvP</span><a href="lobby.html" data-l10n="back">Lobby</a></div>
+
+<section id="qa-setup">
+<h2 data-l10n="setup">Start a session</h2>
+<p data-l10n="setupHelp">Play against scripted test seats. No other Vector users are required.</p>
+<form id="qa-form">
+<div class="grid">
+<label><span data-l10n="opponents">Seats (2–6)</span><input id="qa-seats" type="number" min="2" max="6" value="6" required></label>
+<label><span data-l10n="chips">Starting chips</span><input id="qa-chips" type="number" min="3" max="1000000" value="1000" required></label>
+<label><span data-l10n="small">Small blind</span><input id="qa-small" type="number" min="1" max="1000000" value="5" required></label>
+<label><span data-l10n="big">Big blind</span><input id="qa-big" type="number" min="2" max="1000000" value="10" required></label>
+<label><span data-l10n="seconds">Action time (0 = unlimited)</span><input id="qa-seconds" type="number" min="0" max="3600" value="30" required></label>
+</div>
+<label class="check"><input type="checkbox" checked id="qa-rebuy"><span data-l10n="rebuy">Allow rebuy between hands</span></label>
+<button type="submit" data-l10n="start">Start local session</button>
+</form>
+<div class="qa-setup-resume"><button type="button" id="qa-load-start" class="secondary" data-l10n="load">Resume saved session</button></div>
+</section>
+
+<div id="qa-table" hidden>
+  <div class="qa-meta">
+    <span id="qa-round">Hand 1 · PREFLOP</span>
+    <label class="qa-chat-mode"><span data-l10n="chatMode">Chat</span>
+      <select id="qa-chat-mode"><option value="drawer" data-l10n="drawer">Drawer</option><option value="inline" data-l10n="inline">Always on</option></select>
+    </label>
+  </div>
+  <section class="poker-arena" aria-label="Poker table and seats">
+    <div class="felt">
+      <div class="felt-mark" aria-hidden="true">♠</div>
+      <div id="qa-players" class="poker-seats"></div>
+      <div class="poker-center">
+        <div class="pot-pill" id="qa-pot">Pot 0</div>
+        <div id="qa-street-label" class="street-label">PREFLOP</div>
+        <div id="qa-board-cards" class="community-cards"></div>
+      </div>
+      <div class="hero-spot">
+        <div class="hero-hand" id="qa-hero-cards"></div>
+        <div class="hero-info"><span class="hero-name" data-l10n="you">You</span><span id="qa-my-stack">1,000</span><span id="qa-timer">30s</span></div>
+      </div>
+    </div>
+    <button type="button" id="qa-chat-bubble" class="chat-bubble" aria-label="Open table chat">
+      <span aria-hidden="true">▤</span><strong id="qa-unread" hidden>0</strong>
+    </button>
+  </section>
+
+  <div class="qa-turn-status" id="qa-info" role="status"></div>
+  <div id="qa-chat-toast" class="qa-chat-toast" role="status" aria-live="polite" hidden></div>
+
+  <section id="qa-chat" class="qa-chat chat-drawer" aria-label="QA table chat">
+    <div class="chat-head">
+      <strong data-l10n="chat">Table chat</strong>
+      <small data-l10n="demo">Simulated messages</small>
+      <button type="button" id="qa-chat-close" class="secondary" data-l10n="closeChat">Close</button>
+    </div>
+    <div class="chat-stream" id="qa-chat-messages" role="log" aria-live="polite"></div>
+    <div class="quick-replies" id="qa-quick-replies"></div>
+    <form class="chat-compose" id="qa-chat-form">
+      <input id="qa-chat-text" type="text" maxlength="500" autocomplete="off" data-placeholder="chatPlaceholder" placeholder="Message (local demo only)" required>
+      <button type="submit" data-l10n="send">Send</button>
+    </form>
+    <label class="chat-translation"><input type="checkbox" id="qa-chat-translation"><span data-l10n="translation">Translate known demo phrases (no API)</span></label>
+  </section>
+
+  <section id="qa-controls" class="action-dock" aria-label="Poker betting controls">
+    <div class="action-primary">
+      <button id="qa-fold" type="button" data-l10n="fold">Fold</button>
+      <button id="qa-check" type="button" data-l10n="check">Check</button>
+      <button id="qa-call" type="button" data-l10n="call">Call</button>
+    </div>
+    <div class="action-raise">
+      <label><span data-l10n="raiseTo">Raise to</span><input id="qa-raise-amount" type="number" min="1" step="1"></label>
+      <button type="button" id="qa-raise" data-l10n="raise">Raise</button>
+      <button type="button" id="qa-allin" data-l10n="allin">All-in</button>
+    </div>
+    <div class="action-presets">
+      <button type="button" class="secondary" id="qa-min" data-l10n="min">Min</button>
+      <button type="button" class="secondary" id="qa-half" data-l10n="half">½ Pot</button>
+      <button type="button" class="secondary" id="qa-pot-preset" data-l10n="potPreset">Pot</button>
+      <button type="button" class="secondary" id="qa-max" data-l10n="max">Max</button>
+    </div>
+  </section>
+  <div id="qa-end" class="qa-end" hidden>
+    <p id="qa-result" aria-live="polite"></p>
+    <button id="qa-next" type="button" data-l10n="next">Next hand</button>
+    <button id="qa-buy" type="button" data-l10n="buy">Rebuy busted seats</button>
+    <button id="qa-reset" class="secondary" type="button" data-l10n="reset">New session</button>
+  </div>
+  <details id="qa-history-panel" class="qa-utilities">
+    <summary data-l10n="history">Hand history</summary>
+    <ol class="qa-log" id="qa-log"></ol>
+  </details>
+  <details id="qa-storage-panel" class="qa-utilities">
+    <summary data-l10n="saveTitle">Local QA session / save</summary>
+    <p data-l10n="saveWarning">Contains all hidden cards and deck order, unencrypted. Keep on this device only.</p>
+    <div class="qa-end">
+      <button type="button" id="qa-save" data-l10n="save">Save session</button>
+      <button type="button" id="qa-load" class="secondary" data-l10n="load">Resume saved session</button>
+      <button type="button" id="qa-delete" class="secondary" data-l10n="deleteSave">Delete saved session</button>
+    </div><p id="qa-storage-notice" role="status"></p>
+  </details>
+  <div class="qa-toolrow"><button class="secondary" id="qa-pause" type="button" data-l10n="pause">QA pause (simulated)</button></div>
+</div>
+<footer data-l10n="footer">Local game + sample chat only. Secure Vector PvP and real table chat are not yet active.</footer>
 </main>
-</body>
-</html>
+</body></html>

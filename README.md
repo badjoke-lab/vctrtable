@@ -17,7 +17,7 @@ Requires Node 20+ and a system zip executable.
     npm test
     npm run build
 
-The output is dist/poker.xdc. Open it in Vector or a WebXDC development simulator. Opening apps/poker/index.html directly gives a single-device interface preview.
+The output is dist/poker.xdc. Open it in Vector or a WebXDC development simulator. Opening apps/poker/index.html directly opens the mobile single-device poker UI; apps/poker/lobby.html preserves the experimental shared WebXDC lobby.
 
 See docs/ROADMAP.md for the staged security and game plan.
 
@@ -59,3 +59,7 @@ The new `dm.html` inside `poker.xdc` renders a complete **per-player seat** usin
 Single-device QA now renders a compact 2–6-seat oval poker table, premium self-contained card artwork (illustrated J/Q/K faces and distributed number-card pips), and a sticky legal-action dock. On mobile, chat mode is user-selectable: **Always on** places a small scrollable chat below the table; **Drawer** leaves the table expanded with an unread badge and a brief new-message preview. Both modes share one message stream and offer quick replies. The QA demo has local scripted chat only, and its optional English/Japanese translation covers **predefined demonstration phrases**, not unrestricted real translation. No actual encrypted Vector PvP/DM bridge is implemented in the Mini App yet.
 
 See [the mobile table and chat specification](docs/MOBILE-TABLE-CHAT.md). This UI is an implementation to test visually on one phone, not a completed multi-person game.
+
+## Start screen / corrected entry point
+
+From this update forward, **index.html launches the mobile solo poker UI directly** (the new six-seat table is shown after pressing Start local session). The old shared multiplayer prototype has moved to `lobby.html`, accessible via the header's Lobby link; `qa.html` remains a direct alias for single-device testing, and `dm.html` links back to the preserved lobby. Existing already-opened Vector Mini App messages may continue showing the older embedded app bundle. Open a newly shared updated `.xdc` to see the changed entry point. Never assume that editing a GitHub release asset live-upgrades old messages.
