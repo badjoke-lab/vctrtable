@@ -47,7 +47,7 @@ a{color:#7af1c0}
 .chat-bubble{position:absolute;right:7px;bottom:8px;z-index:4;background:#0a2827;border:1px solid #66dab6;color:#f2fcf5;min-width:40px;height:41px;font-size:23px;box-shadow:0 6px 14px #0006;padding:0}
 .chat-bubble strong{position:absolute;right:-6px;top:-8px;border-radius:18px;min-width:19px;padding:3px;background:#d92d48;color:white;font-size:11px;line-height:1}
 .qa-chat-toast{position:fixed;bottom:calc(var(--dock-height) + env(safe-area-inset-bottom) + 58px);right:16px;z-index:8;max-width:min(75vw,270px);padding:9px 12px;background:#102f33;color:white;border:1px solid #62cba0;border-radius:12px;font-size:12px;box-shadow:0 6px 25px #0009;pointer-events:none}
-.action-dock{position:sticky;bottom:0;z-index:10;background:#071719ed!important;border:1px solid #3b6459!important;border-radius:16px 16px 0 0!important;box-shadow:0 -8px 25px #0008;padding:9px!important;margin:5px 0 0!important;backdrop-filter:blur(12px)}
+.action-dock{position:fixed;bottom:env(safe-area-inset-bottom);left:50%;transform:translateX(-50%);width:min(calc(100vw - 12px),520px);z-index:10;background:#071719ed!important;border:1px solid #3b6459!important;border-radius:16px 16px 0 0!important;box-shadow:0 -8px 25px #0008;padding:9px!important;margin:5px 0 0!important;backdrop-filter:blur(12px)}
 .action-primary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
 .action-primary button{min-width:0;min-height:45px;font-size:15px}
 #qa-fold{background:#ba313c;color:white}#qa-check{background:#28649b;color:white}#qa-call{background:#34cf9a;color:#092719}
@@ -91,3 +91,7 @@ a{color:#7af1c0}
 .qa-settlement-pot b{font-size:13px;color:#f2d88e}
 .qa-settlement-pot span{font-size:12px;overflow-wrap:anywhere}
 .qa-settlement-ranks{display:grid;gap:3px;padding:8px 10px;border-radius:9px;background:#0a2122;color:#bdded0;font-size:12px}
+
+/* Fixed betting dock is visible even before a long 6-seat page is scrolled.
+   Reserve actual dock height so history/chat can scroll above it. */
+.qa-main.qa-playing{padding-bottom:calc(var(--dock-height) + 25px + env(safe-area-inset-bottom))}

@@ -110,3 +110,13 @@ test('mobile UI exposes all-in call and precise side-pot summaries without new s
  assert.ok(!publicChat.includes('showdown-summary'));
  assert.ok(!publicChat.includes('betting-controls'));
 });
+
+test('WebXDC root and solo QA HTML remain identical after every UI update',()=>{
+ const root=readFileSync('apps/poker/index.html','utf8');
+ const qa=readFileSync('apps/poker/qa.html','utf8');
+ assert.equal(root,qa,'Update both source entry pages together; .xdc build derives root from qa.html');
+ const build=readFileSync('scripts/build.mjs','utf8');
+ assert.ok(build.includes('path.join(src,"qa.html"),path.join(temp,"index.html")'),
+   'Built WebXDC entry must derive from the current QA HTML');
+ for(const id of ['qa-chat-network','qa-settlement'])assert.ok(root.includes('id="'+id+'"'),'Missing entry point ID '+id);
+});
