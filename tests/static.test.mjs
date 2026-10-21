@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
-const scripts=['apps/poker/main.js','apps/poker/qa.js','apps/poker/cards.js','apps/poker/chat-view.js','apps/poker/public-chat.js','apps/poker/dm.js','packages/poker/dm-seat.js','packages/poker/dm-sync-state.js','packages/poker/engine.js','packages/poker/hand.js','packages/poker/session.js','packages/poker/betting-controls.js','packages/poker/showdown-summary.js','packages/poker/dealer-room.js','packages/poker/message-boundary.js','packages/poker/dealer-journal.js','packages/poker/dealer-store.js','packages/poker/persistent-dealer.js'];
+const scripts=['apps/poker/main.js','apps/poker/qa.js','apps/poker/cards.js','apps/poker/cardmeister.full.js','apps/poker/chat-view.js','apps/poker/public-chat.js','apps/poker/dm.js','packages/poker/dm-seat.js','packages/poker/dm-sync-state.js','packages/poker/engine.js','packages/poker/hand.js','packages/poker/session.js','packages/poker/betting-controls.js','packages/poker/showdown-summary.js','packages/poker/dealer-room.js','packages/poker/message-boundary.js','packages/poker/dealer-journal.js','packages/poker/dealer-store.js','packages/poker/persistent-dealer.js'];
 for(const f of scripts)test('JavaScript syntax: '+f,()=>{
  assert.doesNotThrow(()=>execFileSync(process.execPath,['--check',f],{encoding:'utf8'}));
 });
@@ -52,7 +52,7 @@ test('mobile six-seat QA and both chat modes are bundled for WebXDC',()=>{
   'qa-chat-translation','qa-chat-form','qa-min','qa-half','qa-pot-preset','qa-max','qa-load-start'])
   assert.ok(html.includes('id="'+id+'"'),'Missing '+id);
  for(const cls of ['pos-top-left','pos-top','pos-top-right','pos-mid-left','pos-mid-right',
-  'chat-inline','chat-drawer','action-dock','vcard-court','vcard-pips'])
+  'chat-inline','chat-drawer','action-dock','vcard-illustrated','vcard-small'])
   assert.ok(css.includes(cls),'Missing UI style '+cls);
  assert.ok(js.includes('layouts[h.players.length-1]'),'Six-seat layout must be driven by player count');
  for(const file of ['apps/poker/qa.js','apps/poker/cards.js','apps/poker/chat-view.js'])
@@ -136,4 +136,23 @@ test('DM screen visibly distinguishes prepared, delayed and imported private sta
   assert.ok(!src.includes('sendUpdate('),'No private seat data in public WebXDC updates');
   assert.ok(!src.includes('localStorage.'),'Never persist private seat data');
  }
+});
+
+test('real 52-card SVG deck bundled offline, not old handmade court markup',()=>{
+ const build=readFileSync('scripts/build.mjs','utf8');
+ const html=readFileSync('apps/poker/qa.html','utf8');
+ const art=readFileSync('apps/poker/cards.js','utf8');
+ const vendor=readFileSync('apps/poker/cardmeister.full.js','utf8');
+ const css=readFileSync('apps/poker/qa.css','utf8');
+ assert.ok(build.includes('"cardmeister.full.js"'));
+ assert.ok(html.includes('<script src="cardmeister.full.js"></script>'));
+ assert.ok(html.indexOf('cardmeister.full.js')<html.indexOf('src="qa.js"'));
+ assert.ok(vendor.includes('customElements.define'));
+ assert.ok(vendor.length>100000,'Must use the full 12-different-court deck, not simplified one-portrait version');
+ assert.ok(art.includes('document.createElement("playing-card")'));
+ assert.ok(art.includes('hidden?"FS":model.code'));
+ assert.ok(!art.includes('courtPortrait('),'Old hand-painted portrait must not be bundled');
+ assert.ok(!art.includes('vcard-pips'),'Handmade pip placements must not render');
+ assert.ok(css.includes('.vcard-illustrated>img'));
+ assert.ok(!css.includes('.vcard-court'),'Old court CSS still included');
 });
