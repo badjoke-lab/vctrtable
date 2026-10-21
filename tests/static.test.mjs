@@ -203,8 +203,11 @@ test('showdown actions are capped to compact touch targets and chat follows resu
  const css=readFileSync('apps/poker/qa.css','utf8');
  const browser=readFileSync('scripts/browser-smoke.mjs','utf8');
  assert.ok(html.includes('class="qa-end-actions"'));
- assert.ok(html.indexOf('id="qa-end"')<html.indexOf('id="qa-chat"'),
-   'Results must be ahead of ordinary always-on chat on completed hand');
+ const ui=readFileSync('apps/poker/qa.js','utf8');
+ assert.ok(html.indexOf('id="qa-chat"')<html.indexOf('id="qa-controls"'),
+   'During live play the chat must remain next to the table');
+ assert.ok(ui.includes('$("qa-end").after(chatPanel)'),
+   'Move chat below the result on showdown without breaking live-play scroll');
  assert.ok(css.includes('.qa-main #qa-end .qa-end-actions button'));
  assert.ok(css.includes('max-height:42px'));
  assert.ok(css.includes('height:76px;max-height:76px'));
