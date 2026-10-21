@@ -284,6 +284,48 @@ try{
     "Finished hand must itemize pot recipients");
   assert.equal(await page.locator("#qa-controls").isVisible(),false,
     "Bet controls must be hidden at showdown");
+  // Regression: Next hand must be a compact button BELOW settlement cards,
+  // never a huge flex-stretched block next to the pot (Android screenshot).
+  const resultBoxes=await page.evaluate(()=>{
+    const r=id=>{const b=document.querySelector(id).getBoundingClientRect();
+      return {top:b.top,bottom:b.bottom,height:b.height,width:b.width};};
+    return {end:r("#qa-end"),summary:r("#qa-settlement"),
+      next:r("#qa-next"),buy:r("#qa-buy"),reset:r("#qa-reset"),
+      chat:r("#qa-chat"),info:r("#qa-info"),
+      visible:getComputedStyle(document.querySelector("#qa-chat")).display!=="none",
+      footerCount:document.querySelectorAll(".qa-main > footer").length,
+      actionsCount:document.querySelectorAll("#qa-end .qa-end-actions").length};
+  });
+  assert.equal(resultBoxes.footerCount,1,"There must be exactly one footer node");
+  assert.equal(resultBoxes.actionsCount,1,"Finished hand has one actions toolbar");
+  assert.ok(resultBoxes.next.height>=36&&resultBoxes.next.height<=48,
+    "Next hand must not stretch: "+JSON.stringify(resultBoxes));
+  assert.ok(resultBoxes.buy.height<=48&&resultBoxes.reset.height<=48,
+    "Rebuy/new session must be compact: "+JSON.stringify(resultBoxes));
+  assert.ok(resultBoxes.next.top>=resultBoxes.summary.bottom-2,
+    "Next hand must be BELOW pot/rank breakdown: "+JSON.stringify(resultBoxes));
+  assert.ok(resultBoxes.buy.top>=resultBoxes.next.bottom-2,
+    "Secondary actions must follow Next hand: "+JSON.stringify(resultBoxes));
+  assert.ok(resultBoxes.end.bottom<=resultBoxes.chat.top+2 || !resultBoxes.visible,
+    "Shown inline chat must follow results, not push them offscreen");
+  // Switch to always-on after a completed hand and verify the compact chat.
+  await page.locator("#qa-chat-mode").selectOption("inline");
+  const finishedInline=await page.evaluate(()=>{
+    const chat=document.querySelector("#qa-chat"),history=document.querySelector("#qa-history-panel");
+    return {height:chat.querySelector(".chat-stream").getBoundingClientRect().height,
+      resultsTop:document.querySelector("#qa-end").getBoundingClientRect().top,
+      chatTop:chat.getBoundingClientRect().top,
+      historyTop:history.getBoundingClientRect().top,
+      chatBottom:chat.getBoundingClientRect().bottom};
+  });
+  assert.ok(finishedInline.height<=85,"Inline message window too tall");
+  assert.ok(finishedInline.chatTop>=resultBoxes.end.bottom-2,
+    "Completed result must precede inline chat: "+JSON.stringify(finishedInline));
+  assert.ok(finishedInline.historyTop>=finishedInline.chatBottom-2,
+    "History should follow inline chat");
+  await page.screenshot({path:path.join(dist,
+    "poker-showdown-compact-"+view.width+"-"+view.seats+".png"),fullPage:true});
+  await page.locator("#qa-chat-mode").selectOption("drawer");
   // Continue from the last saved state and start the next hand, if possible.
   if(await page.locator("#qa-next").isEnabled()){
     await page.locator("#qa-next").click();
