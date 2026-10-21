@@ -32,7 +32,7 @@ export function makeCard(code,{hidden=false,empty=false,small=false}={}){
  if(!hidden)cardModel(code);
  const el=document.createElement("playing-card");
  el.className="vcard vcard-illustrated"+(small?" vcard-small":"")+(hidden?" vcard-back":"");
- el.setAttribute("cid",hidden?"back":code);
+ el.setAttribute("cid",hidden?"FS":code);
  el.setAttribute("aria-label",hidden?"Face-down card":code[0]+" of "+({C:"clubs",D:"diamonds",H:"hearts",S:"spades"}[code[1]]));
  // Each instance is an actual SVG rendered locally by the bundled
  // CardMeister full deck. Use no insecure innerHTML or remote image URLs.
