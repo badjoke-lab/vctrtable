@@ -33,36 +33,56 @@ function configFromEnvironment(env=process.env){
 }
 const sanitizedError=e=>e?.code||"DEALER_REQUEST_REJECTED";
 
-export async function makeHandler({dealer,players}){
+export async function makeHandler({dealer,players,clock=()=>Date.now()}){
   const roster=new Set(players.map(p=>p.id));
+  // The trusted host, never a WebXDC command, provides server time.
+  const serverNow=()=>clock();
   return async function handle(input){
     if(!input||typeof input!=="object"||Array.isArray(input))return {ok:false,code:"INVALID_INPUT"};
     if(input.kind==="sync"&&bounded(input.sender)&&roster.has(input.sender)){
-      const all=stateDeliveries(dealer,players);
-      return {...all,deliveries:all.deliveries.filter(p=>p.to===input.sender)};
+      // Reconnect is always a full private snapshot, never a shared update.
+      return deliverTo(dealer,players,input.sender);
     }
     if(input.kind==="tick"){
       const before=dealer.revision;
-      await dealer.tick(Date.now());
-      return dealer.revision===before?{ok:true,changed:false,revision:dealer.revision}:stateDeliveries(dealer,players);
+      await dealer.tick(serverNow());
+      return dealer.revision===before
+        ?{ok:true,changed:false,revision:dealer.revision,deliveries:[]}
+        :stateDeliveries(dealer,players);
     }
     if(input.kind!=="command"||!bounded(input.sender)||!roster.has(input.sender))
       return {ok:false,code:"UNAUTHORIZED_OR_INVALID_COMMAND"};
+    const before=dealer.revision;
     try{
       const request=parsePlayerRequest(input.request,dealer.publicState().roomId);
       const receipt=await dealer.command({
         actorId:input.sender,
-        now:Date.now(),
+        now:serverNow(),
         requestId:request.requestId,
         expectedRevision:request.expectedRevision,
         op:request.op
       });
-      return {...stateDeliveries(dealer,players),receipt};
+      // A repeated DM must not resend all six private hands. Refresh only
+      // its verified owner, who may have missed the original acknowledgment.
+      return {...(dealer.revision===before
+          ?deliverTo(dealer,players,input.sender)
+          :stateDeliveries(dealer,players)),receipt};
     }catch(e){
-      if(dealer.faulted)throw e; // fail closed: never continue after storage failure
-      return {ok:false,code:sanitizedError(e),recipient:input.sender,revision:dealer.revision};
+      if(dealer.faulted)throw e; // fail closed after a storage failure
+      // A rejected command can STILL have persisted an authoritative timeout
+      // before the revision check. All seats need that update, or some will
+      // stay stuck until their next explicit sync.
+      const out=dealer.revision===before
+        ?deliverTo(dealer,players,input.sender)
+        :stateDeliveries(dealer,players);
+      return {...out,ok:false,code:sanitizedError(e),recipient:input.sender};
     }
   };
+}
+
+function deliverTo(dealer,players,authenticatedId){
+  const out=stateDeliveries(dealer,players);
+  return {...out,deliveries:out.deliveries.filter(p=>p.to===authenticatedId)};
 }
 
 function stateDeliveries(dealer,players){
