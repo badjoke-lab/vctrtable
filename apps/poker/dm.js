@@ -1,11 +1,33 @@
 // Manual, private DM bridge for development. NO WebXDC shared update API.
-import {commandJson,syncJson,parseSeatSnapshot} from "./dm-seat.js";
+import {commandJson,syncJson} from "./dm-seat.js";
+import {SeatSyncTracker} from "./dm-sync-state.js";
 const $=id=>document.getElementById(id);
 const dict={
- en:{title:"Poker seat (developer bridge)",language:"Language",warning:"Developer-only manual bridge. No automatic Vector DM connection. Never paste private hands into group chat or shared updates.",back:"← Lobby",connection:"Bot DM setup",help:"Enter your agreed room ID and your public Vector npub. Verify the dealer Bot identity inside Vector.",room:"Room ID",identity:"Your public npub (not nsec)",privacy:"Send generated actions ONLY in the dealer Bot's one-to-one Vector DM. Copy Bot replies back here. Pasted JSON has no cryptographic authenticity here: verify the sender in Vector.",table:"Table",board:"Community cards",hand:"Your private hand",controls:"Make a move",proposalHelp:"Before the session, propose table rules and wait for everyone to approve.",chips:"Initial chips",sb:"Small blind",bb:"Big blind",timer:"Action seconds (0 = unlimited)",rebuy:"Allow rebuy between hands",propose:"Propose rules",approve:"Approve rules",start:"Start next hand",rebuyBtn:"Rebuy busted seat",fold:"Fold",check:"Check",call:"Call",raiseTo:"Raise to",raise:"Raise",allin:"All-in",pause:"Request pause / resume",pauseYes:"Approve pause / resume",pauseNo:"Reject request",sync:"Request state sync",outbound:"1. Copy action to Bot DM",outboundHelp:"The JSON is prepared here. You must manually send it to the dealer Bot's private DM.",copy:"Copy command",select:"Select text",inbound:"2. Paste Bot's reply",inboundHelp:"Paste the complete JSON from a private DM with the verified dealer Bot. This interface does not broadcast or save the reply.",import:"Import reply",clear:"Clear imported text",footer:"Development-only seat UI. In-app Vector transport is not implemented.",empty:"No state imported. Send a sync request to the Bot and paste the reply.",waiting:"Waiting for table to start",paused:"Table paused by unanimous agreement",pending:"Pause/resume approval pending",turn:"Your turn",otherTurn:"Waiting for another player",complete:"Hand complete",pot:"Pot",stack:"Stack",bet:"Contributed",dealer:"Dealer",you:"You",folded:"Folded",noCopy:"Generate an action first.",copied:"Copied. Paste ONLY into the dealer Bot DM.",selected:"Text selected. Copy manually if needed.",generated:"Action generated. Send it in the Bot's direct message.",loaded:"Private seat snapshot imported. Verify the original DM's sender.",cleared:"Input cleared.",needId:"Enter room ID and your own public npub.",unsafe:"Do NOT paste a private hand or reply in the group chat.",expired:"Older snapshot rejected. Request a new sync.",error:"Cannot import reply:",needed:"To call",status:"Status",revision:"Revision"},
- ja:{title:"ポーカー席（開発用DM連携）",language:"言語",warning:"開発用の手動連携です。Vector DMとの自動通信は未実装です。秘密の手札をグループチャットや共有更新へ送らないでください。",back:"← ロビーへ",connection:"Bot DM接続設定",help:"合意したルームIDと自分の公開npubを入力してください。ディーラーBot本人であることはVector上で確認してください。",room:"ルームID",identity:"自分の公開npub（nsecは禁止）",privacy:"生成した操作は必ずディーラーBotとの1対1のVector DMで送信してください。返信JSONをここへコピーします。貼り付け内容の送信者はこの画面では認証できません。Vector上で確認してください。",table:"テーブル",board:"共通カード",hand:"自分の手札",controls:"アクション",proposalHelp:"セッション開始前にルールを提案し、全員の承認を待ちます。",chips:"初期チップ",sb:"スモールブラインド",bb:"ビッグブラインド",timer:"行動制限（秒、0=無制限）",rebuy:"ハンド間のチップ補充を許可",propose:"ルール提案",approve:"ルール承認",start:"次のハンド開始",rebuyBtn:"チップ補充",fold:"フォールド",check:"チェック",call:"コール",raiseTo:"レイズ後合計",raise:"レイズ",allin:"オールイン",pause:"ポーズ・再開申請",pauseYes:"ポーズ・再開を承認",pauseNo:"申請を拒否",sync:"状態の同期要求",outbound:"1. Bot DMへ送る操作をコピー",outboundHelp:"ここでは送信しません。ディーラーBotとの1対1のDMに自分で貼り付けて送信します。",copy:"操作をコピー",select:"文字列を選択",inbound:"2. Botの返信を貼り付け",inboundHelp:"本人確認したディーラーBotの個別DMからJSON全体を貼り付けます。共有送信・保存は行いません。",import:"返信を読み込む",clear:"貼り付けを消去",footer:"開発用の操作画面です。Vectorアプリ内の自動連携は未実装です。",empty:"状態がありません。Botへ同期要求を送信し、返信を貼り付けてください。",waiting:"テーブル開始待ち",paused:"全員承認によるポーズ中",pending:"ポーズ・再開の承認待ち",turn:"あなたの手番",otherTurn:"他のプレイヤーの手番待ち",complete:"ハンド終了",pot:"ポット",stack:"残りチップ",bet:"投入額",dealer:"ディーラー",you:"あなた",folded:"フォールド",noCopy:"先にアクションを生成してください。",copied:"コピーしました。Botとの1対1のDMにのみ貼り付けてください。",selected:"選択しました。必要なら手動でコピーしてください。",generated:"操作を生成しました。Botとの個別DMで送信してください。",loaded:"本人専用の状態を読み込みました。送信者はVector上で確認してください。",cleared:"入力を消去しました。",needId:"ルームIDと自分の公開npubを入力してください。",unsafe:"秘密の手札やBotの返信をグループチャットに貼らないでください。",expired:"古い状態は拒否しました。同期し直してください。",error:"返信を読み込めません:",needed:"必要額",status:"状態",revision:"リビジョン"}
+ en:{title:"Poker seat (developer bridge)",language:"Language",warning:"Developer-only manual bridge. No automatic Vector DM connection. Never paste private hands into group chat or shared updates.",back:"← Lobby",connection:"Bot DM setup",help:"Enter your agreed room ID and your public Vector npub. Verify the dealer Bot identity inside Vector.",room:"Room ID",identity:"Your public npub (not nsec)",privacy:"Send generated actions ONLY in the dealer Bot's one-to-one Vector DM. Copy Bot replies back here. Pasted JSON has no cryptographic authenticity here: verify the sender in Vector.",table:"Table",board:"Community cards",hand:"Your private hand",controls:"Make a move",proposalHelp:"Before the session, propose table rules and wait for everyone to approve.",chips:"Initial chips",sb:"Small blind",bb:"Big blind",timer:"Action seconds (0 = unlimited)",rebuy:"Allow rebuy between hands",propose:"Propose rules",approve:"Approve rules",start:"Start next hand",rebuyBtn:"Rebuy busted seat",fold:"Fold",check:"Check",call:"Call",raiseTo:"Raise to",raise:"Raise",allin:"All-in",pause:"Request pause / resume",pauseYes:"Approve pause / resume",pauseNo:"Reject request",sync:"Request state sync",outbound:"1. Copy action to Bot DM",outboundHelp:"The JSON is prepared here. You must manually send it to the dealer Bot's private DM.",copy:"Copy command",select:"Select text",inbound:"2. Paste Bot's reply",inboundHelp:"Paste the complete JSON from a private DM with the verified dealer Bot. This interface does not broadcast or save the reply.",import:"Import reply",clear:"Clear imported text",footer:"Development-only seat UI. In-app Vector transport is not implemented.",empty:"No state imported. Send a sync request to the Bot and paste the reply.",waiting:"Waiting for table to start",paused:"Table paused by unanimous agreement",pending:"Pause/resume approval pending",turn:"Your turn",otherTurn:"Waiting for another player",complete:"Hand complete",pot:"Pot",stack:"Stack",bet:"Contributed",dealer:"Dealer",you:"You",folded:"Folded",noCopy:"Generate an action first.",copied:"Copied. Paste ONLY into the dealer Bot DM.",selected:"Text selected. Copy manually if needed.",generated:"Action generated. Send it in the Bot's direct message.",loaded:"Private seat snapshot imported. Verify the original DM's sender.",cleared:"Input cleared.",needId:"Enter room ID and your own public npub.",unsafe:"Do NOT paste a private hand or reply in the group chat.",expired:"Older snapshot rejected. Request a new sync.",error:"Cannot import reply:",needed:"To call",status:"Status",revision:"Revision",linkTitle:"Private DM handoff status",linkWarning:"Manual handoff only. Preparing a message does not send it; imported JSON is not cryptographically authenticated.",markSent:"I sent the DM",retryDm:"Reuse same DM command",requestSync:"Prepare new sync request",linkEmpty:"No private state imported",linkPrepared:"DM prepared — send manually",linkAwaiting:"Waiting for manually pasted Bot reply",linkDelayed:"Reply delayed — reuse same request ID or sync",linkCurrent:"Latest private snapshot imported (not connected)",linkNeedsSync:"Sync required before next action",linkRevision:"Revision",linkNoPending:"No pending DM to reuse",linkConflict:"Conflicting same-revision reply rejected",linkSent:"Marked sent locally; awaiting reply",linkSyncNeeded:"Bot rejected command; prepare a state sync",linkUnverified:"Sending is not verified in this Mini App",linkRetry:"Original request preserved; use only in verified Bot DM"},
+ ja:{title:"ポーカー席（開発用DM連携）",language:"言語",warning:"開発用の手動連携です。Vector DMとの自動通信は未実装です。秘密の手札をグループチャットや共有更新へ送らないでください。",back:"← ロビーへ",connection:"Bot DM接続設定",help:"合意したルームIDと自分の公開npubを入力してください。ディーラーBot本人であることはVector上で確認してください。",room:"ルームID",identity:"自分の公開npub（nsecは禁止）",privacy:"生成した操作は必ずディーラーBotとの1対1のVector DMで送信してください。返信JSONをここへコピーします。貼り付け内容の送信者はこの画面では認証できません。Vector上で確認してください。",table:"テーブル",board:"共通カード",hand:"自分の手札",controls:"アクション",proposalHelp:"セッション開始前にルールを提案し、全員の承認を待ちます。",chips:"初期チップ",sb:"スモールブラインド",bb:"ビッグブラインド",timer:"行動制限（秒、0=無制限）",rebuy:"ハンド間のチップ補充を許可",propose:"ルール提案",approve:"ルール承認",start:"次のハンド開始",rebuyBtn:"チップ補充",fold:"フォールド",check:"チェック",call:"コール",raiseTo:"レイズ後合計",raise:"レイズ",allin:"オールイン",pause:"ポーズ・再開申請",pauseYes:"ポーズ・再開を承認",pauseNo:"申請を拒否",sync:"状態の同期要求",outbound:"1. Bot DMへ送る操作をコピー",outboundHelp:"ここでは送信しません。ディーラーBotとの1対1のDMに自分で貼り付けて送信します。",copy:"操作をコピー",select:"文字列を選択",inbound:"2. Botの返信を貼り付け",inboundHelp:"本人確認したディーラーBotの個別DMからJSON全体を貼り付けます。共有送信・保存は行いません。",import:"返信を読み込む",clear:"貼り付けを消去",footer:"開発用の操作画面です。Vectorアプリ内の自動連携は未実装です。",empty:"状態がありません。Botへ同期要求を送信し、返信を貼り付けてください。",waiting:"テーブル開始待ち",paused:"全員承認によるポーズ中",pending:"ポーズ・再開の承認待ち",turn:"あなたの手番",otherTurn:"他のプレイヤーの手番待ち",complete:"ハンド終了",pot:"ポット",stack:"残りチップ",bet:"投入額",dealer:"ディーラー",you:"あなた",folded:"フォールド",noCopy:"先にアクションを生成してください。",copied:"コピーしました。Botとの1対1のDMにのみ貼り付けてください。",selected:"選択しました。必要なら手動でコピーしてください。",generated:"操作を生成しました。Botとの個別DMで送信してください。",loaded:"本人専用の状態を読み込みました。送信者はVector上で確認してください。",cleared:"入力を消去しました。",needId:"ルームIDと自分の公開npubを入力してください。",unsafe:"秘密の手札やBotの返信をグループチャットに貼らないでください。",expired:"古い状態は拒否しました。同期し直してください。",error:"返信を読み込めません:",needed:"必要額",status:"状態",revision:"リビジョン",linkTitle:"個別DMの受け渡し状態",linkWarning:"手動DM連携のみです。準備しただけでは送信されません。貼り付けたJSONの送信者は認証できません。",markSent:"DMを送信した",retryDm:"同じDM操作を再利用",requestSync:"新しい同期要求を準備",linkEmpty:"個別のゲーム状態は未取得",linkPrepared:"DM準備済み — 手動で送信してください",linkAwaiting:"Botの返信を手動で読み込み待ち",linkDelayed:"返信遅延 — 同じ要求IDを再利用するか同期してください",linkCurrent:"最新の個別状態を読み込み済み（接続済みではありません）",linkNeedsSync:"次の操作の前に同期が必要",linkRevision:"リビジョン",linkNoPending:"再利用できるDMがありません",linkConflict:"同じリビジョンで内容が違う返信を拒否しました",linkSent:"送信したものとして待機中。返信を読み込んでください",linkSyncNeeded:"Botが操作を拒否しました。状態を同期してください",linkUnverified:"この画面ではDM送信を検証できません",linkRetry:"元の要求IDを維持しました。本人確認したBotのDMにのみ送ってください"}
 };
-let locale="en",snapshot=null;
+let locale="en",snapshot=null,tracker=null;
+const connection=()=>{
+ const rm=room(),who=identity();
+ if(!rm||!who.startsWith("npub1"))throw new Error(t("needId"));
+ if(!tracker||tracker.roomId!==rm||tracker.playerId!==who)
+  tracker=new SeatSyncTracker({roomId:rm,playerId:who});
+ return tracker;
+};
+function renderLink(){
+ const states={empty:"linkEmpty",prepared:"linkPrepared",awaiting:"linkAwaiting",
+  delayed:"linkDelayed",current:"linkCurrent","needs-sync":"linkNeedsSync"};
+ const state=tracker?.status()??"empty";
+ $("dm-link-state").textContent=t(states[state]);
+ $("dm-link-state").dataset.phase=state;
+ $("dm-link-revision").textContent=tracker?.snapshot?t("linkRevision")+": "+tracker.snapshot.revision:"—";
+ $("dm-link-detail").textContent=state==="needs-sync"&&tracker?.failure
+  ?t("linkSyncNeeded")+" ("+tracker.failure+")"
+  :state==="delayed"?t("linkUnverified"):"";
+ $("dm-mark-sent").disabled=!tracker?.pending||tracker.pending.sentAt!==null;
+ $("dm-retry").disabled=!tracker?.pending;
+}
+
 const t=k=>dict[locale][k]||k;
 const show=(message,error=false)=>{const el=$("feedback");el.textContent=message;el.style.color=error?"#ffd2a3":"#aaf5c6";};
 const room=()=>$("room").value.trim();
@@ -20,17 +42,25 @@ const card=code=>{
 function put(id,nodes){$(id).replaceChildren(...nodes);}
 function command(op){
  try{
-  if(!room()||!identity().startsWith("npub1"))throw new Error(t("needId"));
+  const link=connection();
+  // Validate pending state BEFORE drawing a fresh random nonce. Retries must
+  // retain the exact old command instead of accidentally changing its ID.
+  if(op&&(link.pending||link.needsSync))throw new Error("SYNC_REQUIRED_BEFORE_ACTION");
   const raw=op?commandJson({roomId:room(),revision:snapshot?.revision??0,op}):syncJson();
+  link.prepare(raw,{kind:op?"action":"sync"});
   $("outbox").value=raw;
   show(t("generated"));
+  renderLink();
+  render();
  }catch(error){show(error.message,true);}
 }
 function render(){
  document.documentElement.lang=locale;
  document.querySelectorAll("[data-t]").forEach(el=>el.textContent=t(el.dataset.t));
+ renderLink();
  const s=snapshot?.state,h=s?.hand,p=snapshot?.private;
  const playing=Boolean(h&&h.status==="betting"),myTurn=Boolean(playing&&p?.legal);
+ const waitingForReply=Boolean(tracker?.pending||tracker?.needsSync);
  $("phase").textContent=h?"#"+h.number+" · "+h.street.toUpperCase():"—";
  $("pot").textContent=h?t("pot")+": "+h.pot:"—";
  const rows=[];
@@ -62,25 +92,25 @@ function render(){
  $("status").textContent=status;
  const legal=p?.legal;
  for(const [id,key] of [["fold","canFold"],["check","canCheck"],["call","canCall"],["raise","canRaise"],["allin","canRaise"]])
-  $(id).disabled=!myTurn||s.pause?.paused||!legal[key];
+  $(id).disabled=!myTurn||waitingForReply||s.pause?.paused||!legal[key];
  const r=$("raise-to");
- r.disabled=!myTurn||!legal?.canRaise;
+ r.disabled=!myTurn||waitingForReply||!legal?.canRaise;
  if(legal?.canRaise){
   r.min=String(Math.min(legal.minRaiseTo,legal.maxRaiseTo));
   r.max=String(legal.maxRaiseTo);
   if(document.activeElement!==r)r.value=r.min;
  }
- $("approve").disabled=!s?.proposal||Boolean(s.settings)||s.proposal.approvals.includes(identity());
- $("propose").disabled=Boolean(s?.settings);
- $("start").disabled=!s?.settings||playing||Boolean(s.pause?.paused)||Boolean(s.pause?.request);
- $("rebuy-btn").disabled=!s?.settings||!s.settings.rebuy||playing||!h?.players.find(x=>x.id===identity()&&x.stack===0);
- $("pause").disabled=!playing||Boolean(s.pause?.request);
+ $("approve").disabled=waitingForReply||!s?.proposal||Boolean(s.settings)||s.proposal.approvals.includes(identity());
+ $("propose").disabled=waitingForReply||Boolean(s?.settings);
+ $("start").disabled=waitingForReply||!s?.settings||playing||Boolean(s.pause?.paused)||Boolean(s.pause?.request);
+ $("rebuy-btn").disabled=waitingForReply||!s?.settings||!s.settings.rebuy||playing||!h?.players.find(x=>x.id===identity()&&x.stack===0);
+ $("pause").disabled=waitingForReply||!playing||Boolean(s.pause?.request);
  const request=s?.pause?.request;
- $("pause-yes").disabled=!request||request.approvals.includes(identity());
- $("pause-no").disabled=!request||request.approvals.includes(identity());
+ $("pause-yes").disabled=waitingForReply||!request||request.approvals.includes(identity());
+ $("pause-no").disabled=waitingForReply||!request||request.approvals.includes(identity());
 }
 $("language").addEventListener("change",e=>{locale=e.target.value==="ja"?"ja":"en";render();});
-for(const name of ["room","identity"])$(name).addEventListener("input",()=>{snapshot=null;render();});
+for(const name of ["room","identity"])$(name).addEventListener("input",()=>{snapshot=null;tracker=null;$("outbox").value="";render();});
 $("propose").addEventListener("click",()=>command({type:"propose",settings:{
  startingChips:Number($("chips").value),smallBlind:Number($("sb").value),bigBlind:Number($("bb").value),
  actionSeconds:Number($("timer").value),rebuy:$("rebuy").checked
@@ -97,6 +127,16 @@ for(const [id,approve] of [["pause-yes",true],["pause-no",false]])$(id).addEvent
  if(p)command({type:"votePause",pauseId:p.id,approve});
 });
 $("sync").addEventListener("click",()=>command(null));
+$("dm-request-sync").addEventListener("click",()=>command(null));
+$("dm-mark-sent").addEventListener("click",()=>{
+ try{connection().markSent();renderLink();show(t("linkSent"));}
+ catch(error){show(error.message,true);}
+});
+$("dm-retry").addEventListener("click",()=>{
+ try{$("outbox").value=connection().retryText();renderLink();show(t("linkRetry"));}
+ catch(error){show(t("linkNoPending")+" "+error.message,true);}
+});
+setInterval(renderLink,1000);
 $("copy").addEventListener("click",async()=>{
  const data=$("outbox").value;
  if(!data){show(t("noCopy"),true);return;}
@@ -108,11 +148,23 @@ $("copy").addEventListener("click",async()=>{
 $("select").addEventListener("click",()=>{$("outbox").focus();$("outbox").select();show(t("selected"));});
 $("import").addEventListener("click",()=>{
  try{
-  const parsed=parseSeatSnapshot($("inbox").value,{roomId:room(),playerId:identity(),minimumRevision:snapshot?.revision??-1});
-  snapshot=parsed;
-  $("inbox").value=""; // Never persist the raw reply; keep seat state only in memory.
+  const link=connection();
+  const outcome=link.importReply($("inbox").value);
+  if(outcome.kind==="error"){
+   // A text error is only a locally parsed claim. Trust the actual Vector DM
+   // sender, not the contents of an unverified paste.
+   $("inbox").value="";
+   render();show(t("linkSyncNeeded")+" ("+outcome.code+")",true);
+   return;
+  }
+  snapshot=link.snapshot;
+  $("inbox").value=""; // Never persist raw reply or private cards.
+  if(!link.pending)$("outbox").value="";
   render();show(t("loaded"));
- }catch(error){show(t("error")+" "+error.message,true);}
+ }catch(error){
+  show(t(error.code==="CONFLICTING_SAME_REVISION"?"linkConflict":"error")+" "+error.message,true);
+  renderLink();
+ }
 });
 $("clear").addEventListener("click",()=>{$("inbox").value="";show(t("cleared"));});
 render();
