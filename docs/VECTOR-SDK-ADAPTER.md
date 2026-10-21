@@ -48,3 +48,13 @@ The full state DM is JSON with the current room revision, public state and recip
 5. Human multi-device test only when remaining game and UI work is near complete.
 
 The Node IPC test suite runs a real Node worker with **fake npub-shaped IDs** and confirms routing and restart behavior. It is not proof of real Nostr/Vector cryptographic integrity.
+
+## DM delivery consistency and reconnection (transport hardening)
+
+The developer Bot uses a single authoritative persistent dealer revision, and a player's **explicit `{"kind":"sync"}` request** retrieves only that verified sender's encrypted private seat snapshot. No other player's hand is returned in a resync response.
+
+A command's stable per-player `requestId` is the idempotency key. If a player retries an already committed command because its original DM acknowledgement was lost, the dealer does **not** run the command twice and now resends the **current private snapshot to that player only** instead of flooding every seat. The receipt also records that it was replayed.
+
+Important race: a late action can cause the dealer to **persist a timeout** before comparing the caller's stale revision. Although the action is rejected with `STALE_REVISION`, the timeout still advances the authoritative room. The worker now sends the new revision to **all seats** with individual encrypted DMs, and the Rust adapter delivers those snapshots even when the command itself failed. If a request was simply rejected without advancing state, only the authenticated sender gets a private snapshot for repair.
+
+These are local protocol and IPC tests, including an encrypted worker restart. They do **not** establish that messages are actually delivered over a live Vector relay: a recipient may still miss an outgoing DM. Clients should request `sync` upon reconnect or after missing/uncertain acknowledgments. The current bot does not implement an automatic WebXDC request/reply channel, durable outbound queues, or automatic worker restart.

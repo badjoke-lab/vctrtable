@@ -77,10 +77,11 @@ async fn send_deliveries(bot:&VectorBot, reply:WorkerReply, requester:Option<&st
     if !reply.ok {
         if let Some(sender)=requester {
             let code=reply.code.unwrap_or_else(||"REJECTED".to_string());
-            // Send a fixed error code only; do not echo untrusted payloads.
+            // An expired action can trigger a persisted timeout before being
+            // rejected as stale. Do not discard its recipient-specific state
+            // deliveries: the other seats also need that new revision.
             let _=bot.dm(sender.to_owned()).send(&format!("poker error: {}",code)).await;
         }
-        return;
     }
     for delivery in reply.deliveries {
         // Dealer has the configured roster; recipient-specific SDK DMs are
