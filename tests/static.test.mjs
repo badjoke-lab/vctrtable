@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
-const scripts=['apps/poker/main.js','apps/poker/qa.js','apps/poker/dm.js','packages/poker/dm-seat.js','packages/poker/engine.js','packages/poker/hand.js','packages/poker/session.js','packages/poker/dealer-room.js','packages/poker/message-boundary.js','packages/poker/dealer-journal.js','packages/poker/dealer-store.js','packages/poker/persistent-dealer.js'];
+const scripts=['apps/poker/main.js','apps/poker/qa.js','apps/poker/cards.js','apps/poker/chat-view.js','apps/poker/dm.js','packages/poker/dm-seat.js','packages/poker/engine.js','packages/poker/hand.js','packages/poker/session.js','packages/poker/dealer-room.js','packages/poker/message-boundary.js','packages/poker/dealer-journal.js','packages/poker/dealer-store.js','packages/poker/persistent-dealer.js'];
 for(const f of scripts)test('JavaScript syntax: '+f,()=>{
  assert.doesNotThrow(()=>execFileSync(process.execPath,['--check',f],{encoding:'utf8'}));
 });
@@ -40,4 +40,21 @@ test('Private DM seat only uses offline manual handoff',()=>{
   assert.ok(!src.includes('sendUpdate('),'No private cards may reach shared status updates');
   assert.ok(!src.includes('localStorage.'),'Private DM snapshots must never persist in browser storage');
  }
+});
+
+test('mobile six-seat QA and both chat modes are bundled for WebXDC',()=>{
+ const html=readFileSync('apps/poker/qa.html','utf8');
+ const css=readFileSync('apps/poker/qa.css','utf8');
+ const js=readFileSync('apps/poker/qa.js','utf8');
+ const build=readFileSync('scripts/build.mjs','utf8');
+ for(const file of ['cards.js','chat-view.js'])assert.ok(build.includes(file),'Missing '+file+' from .xdc');
+ for(const id of ['qa-chat-mode','qa-chat-bubble','qa-unread','qa-chat-toast','qa-chat-messages',
+  'qa-chat-translation','qa-chat-form','qa-min','qa-half','qa-pot-preset','qa-max','qa-load-start'])
+  assert.ok(html.includes('id="'+id+'"'),'Missing '+id);
+ for(const cls of ['pos-top-left','pos-top','pos-top-right','pos-mid-left','pos-mid-right',
+  'chat-inline','chat-drawer','action-dock','vcard-court','vcard-pips'])
+  assert.ok(css.includes(cls),'Missing UI style '+cls);
+ assert.ok(js.includes('layouts[h.players.length-1]'),'Six-seat layout must be driven by player count');
+ for(const file of ['apps/poker/qa.js','apps/poker/cards.js','apps/poker/chat-view.js'])
+  assert.ok(!readFileSync(file,'utf8').includes('sendUpdate('),'Offline QA must not broadcast secrets');
 });
