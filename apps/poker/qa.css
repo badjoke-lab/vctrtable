@@ -238,3 +238,7 @@ a{color:#7af1c0}
  .community-cards .vcard{width:clamp(25px,8.3vw,30px);height:clamp(37px,11.7vw,44px);flex-basis:clamp(25px,8.3vw,30px)}
  .poker-seat.pos-mid-left .poker-seat-stack,.poker-seat.pos-mid-right .poker-seat-stack{font-size:11px}
 }
+
+/* Reading/composing inline chat never has controls painted over its input.
+   Scrolling back to the felt restores the betting dock automatically. */
+.qa-main.qa-inline-reading #qa-controls{display:none!important}
