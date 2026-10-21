@@ -242,3 +242,9 @@ a{color:#7af1c0}
 /* Reading/composing inline chat never has controls painted over its input.
    Scrolling back to the felt restores the betting dock automatically. */
 .qa-main.qa-inline-reading #qa-controls{display:none!important}
+
+/* Keep the three top seats clear of the pot badge on 320px six-seat tables. */
+.poker-seat.pos-top-left,.poker-seat.pos-top,.poker-seat.pos-top-right{top:16%}
+/* No large empty reserved space once reading chat has released the dock. */
+.qa-main.qa-inline-reading .qa-chat.chat-inline{margin-bottom:16px!important}
+.qa-main.qa-inline-reading.qa-playing{padding-bottom:28px}
