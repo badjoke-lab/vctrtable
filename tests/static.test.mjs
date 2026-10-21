@@ -197,3 +197,18 @@ test('mobile control layering is explicitly defended and visible full river card
  assert.ok(test.includes('No duplicate action dock'));
  assert.ok(test.includes('PNG'));
 });
+
+test('showdown actions are capped to compact touch targets and chat follows results',()=>{
+ const html=readFileSync('apps/poker/qa.html','utf8');
+ const css=readFileSync('apps/poker/qa.css','utf8');
+ const browser=readFileSync('scripts/browser-smoke.mjs','utf8');
+ assert.ok(html.includes('class="qa-end-actions"'));
+ assert.ok(html.indexOf('id="qa-end"')<html.indexOf('id="qa-chat"'),
+   'Results must be ahead of ordinary always-on chat on completed hand');
+ assert.ok(css.includes('.qa-main #qa-end .qa-end-actions button'));
+ assert.ok(css.includes('max-height:42px'));
+ assert.ok(css.includes('height:76px;max-height:76px'));
+ assert.ok(browser.includes('Next hand must not stretch'));
+ assert.ok(browser.includes('There must be exactly one footer node'));
+ assert.ok(browser.includes('poker-showdown-compact-'));
+});
