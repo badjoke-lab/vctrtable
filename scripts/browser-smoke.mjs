@@ -73,6 +73,38 @@ try{
   assert.equal(await page.locator("#qa-players .poker-seat").count(),view.seats-1);
   assert.equal(await page.locator("#qa-hero-cards .vcard").count(),2);
   assert.equal(await page.locator("#qa-board-cards .vcard").count(),5);
+  const fullDeckArt=await page.evaluate(async()=>{
+    const {makeCard}=await import("./cards.js");
+    const root=document.createElement("div");
+    root.style.cssText="position:absolute;left:-9999px;top:0;display:flex;flex-wrap:wrap;width:450px";
+    document.body.append(root);
+    const cards=[];
+    for(const suit of "CDHS")for(const rank of "23456789TJQKA"){
+      const node=makeCard(rank+suit);
+      root.append(node);
+      cards.push(node);
+    }
+    const back=makeCard("AS",{hidden:true});
+    root.append(back);
+    const images=cards.map(c=>c.querySelector("img"));
+    try{await Promise.all([...images,back.querySelector("img")].map(async img=>{
+      if(!img)throw Error("CardMeister did not mount an SVG image");
+      await img.decode();
+    }));}
+    catch(error){root.remove();return {total:images.length,loaded:false,error:String(error)};}
+    const good=images.every(img=>img.naturalWidth>0&&img.src.startsWith("data:image/svg+xml"));
+    const courts=["JC","QD","KH","JS"].map(code=>{
+      const el=cards.find(card=>card.getAttribute("cid")===code);
+      return el?.querySelector("img")?.src;
+    });
+    const distinctCourts=new Set(courts).size===4;
+    const result={total:images.length,loaded:good,distinctCourts,
+      backReady:back.querySelector("img").naturalWidth>0};
+    root.remove();
+    return result;
+  });
+  assert.deepEqual(fullDeckArt,{total:52,loaded:true,distinctCourts:true,backReady:true},
+    "All 52 full SVG cards and face-down back must decode offline");
   await page.locator("#qa-controls").waitFor({state:"visible"});
   // Actual rendered geometry; Node tests cannot catch clipped or overlapping
   // seats on a six-player phone table.
@@ -141,6 +173,12 @@ try{
    else throw new Error("No playable action before hand completion");
   }
   assert.equal(await page.locator("#qa-result").isVisible(),true);
+  assert.equal(await page.locator("#qa-timer").isVisible(),false,
+    "Completed hand must not show stale player countdown");
+  assert.ok(/Paid out|精算済み/.test(await page.locator("#qa-pot").textContent()),
+    "Pot cannot appear as active after settlement");
+  assert.ok(/Showdown|決着/.test(await page.locator("#qa-round").textContent()),
+    "Completed hand must not be labelled as active river");
   assert.ok(await page.locator(".qa-settlement-pot").count()>=1,
     "Finished hand must itemize pot recipients");
   assert.equal(await page.locator("#qa-controls").isVisible(),false,
