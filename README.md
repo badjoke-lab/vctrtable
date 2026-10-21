@@ -89,3 +89,7 @@ This checks UI runtime without requiring the user to open Vector. It is NOT an A
 ## Browser-tested six-seat layout and complete hands
 
 Mobile browser CI now checks 6 seats at widths **320, 360, 390 pixels**, 2 seats at 320px, all five opponent elements staying inside the screen/table and free of overlap with each other, community cards and the hero hand. It drives a **complete hold'em hand** through the visible Check/Call/Fold actions, verifies itemized showdown pots, checks that betting controls hide after settlement, and starts the next hand when chips allow. The tests also retain previously added save/restore and both chat UI modes. Captured PNGs remain GitHub Actions artifacts. These browser tests still use scripted seats; actual Vector multi-user tests are intentionally deferred.
+
+## Manual Bot DM status
+
+The developer Bot DM seat has visible EN/JA handoff states and safe exact-command retry. Generated JSON is NEVER described as an automatically sent message. The user can mark a DM as manually sent, re-use its original requestId after delivery uncertainty, and prepare a private resync. Imported older and same-revision-conflicting responses cannot replace the displayed state. The local delayed indicator does not establish a live Vector connection. A credential-free Chromium test checks these controls.
