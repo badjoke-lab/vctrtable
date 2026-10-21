@@ -247,9 +247,9 @@ img.vcard-small{width:24px;flex-basis:24px}
 
 /* Keep the three top seats clear of the pot badge on 320px six-seat tables. */
 .poker-seat.pos-top-left,.poker-seat.pos-top,.poker-seat.pos-top-right{top:16%}
-/* No large empty reserved space once reading chat has released the dock. */
-.qa-main.qa-inline-reading .qa-chat.chat-inline{margin-bottom:16px!important}
-.qa-main.qa-inline-reading.qa-playing{padding-bottom:28px}
+/* Keep scroll geometry stable when IntersectionObserver toggles the dock.
+   Changing inline margins/padding at this point can make the composer jump out
+   of the viewport, oscillating the observer and hiding the input again. */
 
 /* Single-image invariant: even legacy height declarations elsewhere must
    not stretch a fully composed 75:113 PNG to a different card proportion. */
