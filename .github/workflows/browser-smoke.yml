@@ -39,5 +39,7 @@ jobs:
         if: always()
         with:
           name: poker-mobile-browser-screenshots
-          path: dist/poker-mobile-*.png
+          path: |
+            dist/poker-mobile-*.png
+            dist/poker-river-*.png
           if-no-files-found: ignore

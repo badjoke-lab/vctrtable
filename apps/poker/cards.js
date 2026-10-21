@@ -1,27 +1,39 @@
 /**
- * Full 52-card SVG deck (CardMeister FULL, Unlicense).
- * Bundled cardmeister.full.js renders all real faces including distinct
- * J/Q/K figures. No external CDN or Unicode suit overlay is required.
+ * Full 52-face traditional PNG deck: actual raster assets ship with poker.xdc.
+ * No SVG/card custom elements, remote URL, or runtime image conversion.
  */
 export const SUIT_SYMBOLS={C:"♣",D:"♦",H:"♥",S:"♠"};
-const NAMES={C:"clubs",D:"diamonds",H:"hearts",S:"spades"};
+const SUIT_NAMES={C:"clubs",D:"diamonds",H:"hearts",S:"spades"};
+const SUIT_FILES={C:"club",D:"diamond",H:"heart",S:"spade"};
+const RANK_FILES={A:"Ace",K:"King",Q:"Queen",J:"Jack",T:"10"};
 export function cardModel(code){
  if(typeof code!=="string"||!/^[2-9TJQKA][CDHS]$/.test(code))
   throw new Error("Invalid card artwork code");
- return {code,rank:code[0],suit:code[1],symbol:SUIT_SYMBOLS[code[1]],red:"DH".includes(code[1]),court:"JQK".includes(code[0])};
+ const rank=code[0],suit=code[1];
+ return {code,rank,suit,symbol:SUIT_SYMBOLS[suit],red:"DH".includes(suit),court:"JQK".includes(rank)};
+}
+export function cardPngPath(code){
+ if(code==="BACK")return "./card-png/blueBack.png";
+ const {rank,suit}=cardModel(code);
+ return "./card-png/"+SUIT_FILES[suit]+(RANK_FILES[rank]||rank)+".png";
 }
 export function makeCard(code,{hidden=false,empty=false,small=false}={}){
  if(empty||!code){
-  const el=document.createElement("span");
-  el.className="vcard vcard-empty"+(small?" vcard-small":"");
-  el.setAttribute("aria-label","Empty community card");
-  return el;
+  const blank=document.createElement("span");
+  blank.className="vcard vcard-empty"+(small?" vcard-small":"");
+  blank.setAttribute("aria-label","Empty community card");
+  return blank;
  }
  const model=cardModel(code);
- const el=document.createElement("playing-card");
+ const el=document.createElement("span");
  el.className="vcard vcard-illustrated"+(small?" vcard-small":"")+(hidden?" vcard-back":"");
- // CardMeister's official face-down CID is FS (not "back").
- el.setAttribute("cid",hidden?"FS":model.code);
- el.setAttribute("aria-label",hidden?"Face-down card":model.rank+" of "+NAMES[model.suit]);
+ el.setAttribute("data-card",hidden?"BACK":model.code);
+ el.setAttribute("aria-label",hidden?"Face-down card":model.rank+" of "+SUIT_NAMES[model.suit]);
+ const img=document.createElement("img");
+ img.src=cardPngPath(hidden?"BACK":model.code);
+ img.alt="";
+ img.decoding="async";
+ img.draggable=false;
+ el.append(img);
  return el;
 }
