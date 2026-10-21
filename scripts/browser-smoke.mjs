@@ -21,7 +21,7 @@ const xdc=path.join(dist,"poker.xdc");
 if(!fs.existsSync(xdc))throw new Error("Build poker.xdc before running browser smoke");
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),"vctrtable-browser-"));
 execFileSync("unzip",["-q",xdc,"-d",temp]);
-const mime={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".css":"text/css; charset=utf-8",".json":"application/json"};
+const mime={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".css":"text/css; charset=utf-8",".json":"application/json",".png":"image/png"};
 const server=http.createServer((req,res)=>{
  let pathname;
  try{pathname=decodeURIComponent(new URL(req.url,"http://localhost").pathname);}
@@ -73,38 +73,33 @@ try{
   assert.equal(await page.locator("#qa-players .poker-seat").count(),view.seats-1);
   assert.equal(await page.locator("#qa-hero-cards .vcard").count(),2);
   assert.equal(await page.locator("#qa-board-cards .vcard").count(),5);
+  // 52 independently decoded PNG assets must be shipped INSIDE the XDC.
   const fullDeckArt=await page.evaluate(async()=>{
     const {makeCard}=await import("./cards.js");
-    const root=document.createElement("div");
-    root.style.cssText="position:absolute;left:-9999px;top:0;display:flex;flex-wrap:wrap;width:450px";
-    document.body.append(root);
+    const holder=document.createElement("div");
+    holder.style.cssText="position:absolute;left:-9999px;top:0;display:flex;flex-wrap:wrap;width:450px";
+    document.body.append(holder);
     const cards=[];
     for(const suit of "CDHS")for(const rank of "23456789TJQKA"){
-      const node=makeCard(rank+suit);
-      root.append(node);
-      cards.push(node);
+      const el=makeCard(rank+suit);holder.append(el);cards.push(el);
     }
-    const back=makeCard("AS",{hidden:true});
-    root.append(back);
-    const images=cards.map(c=>c.querySelector("img"));
-    try{await Promise.all([...images,back.querySelector("img")].map(async img=>{
-      if(!img)throw Error("CardMeister did not mount an SVG image");
-      await img.decode();
-    }));}
-    catch(error){root.remove();return {total:images.length,loaded:false,error:String(error)};}
-    const good=images.every(img=>img.naturalWidth>0&&img.src.startsWith("data:image/svg+xml"));
-    const courts=["JC","QD","KH","JS"].map(code=>{
-      const el=cards.find(card=>card.getAttribute("cid")===code);
-      return el?.querySelector("img")?.src;
-    });
-    const distinctCourts=new Set(courts).size===4;
-    const result={total:images.length,loaded:good,distinctCourts,
-      backReady:back.querySelector("img").naturalWidth>0};
-    root.remove();
-    return result;
+    const back=makeCard("AS",{hidden:true});holder.append(back);
+    const imgs=cards.map(el=>el.querySelector("img"));
+    try{
+      await Promise.all([...imgs,back.querySelector("img")].map(img=>img.decode()));
+      const result={
+        total:imgs.length,
+        png:imgs.every(img=>img.naturalWidth>0&&img.naturalHeight>0&&
+         img.currentSrc.endsWith(".png")),
+        unique:new Set(imgs.map(img=>img.currentSrc)).size,
+        back:back.querySelector("img").naturalWidth>0,
+        courts:new Set(["JC","QD","KH","JS"].map(code=>cards.find(e=>e.dataset.card===code).querySelector("img").currentSrc)).size
+      };
+      holder.remove();return result;
+    }catch(error){holder.remove();return {error:String(error)};}
   });
-  assert.deepEqual(fullDeckArt,{total:52,loaded:true,distinctCourts:true,backReady:true},
-    "All 52 full SVG cards and face-down back must decode offline");
+  assert.deepEqual(fullDeckArt,{total:52,png:true,unique:52,back:true,courts:4},
+    "PNG: full 52-card + card-back raster deck must decode offline");
   await page.locator("#qa-controls").waitFor({state:"visible"});
   // Actual rendered geometry; Node tests cannot catch clipped or overlapping
   // seats on a six-player phone table.
@@ -194,6 +189,40 @@ try{
   await page.locator("#qa-table").waitFor({state:"visible"});
   const holeAfter=await page.locator("#qa-hero-cards .vcard").evaluateAll(xs=>xs.map(x=>x.getAttribute("aria-label")));
   assert.deepEqual(holeAfter,holeBefore,"Cards changed after reload and recovery");
+
+  // This would have caught the real Android screenshot regression: the old
+  // geometry checks measured five EMPTY placeholders only, not five rendered
+  // community cards at RIVER, where mid-left/right seats obscured 10/A.
+  let riverSteps=0;
+  while((await page.locator("#qa-street-label").textContent())!=="RIVER" &&
+        !await page.locator("#qa-end").isVisible()){
+    if(++riverSteps>20)throw Error("Could not reach river for card-overlap check");
+    if(await page.locator("#qa-check").isEnabled())await page.locator("#qa-check").click();
+    else if(await page.locator("#qa-call").isEnabled())await page.locator("#qa-call").click();
+    else throw Error("No safe non-fold river progression");
+  }
+  if(await page.locator("#qa-street-label").textContent()==="RIVER"){
+    const actual=await page.evaluate(()=>{
+      const rect=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom};};
+      return {seats:[...document.querySelectorAll(".poker-seat")].map(rect),
+        cards:[...document.querySelectorAll("#qa-board-cards .vcard:not(.vcard-empty)")].map(rect),
+        hero:rect(document.querySelector(".hero-spot"))};
+    });
+    assert.equal(actual.cards.length,5,"Must check FIVE real community cards at RIVER");
+    const overlaps=(a,b)=>Math.min(a.right,b.right)>Math.max(a.x,b.x)+2&&
+      Math.min(a.bottom,b.bottom)>Math.max(a.y,b.y)+2;
+    for(const [i,seat] of actual.seats.entries()){
+      for(const [j,card] of actual.cards.entries())
+        assert.ok(!overlaps(seat,card),
+          "Seat "+(i+2)+" obscures real river board card "+(j+1)+" at "+view.width+": "+JSON.stringify(actual));
+      assert.ok(!overlaps(seat,actual.hero),
+        "Seat "+(i+2)+" obscures hero cards at "+view.width);
+    }
+    await page.screenshot({path:path.join(dist,"poker-river-"+view.width+".png")});
+  }
+  // No duplicate action dock may be mounted, regardless of full-page capture
+  // stitching quirks in Chromium/Android screenshots.
+  assert.equal(await page.locator("#qa-controls").count(),1,"No duplicate action dock");
   // Exercise a complete 2–6-seat hand THROUGH the real button handlers,
   // rather than only folding on preflop and missing showdown crashes.
   let turns=0;
