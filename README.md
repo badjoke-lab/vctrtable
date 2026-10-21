@@ -52,3 +52,10 @@ A new Rust **Vector SDK 0.11.0** bot (`bots/vector/`) receives authenticated NIP
 ## Manual Bot DM poker seat (development only)
 
 The new `dm.html` inside `poker.xdc` renders a complete **per-player seat** using manually imported JSON DM snapshots: own cards, public board, pots, stacks, legal actions, settings approval, pause voting, rebuy and resync. It can generate versioned Bot DM commands for copying into an authenticated 1:1 Vector DM. It **cannot** automatically exchange DMs from inside a standard WebXDC sandbox. Private snapshots are held only in memory; they are never shared through `sendUpdate()`. Import checks the intended recipient ID, but cannot cryptographically verify the sender of manually pasted text. See [the WebXDC/DM transport decision](docs/WEBXDC-DM-BRIDGE.md). The existing `qa.html` remains the recommended one-person full-game tester.
+
+
+## Mobile Poker table visual refresh
+
+Single-device QA now renders a compact 2–6-seat oval poker table, premium self-contained card artwork (illustrated J/Q/K faces and distributed number-card pips), and a sticky legal-action dock. On mobile, chat mode is user-selectable: **Always on** places a small scrollable chat below the table; **Drawer** leaves the table expanded with an unread badge and a brief new-message preview. Both modes share one message stream and offer quick replies. The QA demo has local scripted chat only, and its optional English/Japanese translation covers **predefined demonstration phrases**, not unrestricted real translation. No actual encrypted Vector PvP/DM bridge is implemented in the Mini App yet.
+
+See [the mobile table and chat specification](docs/MOBILE-TABLE-CHAT.md). This UI is an implementation to test visually on one phone, not a completed multi-person game.

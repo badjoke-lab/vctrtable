@@ -83,3 +83,8 @@ Rust SDK v0.11.0 `VectorBot::on_message` + `bot.dm(npub).send` integrated into a
 ## Manual WebXDC/Vector DM UI milestone
 
 A per-player table view in `dm.html` displays imported, recipient-specific Bot state and creates actions for manual sending via Vector's 1:1 Bot DM. It supports gameplay and consent controls, English/Japanese UI, rejects cross-seat/stale/malformed snapshots, and does not broadcast secrets or persist the DM contents. The actual standardized WebXDC API has no automatic recipient-specific DM receive bridge; `sendToChat` only invokes a user-mediated chat compose action. Therefore true in-app automatic SDK ↔ Mini App messaging remains a **verified integration blocker** and cannot be marked complete. Continue developer-only simulator/CI tests; do not require multi-human testing yet.
+
+
+## Mobile table/UI milestone
+
+Approved: **6-seat phone-portrait** compact felt table with opponent positions around the rim, large local hand, illustrated face cards and correct number-card pips, sticky betting actions, scrollable history/settings. **Do not use a horizontal chat side panel on mobile.** Users can switch between inline permanent chat below the table and a bottom drawer. Collapsed drawer has unread badge and timed toast preview. Chat shares the same history across modes; quick replies and English/Japanese QA phrase translations remain local mock messages for one-person validation. Full production chat/translation integration and authenticated live PvP still pending. See MOBILE-TABLE-CHAT.md.
