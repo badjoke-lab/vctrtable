@@ -12,6 +12,8 @@ use tokio::process::{Child,ChildStdin,ChildStdout,Command};
 use tokio::sync::Mutex;
 use tokio::time::{timeout,MissedTickBehavior};
 use vector_sdk::VectorBot;
+mod delivery_guard;
+use delivery_guard::DeliveryOrder;
 
 type DynError=Box<dyn Error+Send+Sync>;
 const HANDSHAKE_TIMEOUT:Duration=Duration::from_secs(10);
@@ -58,6 +60,8 @@ struct WorkerReply {
     code:Option<String>,
     #[serde(default)]
     deliveries:Vec<Delivery>,
+    #[serde(default)]
+    revision:Option<u64>,
 }
 impl DealerChild {
     async fn request(&mut self,input:Value)->Result<WorkerReply,DynError>{
@@ -149,20 +153,35 @@ impl DealerSupervisor {
     }
 }
 
-async fn send_deliveries(bot:&VectorBot,reply:WorkerReply,requester:Option<&str>){
-    if !reply.ok {
+// Caller holds the delivery-order mutex for the entire batch. A concurrent
+// timeout tick and a player action may complete network sends in a different
+// order than their authoritative dealer revisions: older state is suppressed.
+async fn send_deliveries(
+    bot:&VectorBot,reply:WorkerReply,requester:Option<&str>,order:&mut DeliveryOrder
+){
+    if !reply.ok{
         if let Some(sender)=requester{
             let code=reply.code.unwrap_or_else(||"REJECTED".to_string());
-            // Reject stale operations but still send state if a timeout was
-            // persisted by the dealer before the command failed.
-            let _=bot.dm(sender.to_owned()).send(&format!("poker error: {}",code)).await;
+            // Fixed error code; never echo secret input or private card state.
+            let _=timeout(Duration::from_secs(5),
+                bot.dm(sender.to_owned()).send(&format!("poker error: {}",code))).await;
         }
     }
     for delivery in reply.deliveries{
-        // Exact recipient IDs are selected by the private dealer roster.
-        if !delivery.to.starts_with("npub1"){continue;}
-        if bot.dm(delivery.to).send(&delivery.body).await.is_err(){
-            eprintln!("Private delivery failed; recipient can request resync");
+        // Fail closed when the envelope target or revision disagrees with
+        // the worker reply. Never "repair" a malformed packet by broadcasting.
+        if !order.eligible(&delivery.to,&delivery.body,reply.revision){
+            eprintln!("Skipped invalid or stale private poker snapshot");
+            continue;
+        }
+        match timeout(Duration::from_secs(5),
+            bot.dm(delivery.to.clone()).send(&delivery.body)).await{
+            Ok(Ok(_))=>{
+                // The SDK accepted the send. A future missed relay delivery
+                // can still be repaired by a same-revision private sync.
+                order.record_success(&delivery.to,reply.revision.unwrap_or_default());
+            }
+            _=>eprintln!("Private delivery failed or timed out; recipient may resync"),
         }
     }
 }
@@ -172,6 +191,7 @@ async fn main()->Result<(),DynError>{
     let nsec=std::env::var("VECTOR_NSEC").map_err(|_|"VECTOR_NSEC not configured")?;
     let bot=VectorBot::builder().nsec(nsec).build().await?;
     let dealer=Arc::new(Mutex::new(DealerSupervisor::start().await?));
+    let delivery_order=Arc::new(Mutex::new(DeliveryOrder::default()));
     println!("Poker Bot DM adapter initialized as {}",bot.npub());
 
     // Keep the timeout/supervision loop ALIVE after a dealer crash. A later
@@ -179,6 +199,7 @@ async fn main()->Result<(),DynError>{
     {
         let dealer=dealer.clone();
         let bot=bot.clone();
+        let delivery_order=delivery_order.clone();
         tokio::spawn(async move{
             let mut interval=tokio::time::interval(Duration::from_secs(1));
             interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
@@ -192,7 +213,8 @@ async fn main()->Result<(),DynError>{
                 match next{
                     Ok(reply)=>{
                         failures=0;
-                        send_deliveries(&bot,reply,None).await;
+                        let mut order=delivery_order.lock().await;
+                        send_deliveries(&bot,reply,None,&mut order).await;
                     }
                     Err(_)=>{
                         failures=failures.saturating_add(1);
@@ -209,6 +231,7 @@ async fn main()->Result<(),DynError>{
 
     bot.on_message(move |bot,msg|{
         let dealer=dealer.clone();
+        let delivery_order=delivery_order.clone();
         async move{
             if msg.is_mine()||msg.is_group||msg.is_file{return;}
             // NIP-17 sender is obtained from authenticated Vector SDK metadata.
@@ -226,7 +249,10 @@ async fn main()->Result<(),DynError>{
                 }
             };
             match next{
-                Ok(reply)=>send_deliveries(&bot,reply,Some(&author)).await,
+                Ok(reply)=>{
+                    let mut order=delivery_order.lock().await;
+                    send_deliveries(&bot,reply,Some(&author),&mut order).await;
+                },
                 Err(_)=>{
                     // The command may have been committed before IPC failed.
                     // Never retry an unknown-mutating command automatically.
