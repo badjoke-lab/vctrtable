@@ -156,31 +156,42 @@ impl DealerSupervisor {
 // Caller holds the delivery-order mutex for the entire batch. A concurrent
 // timeout tick and a player action may complete network sends in a different
 // order than their authoritative dealer revisions: older state is suppressed.
+/// Serialize BATCHES across tick and player callbacks to prevent an old
+/// snapshot from arriving after a newer one. Within a batch, send to all
+/// recipients concurrently so a slow DM does not block the other five seats.
+/// Actual relay delivery is not guaranteed; clients can resync explicitly.
 async fn send_deliveries(
     bot:&VectorBot,reply:WorkerReply,requester:Option<&str>,order:&mut DeliveryOrder
 ){
-    if !reply.ok{
+    if !reply.ok {
         if let Some(sender)=requester{
             let code=reply.code.unwrap_or_else(||"REJECTED".to_string());
-            // Fixed error code; never echo secret input or private card state.
+            let bot=bot.clone();
+            let sender=sender.to_owned();
+            let notice=format!("poker error: {}",code);
             let _=timeout(Duration::from_secs(5),
-                bot.dm(sender.to_owned()).send(&format!("poker error: {}",code))).await;
+                async move {bot.dm(sender).send(&notice).await}).await;
         }
     }
+    let mut pending=tokio::task::JoinSet::new();
     for delivery in reply.deliveries{
-        // Fail closed when the envelope target or revision disagrees with
-        // the worker reply. Never "repair" a malformed packet by broadcasting.
+        // Private recipient and revision MUST agree with authenticated local
+        // worker's reply and embedded seat snapshot. No public broadcast.
         if !order.eligible(&delivery.to,&delivery.body,reply.revision){
             eprintln!("Skipped invalid or stale private poker snapshot");
             continue;
         }
-        match timeout(Duration::from_secs(5),
-            bot.dm(delivery.to.clone()).send(&delivery.body)).await{
-            Ok(Ok(_))=>{
-                // The SDK accepted the send. A future missed relay delivery
-                // can still be repaired by a same-revision private sync.
-                order.record_success(&delivery.to,reply.revision.unwrap_or_default());
-            }
+        let bot=bot.clone();
+        pending.spawn(async move {
+            let sent=matches!(timeout(Duration::from_secs(5),
+                async {bot.dm(delivery.to.clone()).send(&delivery.body).await}).await,
+                Ok(Ok(_)));
+            (delivery.to,sent)
+        });
+    }
+    while let Some(result)=pending.join_next().await{
+        match result{
+            Ok((recipient,true))=>order.record_success(&recipient,reply.revision.unwrap_or_default()),
             _=>eprintln!("Private delivery failed or timed out; recipient may resync"),
         }
     }
