@@ -132,8 +132,28 @@ try{
     for(let j=0;j<i;j++)assert.ok(!hit(seat,placement.seats[j]),
       "Opponents "+i+"/"+j+" overlap: "+JSON.stringify({view,placement}));
   }
+  const assertChatStage=async(where)=>{
+    const m=await page.evaluate(()=>{
+      const box=id=>{const x=document.querySelector(id),r=x.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height};};
+      return {visibleHeight:window.visualViewport?.height??innerHeight,
+        stage:box("#qa-table"),hud:box("#qa-chat-hud"),chat:box("#qa-chat"),
+        input:box("#qa-chat-text"),send:box("#qa-chat-form button"),controlsVisible:
+        getComputedStyle(document.querySelector("#qa-controls")).display!=="none"};
+    });
+    assert.ok(m.hud.y>=m.stage.y-2&&m.hud.bottom<m.chat.y+5,
+      "Hand/timer HUD hidden behind chat at "+where+": "+JSON.stringify(m));
+    assert.ok(m.input.y>=m.chat.y&&m.input.bottom<=m.stage.bottom+2,
+      "Composer clipped at "+where+": "+JSON.stringify(m));
+    assert.ok(m.send.y>=m.chat.y&&m.send.bottom<=m.stage.bottom+2,
+      "Send button clipped at "+where+": "+JSON.stringify(m));
+    assert.ok(!m.controlsVisible,"Bet dock must not cover composer during "+where);
+    assert.equal(await page.locator("#qa-hud-cards .vcard").count(),2);
+    assert.ok(await page.locator("#qa-hud-timer").isVisible());
+  };
   await page.locator("#qa-chat-bubble").click();
   await page.locator("#qa-chat").waitFor({state:"visible"});
+  await assertChatStage("drawer open");
+  await page.screenshot({path:path.join(dist,"poker-mobile-drawer-"+view.width+".png")});
   await page.locator("#qa-chat-text").fill("one-device smoke");
   await page.locator("#qa-chat-form button[type=submit]").click();
   assert.equal(await page.locator(".chat-line.own").count(),1);
@@ -141,6 +161,19 @@ try{
   await page.locator("#qa-chat-mode").selectOption("inline");
   await page.locator("#qa-chat").waitFor({state:"visible"});
   assert.equal(await page.locator(".chat-line.own").count(),1,"Mode switch lost messages");
+  // On focus, even the inline mode must enter an isolated composer scene so
+  // Android IME never covers the input behind the betting dock.
+  await page.locator("#qa-chat-text").click();
+  await assertChatStage("inline focus");
+  await page.screenshot({path:path.join(dist,"poker-mobile-inline-focus-"+view.width+".png")});
+  await page.setViewportSize({width:view.width,height:Math.min(view.height,480)});
+  await page.waitForTimeout(80);
+  await assertChatStage("simulated smaller visible area / keyboard");
+  await page.setViewportSize({width:view.width,height:view.height});
+  await page.locator("#qa-chat-close").click();
+  assert.equal(await page.locator("#qa-table.chat-stage").count(),0,
+    "Closing inline composer must return betting dock");
+  assert.ok(await page.locator("#qa-controls").isVisible());
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
   assert.ok(overflow<=2,"Horizontal overflow on "+view.width+"px screen: "+overflow);
   await page.evaluate(()=>window.scrollTo(0,0));
