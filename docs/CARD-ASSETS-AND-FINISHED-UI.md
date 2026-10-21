@@ -1,22 +1,19 @@
-# Bundled playing-card artwork
+# Offline PNG playing-card artwork
 
-The 52 illustrated card faces are generated offline from the self-contained **CardMeister FULL** JavaScript deck.
+The Poker Mini App now displays **53 actual PNG files** (52 faces + one blue back) instead of CardMeister SVG custom elements.
 
-- Upstream: https://github.com/cardmeister/cardmeister.github.io
-- Source file: `elements.cardmeister.full.js` from the upstream `master` branch.
-- Local vendored copy: `apps/poker/cardmeister.full.js` (unchanged upstream asset).
-- License: **Unlicense** (public-domain dedication, permissive fallback); see upstream README and https://unlicense.org/.
-- Its FULL variant has **12 separate J/Q/K SVG courts**, rather than the minified one-portrait-per-rank variant.
-- All 52 faces, back graphics and their color/shape details are provided locally, with no remote fetches or Google fonts.
-- `cards.js` is our thin wrapper for the game's two-letter rank-and-suit codes and accessibility descriptions. It does not draw fake portraits or add duplicate pip glyphs.
-- Browser CI decodes the 52 SVG face images and the face-down card; packaging tests verify the asset is included in `poker.xdc`.
+The card source is [saulspatz/SVGCards](https://github.com/saulspatz/SVGCards), directory Decks/Vertical2/pngs. These assets are published as **public domain** by the author. The source commit is pinned to f8df28774736ea2545fc8e7fb693eb55ce031945. Cards are mapped exactly to the game engine's rank/suit names.
 
-Do not remove this file from the `.xdc` bundling list. Avoid external CDN dependencies for private offline Vector games.
+Only during a packaging build, scripts/poker-png-assets.mjs downloads 53 files from the pinned commit. It checks the PNG signature, dimensions and item count and places every file inside poker.xdc. In Vector there are NO card image network requests: the images are local paths inside the .xdc.
 
-## Presentation rules after settlement
+**Build caveat:** a checkout without Internet currently cannot build its first PNG package (source assets are fetched at build time). Runtime is entirely offline for images. This is not falsely described as an offline source build.
 
-While a hand is betting, show pot and each live contribution. Once complete, label the pot **Paid out / 精算済み**, show winners' awarded chips (otherwise contributions as historical amounts), mark the round **Showdown / 決着** and hide the obsolete action clock. The actual payout breakdown is in the result panel.
+## UI / regression policy
 
-## Phone six-seat layout
+The Android screenshots showed side seats covering board cards, and a bottom action dock covering inline chat. Narrow-screen positioning now reserves room for five centered PNG board cards and shrinks the two edge seat panels. Chromium checks collisions AFTER revealing the full river, not merely when five placeholders are empty.
 
-On 320–390 px screens, seats must never obscure actual community-card faces, the hero's hole cards or the action dock. Two side seats are lowered on the felt, and the top seats stay within the table. In automatic Chromium QA, rectangles for all seats, board cards and hero are checked on narrow viewports. Final acceptance still requires a Vector Android WebView screenshot.
+In chat focus, both drawer and inline composer use a separate full-height panel with a compact live local hand/timer HUD and hide the betting dock. In ordinary inline mode, the compact chat follows the table and reserves dock-height scroll space.
+
+Only ONE betting dock exists in the DOM. Some full-page screenshot capture methods paint a fixed element twice, but an extra painted copy is not necessarily a duplicated interactive element. Test both the DOM count and live view positions.
+
+The Android Vector WebView and real soft keyboard still require device verification; Chromium cannot guarantee the same viewport behavior.
