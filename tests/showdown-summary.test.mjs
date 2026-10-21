@@ -38,8 +38,9 @@ test("odd chip is paid to first eligible winning seat left of the dealer",()=>{
  while(t.hand.status==="betting")move(t,"check");
  const r=settlementSummary(t,{locale:"en",heroId:"p0"});
  assert.equal(r.totalPot,5);
- assert.deepEqual(r.pots.map(p=>p.amount),[4,1]);
- assert.deepEqual(r.pots[0].payout.map(p=>[p.id,p.amount]),[["p2",2],["p0",2]]);
+ assert.deepEqual(r.pots.map(p=>p.amount),[3,2]);
+ assert.deepEqual(r.pots[0].payout.map(p=>[p.id,p.amount]),[["p2",2],["p0",1]]);
+ assert.deepEqual(r.pots[1].payout.map(p=>[p.id,p.amount]),[["p2",1],["p0",1]]);
  assert.equal(r.seats[1].handName,null);
  assert.equal(r.seats[0].handName,"Royal flush");
  assert.equal(r.seats[2].handName,"Royal flush");
