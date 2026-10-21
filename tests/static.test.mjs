@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
-const scripts=['apps/poker/main.js','apps/poker/qa.js','apps/poker/cards.js','apps/poker/cardmeister.full.js','apps/poker/chat-view.js','apps/poker/public-chat.js','apps/poker/dm.js','packages/poker/dm-seat.js','packages/poker/dm-sync-state.js','packages/poker/engine.js','packages/poker/hand.js','packages/poker/session.js','packages/poker/betting-controls.js','packages/poker/showdown-summary.js','packages/poker/dealer-room.js','packages/poker/message-boundary.js','packages/poker/dealer-journal.js','packages/poker/dealer-store.js','packages/poker/persistent-dealer.js'];
+const scripts=['apps/poker/main.js','apps/poker/qa.js','apps/poker/cards.js','scripts/poker-png-assets.mjs','apps/poker/chat-view.js','apps/poker/public-chat.js','apps/poker/dm.js','packages/poker/dm-seat.js','packages/poker/dm-sync-state.js','packages/poker/engine.js','packages/poker/hand.js','packages/poker/session.js','packages/poker/betting-controls.js','packages/poker/showdown-summary.js','packages/poker/dealer-room.js','packages/poker/message-boundary.js','packages/poker/dealer-journal.js','packages/poker/dealer-store.js','packages/poker/persistent-dealer.js'];
 for(const f of scripts)test('JavaScript syntax: '+f,()=>{
  assert.doesNotThrow(()=>execFileSync(process.execPath,['--check',f],{encoding:'utf8'}));
 });
@@ -138,23 +138,21 @@ test('DM screen visibly distinguishes prepared, delayed and imported private sta
  }
 });
 
-test('real 52-card SVG deck bundled offline, not old handmade court markup',()=>{
+test('52 PNG images embedded during WebXDC build, never remote in Vector',()=>{
  const build=readFileSync('scripts/build.mjs','utf8');
- const html=readFileSync('apps/poker/qa.html','utf8');
+ const qa=readFileSync('apps/poker/qa.html','utf8');
  const art=readFileSync('apps/poker/cards.js','utf8');
- const vendor=readFileSync('apps/poker/cardmeister.full.js','utf8');
- const css=readFileSync('apps/poker/qa.css','utf8');
- assert.ok(build.includes('"cardmeister.full.js"'));
- assert.ok(html.includes('<script src="cardmeister.full.js"></script>'));
- assert.ok(html.indexOf('cardmeister.full.js')<html.indexOf('src="qa.js"'));
- assert.ok(vendor.includes('customElements.define'));
- assert.ok(vendor.length>100000,'Must use the full 12-different-court deck, not simplified one-portrait version');
- assert.ok(art.includes('document.createElement("playing-card")'));
- assert.ok(art.includes('hidden?"FS":model.code'));
- assert.ok(!art.includes('courtPortrait('),'Old hand-painted portrait must not be bundled');
- assert.ok(!art.includes('vcard-pips'),'Handmade pip placements must not render');
- assert.ok(css.includes('.vcard-illustrated>img'));
- assert.ok(!css.includes('.vcard-court'),'Old court CSS still included');
+ const source=readFileSync('scripts/poker-png-assets.mjs','utf8');
+ assert.ok(build.includes('await downloadCardAssets(temp)'));
+ assert.ok(build.includes('poker-png-assets.mjs'));
+ assert.ok(!build.includes('"cardmeister.full.js"'));
+ assert.ok(!qa.includes('cardmeister.full.js'));
+ assert.ok(art.includes('document.createElement("img")'));
+ assert.ok(art.includes('img.src=cardPngPath('));
+ assert.ok(!art.includes('playing-card'));
+ assert.ok(source.includes('f8df28774736ea2545fc8e7fb693eb55ce031945'));
+ assert.ok(source.includes('saulspatz/SVGCards'));
+ assert.ok(!art.includes('fetch('),'No card downloads from Vector runtime');
 });
 
 test('inline chat composer and drawer share compact always-visible own cards/timer during input',()=>{
@@ -172,4 +170,13 @@ test('inline chat composer and drawer share compact always-visible own cards/tim
  assert.ok(css.includes('.qa-chat-hud-clock'));
  assert.ok(css.includes('.qa-main.qa-chatting #qa-controls{display:none!important}'));
  assert.ok(css.includes('--chat-vv-height'));
+});
+
+test('mobile control layering is explicitly defended and visible full river cards checked',()=>{
+ const css=readFileSync('apps/poker/qa.css','utf8');
+ const test=readFileSync('scripts/browser-smoke.mjs','utf8');
+ assert.ok(css.includes('#qa-controls')&&css.includes('action-dock'));
+ assert.ok(test.includes('community cards at RIVER'));
+ assert.ok(test.includes('No duplicate action dock'));
+ assert.ok(test.includes('PNG'));
 });
