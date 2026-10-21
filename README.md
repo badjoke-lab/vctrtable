@@ -84,3 +84,8 @@ After each hand, the local-only results list the main pot, each side pot, any un
 The repository includes a separate, credential-free headless Chromium workflow (.github/workflows/browser-smoke.yml) that extracts the built poker.xdc and loads its actual index.html through a local HTTP server. It checks 320px and 390px mobile viewports, two- and six-seat rendering, the correct initial page, all five community-card positions, own cards, chat drawer/inline switching, local messages, fixed betting-dock visibility, horizontal overflow, save/reload/resume, and a real fold action. Screenshot artifacts are uploaded for review.
 
 This checks UI runtime without requiring the user to open Vector. It is NOT an Android Vector WebView test, real Nostr identity test or multi-user network test. Playwright and Chromium are installed only in CI, never in the packaged poker.xdc.
+
+
+## Browser-tested six-seat layout and complete hands
+
+Mobile browser CI now checks 6 seats at widths **320, 360, 390 pixels**, 2 seats at 320px, all five opponent elements staying inside the screen/table and free of overlap with each other, community cards and the hero hand. It drives a **complete hold'em hand** through the visible Check/Call/Fold actions, verifies itemized showdown pots, checks that betting controls hide after settlement, and starts the next hand when chips allow. The tests also retain previously added save/restore and both chat UI modes. Captured PNGs remain GitHub Actions artifacts. These browser tests still use scripted seats; actual Vector multi-user tests are intentionally deferred.

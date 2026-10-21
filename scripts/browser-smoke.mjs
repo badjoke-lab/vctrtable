@@ -46,7 +46,10 @@ let browser;
 try{
  browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
  const errors=[];
- for(const view of [{width:390,height:844,seats:6},{width:320,height:640,seats:2}]){
+ for(const view of [
+  {width:390,height:844,seats:6},{width:360,height:740,seats:6},
+  {width:320,height:640,seats:6},{width:320,height:640,seats:2}
+ ]){
   const ctx=await browser.newContext({viewport:{width:view.width,height:view.height},isMobile:true,hasTouch:true,deviceScaleFactor:1});
   const page=await ctx.newPage();
   const dialogs=[];
@@ -71,6 +74,32 @@ try{
   assert.equal(await page.locator("#qa-hero-cards .vcard").count(),2);
   assert.equal(await page.locator("#qa-board-cards .vcard").count(),5);
   await page.locator("#qa-controls").waitFor({state:"visible"});
+  // Actual rendered geometry; Node tests cannot catch clipped or overlapping
+  // seats on a six-player phone table.
+  const placement=await page.evaluate(()=>{
+    const rect=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height};};
+    return {seats:[...document.querySelectorAll(".poker-seat")].map(rect),
+      board:(()=>{
+        const cards=[...document.querySelectorAll("#qa-board-cards .vcard")].map(rect);
+        return {x:Math.min(...cards.map(c=>c.x)),right:Math.max(...cards.map(c=>c.right)),
+          y:Math.min(...cards.map(c=>c.y)),bottom:Math.max(...cards.map(c=>c.bottom))};
+      })(),
+      hero:rect(document.querySelector(".hero-spot")),
+      arena:rect(document.querySelector(".poker-arena")),
+      viewport:innerWidth};
+  });
+  const hit=(a,b)=>Math.min(a.right,b.right)-Math.max(a.x,b.x)>3&&
+                      Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y)>3;
+  for(const [i,seat] of placement.seats.entries()){
+    assert.ok(seat.x>=0&&seat.right<=view.width,
+      "Opponent seat "+i+" horizontal viewport clipping: "+JSON.stringify({view,placement}));
+    assert.ok(seat.y>=placement.arena.y-2,
+      "Opponent seat "+i+" sticks out above table: "+JSON.stringify({view,placement}));
+    assert.ok(!hit(seat,placement.board),"Opponent seat "+i+" overlaps community cards: "+JSON.stringify({view,placement}));
+    assert.ok(!hit(seat,placement.hero),"Opponent seat "+i+" overlaps hero: "+JSON.stringify({view,placement}));
+    for(let j=0;j<i;j++)assert.ok(!hit(seat,placement.seats[j]),
+      "Opponents "+i+"/"+j+" overlap: "+JSON.stringify({view,placement}));
+  }
   await page.locator("#qa-chat-bubble").click();
   await page.locator("#qa-chat").waitFor({state:"visible"});
   await page.locator("#qa-chat-text").fill("one-device smoke");
@@ -89,7 +118,7 @@ try{
   await page.locator("#qa-chat-mode").selectOption("drawer");
   await page.evaluate(()=>window.scrollTo(0,0));
   fs.mkdirSync(dist,{recursive:true});
-  await page.screenshot({path:path.join(dist,"poker-mobile-"+view.width+".png")});
+  await page.screenshot({path:path.join(dist,"poker-mobile-"+view.width+"-"+view.seats+".png")});
   // Explicitly save an in-progress hand, reload and restore without losing cards.
   await page.locator("#qa-storage-panel summary").click();
   const holeBefore=await page.locator("#qa-hero-cards .vcard").evaluateAll(xs=>xs.map(x=>x.getAttribute("aria-label")));
@@ -100,14 +129,35 @@ try{
   await page.locator("#qa-table").waitFor({state:"visible"});
   const holeAfter=await page.locator("#qa-hero-cards .vcard").evaluateAll(xs=>xs.map(x=>x.getAttribute("aria-label")));
   assert.deepEqual(holeAfter,holeBefore,"Cards changed after reload and recovery");
-  // Real local action should advance the engine (or settle), not throw.
-  await page.locator("#qa-fold").click();
-  const after=await page.locator("#qa-round").textContent();
-  assert.ok(after.includes("Hand 1"));
+  // Exercise a complete 2–6-seat hand THROUGH the real button handlers,
+  // rather than only folding on preflop and missing showdown crashes.
+  let turns=0;
+  while(!await page.locator("#qa-end").isVisible()){
+   if(++turns>55)throw new Error("Full hand stalled: "+JSON.stringify({view,errors,dialogs}));
+   const check=page.locator("#qa-check"),call=page.locator("#qa-call");
+   if(await check.isEnabled())await check.click();
+   else if(await call.isEnabled())await call.click();
+   else if(await page.locator("#qa-fold").isEnabled())await page.locator("#qa-fold").click();
+   else throw new Error("No playable action before hand completion");
+  }
+  assert.equal(await page.locator("#qa-result").isVisible(),true);
+  assert.ok(await page.locator(".qa-settlement-pot").count()>=1,
+    "Finished hand must itemize pot recipients");
+  assert.equal(await page.locator("#qa-controls").isVisible(),false,
+    "Bet controls must be hidden at showdown");
+  // Continue from the last saved state and start the next hand, if possible.
+  if(await page.locator("#qa-next").isEnabled()){
+    await page.locator("#qa-next").click();
+    assert.ok((await page.locator("#qa-round").textContent()).includes("Hand 2"));
+    assert.equal(await page.locator("#qa-controls").isVisible(),true);
+  }
+  assert.deepEqual(errors.filter(x=>x.startsWith(view.width+":")),[],
+    "Browser runtime exceptions during "+view.width+"px hand");
+  assert.deepEqual(dialogs,[],"Unexpected dialogs during full hand");
   await ctx.close();
  }
  assert.deepEqual(errors,[],"Browser runtime errors");
- console.log("Chromium QA smoke OK: two/six seats, compact chat, reloading, 390/320px, 2 screenshots");
+ console.log("Chromium QA smoke OK: 2-6 seats, 320/360/390px overlap checks, live browser complete hands, storage+chat");
 }finally{
  await browser?.close();
  await new Promise(resolve=>server.close(resolve));
