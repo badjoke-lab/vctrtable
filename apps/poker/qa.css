@@ -1,1 +1,81 @@
-a{color:#7ff2bc}.qa-main section{margin-top:16px}.qa-players{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px}.qa-player{background:#173a3a;border-radius:10px;padding:11px;min-width:0;border:1px solid transparent}.qa-player.active{border-color:#7bf5b5}.qa-player.folded{opacity:.55}.qa-player b{display:block;font-size:13px}.qa-player span{font-size:12px;color:#bce1d3}.qa-player .qa-cards{margin-top:9px}.qa-cards{display:flex;gap:6px;flex-wrap:wrap;min-height:70px;align-items:center}.qa-card{width:47px;height:64px;border-radius:7px;border:1px solid #a5b2b7;background:#fafafa;color:#121922;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px}.qa-card.red{color:#c52847}.qa-card.back{color:#fff;background:linear-gradient(135deg,#244b70,#112844);border:2px solid #d8e9e4}.qa-card.empty{opacity:.3;background:transparent;color:#fff;border:1px dashed #809995}.qa-board,.qa-hero{margin:14px 0}.qa-board p,.qa-hero p{margin:5px 0}.qa-controls{display:flex;gap:9px;flex-wrap:wrap;align-items:end;margin:14px 0}.qa-controls label{width:150px}.qa-controls button{min-height:40px}.qa-controls button:disabled{opacity:.35}.qa-end{margin-top:10px}.qa-end button{margin:5px 5px 5px 0}.qa-log{max-height:180px;overflow:auto;padding-left:20px;font-size:12px;color:#bfd8cc}.qa-log li{margin:4px 0}#qa-timer{font-weight:700;color:#f6d78a}#qa-pot{color:#f6d78a}[hidden]{display:none!important}@media(max-width:450px){.qa-player{padding:7px}.qa-card{width:39px;height:56px;font-size:17px}.qa-controls label{width:100%;}}
+/* Mobile-first solo QA table. This layout is shared-design groundwork, not real PvP. */
+a{color:#7af1c0}
+.qa-main{max-width:520px;padding:12px 10px max(24px,env(safe-area-inset-bottom));--dock-height:182px}
+.qa-topbar{padding-right:46px;gap:8px}.qa-topbar h1{font-size:21px;margin:2px 0 0}.qa-lang{width:108px;flex:0 0 108px}
+.qa-lang select{padding:8px 5px}.qa-mode-banner{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:11px;line-height:1.35;color:#e1c99e;background:#2d261b;border-radius:8px;padding:7px 10px;margin-top:10px}
+.qa-mode-banner a{white-space:nowrap}.qa-main #qa-setup{padding:15px;margin-top:16px}
+.qa-main [hidden]{display:none!important}.qa-main button:focus-visible,.qa-main input:focus-visible,.qa-main select:focus-visible,.qa-main summary:focus-visible{outline:2px solid #c8ffdb;outline-offset:2px}
+.qa-meta{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:13px 2px 9px;color:#bad8cd;font-size:12px}
+.qa-chat-mode{display:flex;align-items:center;gap:5px;font-size:11px}.qa-chat-mode span{margin:0}.qa-chat-mode select{font-size:12px;width:auto;padding:6px 8px;max-width:120px}
+.poker-arena{background:#07191b!important;border:1px solid #2e5350!important;border-radius:22px!important;margin:0!important;padding:8px 5px 10px!important;position:relative;overflow:visible;box-shadow:0 12px 28px #0006}
+.felt{width:100%;height:clamp(345px,109vw,470px);border-radius:47%/43%;border:9px solid #382b22;outline:2px solid #846b45;outline-offset:-5px;background:radial-gradient(ellipse at 46% 42%,#117358 0%,#08543e 51%,#053324 100%);box-shadow:inset 0 0 0 3px #1a8b6e,inset 0 10px 36px #001c17b8,0 9px 24px #000a;position:relative}
+.felt-mark{position:absolute;left:50%;top:24%;transform:translateX(-50%);font-size:90px;color:#03503a78;pointer-events:none}
+.poker-seats{position:absolute;inset:0;z-index:2;pointer-events:none}
+.poker-seat{position:absolute;width:min(29%,104px);min-width:72px;background:#061d20ed;border:1px solid #327668;border-radius:12px;padding:5px 5px 4px;box-shadow:0 4px 12px #0008;text-align:center;transform:translate(-50%,-50%);color:#effaf5;pointer-events:auto}
+.poker-seat.active{border-color:#6eebbd;box-shadow:0 0 0 2px #63dc9c77,0 4px 16px #0008}
+.poker-seat.folded{opacity:.48}.poker-seat.all-in{border-color:#ea637d}
+.poker-seat.pos-top-left{left:19%;top:18%}.poker-seat.pos-top{left:50%;top:5%}.poker-seat.pos-top-right{left:81%;top:18%}
+.poker-seat.pos-mid-left{left:8%;top:52%}.poker-seat.pos-mid-right{left:92%;top:52%}
+.poker-seat-name{font-weight:700;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}
+.poker-seat-stack{display:block;font-size:12px;color:#e5f6ee;margin:3px 0}
+.poker-seat-badge{font-size:9px;border-radius:4px;background:#ae7d26;padding:2px 4px;color:#080f12;margin:0 1px}
+.poker-seat-badge.bb{background:#387ee3;color:white}.poker-seat-badge.d{background:#f8df9d}
+.poker-seat-cards{display:flex;gap:3px;justify-content:center;min-height:25px;margin:3px 0}.poker-seat-bet{color:#f6d98d;font-size:10px}
+.poker-center{position:absolute;top:38%;left:50%;transform:translate(-50%,-12%);width:94%;display:flex;flex-direction:column;align-items:center;gap:7px;z-index:1}
+.pot-pill{padding:5px 17px;border-radius:22px;background:#051d1bbf;color:#f3d28b;font-weight:750;font-size:16px}
+.street-label{font-size:10px;letter-spacing:.12em;color:#c9d6ca}
+.community-cards{display:flex;gap:3px;justify-content:center;width:100%}
+.hero-spot{position:absolute;bottom:2%;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;width:62%;z-index:3}
+.hero-hand{display:flex;justify-content:center;gap:5px}.hero-info{min-width:170px;display:flex;justify-content:space-around;align-items:center;gap:8px;background:#061d1ef2;border:1px solid #5bc998;border-radius:22px;min-height:31px;padding:5px 9px;font-size:12px;font-weight:750}
+#qa-timer{color:#93f7b9;font-size:12px;font-weight:750}
+.qa-turn-status{background:#143634;padding:10px 12px;margin:11px 1px;border:1px solid #32685c;border-radius:11px;color:#ecfff6;font-size:13px;line-height:1.5}
+.qa-chat{border:1px solid #35645b!important;border-radius:13px!important;background:#091d21!important;padding:10px!important;margin:8px 0!important}
+.qa-chat.chat-inline{display:block}.qa-chat.chat-drawer:not(.open){display:none!important}
+.qa-chat.chat-drawer.open{position:fixed;left:10px;right:10px;bottom:calc(var(--dock-height) + env(safe-area-inset-bottom) + 5px);z-index:9;max-width:520px;margin:0 auto!important;height:min(49dvh,420px);display:flex;flex-direction:column;box-shadow:0 -12px 45px #000b}
+.chat-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;margin-bottom:7px}.chat-head strong{white-space:nowrap}.chat-head small{color:#9bcfc1;margin-left:auto;font-size:10px}.chat-head button{font-size:11px;padding:6px 9px}
+.qa-chat.chat-inline .chat-head button{display:none}
+.chat-stream{overflow-y:auto;overscroll-behavior:contain;min-height:70px;height:92px;flex:1;background:#061416;border-radius:8px;padding:5px}
+.chat-inline .chat-stream{max-height:93px}
+.chat-line{padding:5px 6px;border-bottom:1px solid #1e3e3e;font-size:12px;overflow-wrap:anywhere}
+.chat-line:last-child{border:0}.chat-line b{font-size:11px;color:#8aebc5;margin-right:6px}.chat-line.own b{color:#e9d18e}
+.chat-translated{display:block;color:#accbc4;font-size:11px;padding-left:6px;margin-top:2px}
+.quick-replies{display:flex;gap:5px;margin:7px 0;overflow-x:auto;scrollbar-width:thin;flex:0 0 auto}
+.quick-replies button{white-space:nowrap;font-weight:500;font-size:11px;padding:5px 9px;background:#204843;color:#e5fff6}
+.chat-compose{display:flex;gap:6px}.chat-compose input{min-width:0;flex:1;font-size:12px;padding:8px!important}.chat-compose button{padding:8px 11px}
+.chat-translation{display:flex;gap:6px;align-items:center;font-size:11px;margin-top:5px}
+.chat-translation span{margin:0}.chat-translation input{margin:0}
+.chat-bubble{position:absolute;right:7px;bottom:8px;z-index:4;background:#0a2827;border:1px solid #66dab6;color:#f2fcf5;min-width:40px;height:41px;font-size:23px;box-shadow:0 6px 14px #0006;padding:0}
+.chat-bubble strong{position:absolute;right:-6px;top:-8px;border-radius:18px;min-width:19px;padding:3px;background:#d92d48;color:white;font-size:11px;line-height:1}
+.qa-chat-toast{position:fixed;bottom:calc(var(--dock-height) + env(safe-area-inset-bottom) + 58px);right:16px;z-index:8;max-width:min(75vw,270px);padding:9px 12px;background:#102f33;color:white;border:1px solid #62cba0;border-radius:12px;font-size:12px;box-shadow:0 6px 25px #0009;pointer-events:none}
+.action-dock{position:sticky;bottom:0;z-index:10;background:#071719ed!important;border:1px solid #3b6459!important;border-radius:16px 16px 0 0!important;box-shadow:0 -8px 25px #0008;padding:9px!important;margin:5px 0 0!important;backdrop-filter:blur(12px)}
+.action-primary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.action-primary button{min-width:0;min-height:45px;font-size:15px}
+#qa-fold{background:#ba313c;color:white}#qa-check{background:#28649b;color:white}#qa-call{background:#34cf9a;color:#092719}
+.action-raise{display:grid;grid-template-columns:minmax(0,1fr) 68px 65px;gap:6px;align-items:end;margin-top:8px}
+.action-raise label{font-size:11px;min-width:0}
+.action-raise label span{margin-bottom:3px}.action-raise input{width:100%;font-size:13px;padding:8px!important}
+.action-raise button{font-size:11px;min-height:37px;padding:7px 4px}
+.action-presets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:7px}
+.action-presets button{font-size:11px;min-width:0;padding:7px 2px;min-height:34px}
+.action-dock button:disabled{opacity:.34;cursor:default}
+.qa-end{margin:9px 0}.qa-end button{margin:3px 3px 3px 0}
+.qa-utilities{border:1px solid #2d504b;border-radius:9px;background:#14272a;margin:11px 0;padding:10px}
+.qa-utilities summary{cursor:pointer;color:#d8f7ea;font-size:13px;font-weight:650}
+.qa-utilities p{font-size:12px}.qa-log{max-height:160px;overflow:auto;font-size:11px;padding-left:22px}
+.qa-toolrow{display:flex;justify-content:flex-end;margin:12px 0}.qa-toolrow button{font-size:12px}
+.qa-main footer{padding:12px 3px;font-size:11px}
+.vcard{position:relative;width:40px;height:59px;flex:0 0 40px;border-radius:5px;border:1px solid #bfc2b9;background:linear-gradient(130deg,#fffef5,#f5f0e5);color:#111e25;box-shadow:0 2px 5px #0009;display:block;overflow:hidden;font-family:Georgia,"Times New Roman",serif}
+.vcard-red{color:#b82738}.vcard-black{color:#121c25}.vcard-corner{position:absolute;top:2px;left:3px;display:flex;flex-direction:column;line-height:.9;text-align:center;z-index:2;font-size:11px;font-style:normal}
+.vcard-corner em{font-style:normal;font-size:12px;margin-top:2px}.vcard-corner-bottom{top:auto;left:auto;right:3px;bottom:2px;transform:rotate(180deg)}
+.vcard-pips{position:absolute;inset:9% 15%;font-family:Georgia,serif}.vcard-pips span{position:absolute;transform:translate(-50%,-50%);font-size:clamp(9px,2.5vw,16px)}
+.vcard-ace{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:32px;text-shadow:0 1px 1px #ddd}
+.vcard-court{position:absolute;left:15%;top:13%;width:70%;height:74%;filter:saturate(.95)}
+.vcard-back{background:#173d69;border:2px solid #e5e0cb;box-shadow:inset 0 0 0 2px #326ca1,0 2px 4px #0008}
+.vcard-back-inner{display:flex;align-items:center;justify-content:center;position:absolute;inset:4px;border:1px solid #a4bad4;color:#b1d6f6;font-size:19px;background:repeating-linear-gradient(45deg,#153c69 0 4px,#386a9b 4px 5px)}
+.vcard-empty{border:1px dashed #79a092;background:#21604d4d;box-shadow:none}
+.vcard-small{width:19px;height:28px;flex-basis:19px;border-radius:3px}.vcard-small .vcard-corner{font-size:8px;left:1px;top:1px}.vcard-small .vcard-corner em{font-size:7px;margin:0}.vcard-small .vcard-corner-bottom{top:auto;left:auto;right:1px;bottom:1px}
+.vcard-small .vcard-ace{font-size:18px}.vcard-small .vcard-pips span{font-size:8px}.vcard-small .vcard-back-inner{inset:2px;font-size:10px}
+.hero-hand .vcard{width:51px;height:74px;flex-basis:51px}.hero-hand .vcard-corner{font-size:15px}.hero-hand .vcard-corner em{font-size:17px}.hero-hand .vcard-court{top:13%;height:76%}
+@media(min-width:521px){.qa-main{padding-top:18px}.felt{height:480px}.vcard-pips span{font-size:15px}}
+@media(max-width:370px){.qa-main{padding:10px 6px}.poker-arena{padding:6px 3px!important}.felt{height:350px;border-width:7px}.poker-seat{padding:3px 2px;min-width:70px}.poker-seat-stack{font-size:11px}.community-cards .vcard{width:35px;height:52px;flex-basis:35px}.hero-hand .vcard{width:44px;height:67px;flex-basis:44px}.poker-seat.pos-mid-left{left:9%}.poker-seat.pos-mid-right{left:91%}.qa-chat.chat-drawer.open{left:5px;right:5px}}
+@media(prefers-reduced-motion:reduce){.qa-main *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
