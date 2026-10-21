@@ -73,6 +73,12 @@ try{
   assert.equal(await page.locator("#qa-players .poker-seat").count(),view.seats-1);
   assert.equal(await page.locator("#qa-hero-cards .vcard").count(),2);
   assert.equal(await page.locator("#qa-board-cards .vcard").count(),5);
+  assert.equal(await page.locator("#qa-hero-cards > img.vcard").count(),2,
+    "Each hero card must be one PNG image directly in the hand");
+  assert.equal(await page.locator("#qa-hero-cards .vcard span").count(),0,
+    "No overlaid ranks or suit symbols in hole cards");
+  assert.equal(await page.locator(".poker-seat-cards .vcard img").count(),0,
+    "Opponent PNG cards must not be wrapped with an extra frame");
   // 52 independently decoded PNG assets must be shipped INSIDE the XDC.
   const fullDeckArt=await page.evaluate(async()=>{
     const {makeCard}=await import("./cards.js");
@@ -84,22 +90,37 @@ try{
       const el=makeCard(rank+suit);holder.append(el);cards.push(el);
     }
     const back=makeCard("AS",{hidden:true});holder.append(back);
-    const imgs=cards.map(el=>el.querySelector("img"));
+    // The <img> element itself must be the COMPLETE card. No wrapper,
+    // nested corner markings, suit text, decorative CSS frame, or distortion.
+    const imgs=cards;
     try{
-      await Promise.all([...imgs,back.querySelector("img")].map(img=>img.decode()));
+      await Promise.all([...imgs,back].map(img=>img.decode()));
+      const singleImage=imgs.every(img=>img.tagName==="IMG"&&img.childElementCount===0)&&
+        back.tagName==="IMG"&&back.childElementCount===0;
+      const styleClean=[...imgs,back].every(img=>{
+        const css=getComputedStyle(img);
+        const r=img.getBoundingClientRect();
+        return css.borderTopWidth==="0px"&&css.borderLeftWidth==="0px"&&
+          css.borderBottomWidth==="0px"&&css.borderRightWidth==="0px"&&
+          css.borderRadius==="0px"&&css.boxShadow==="none"&&
+          css.backgroundColor==="rgba(0, 0, 0, 0)"&&
+          Math.abs(r.width/r.height-img.naturalWidth/img.naturalHeight)<0.01;
+      });
       const result={
         total:imgs.length,
         png:imgs.every(img=>img.naturalWidth>0&&img.naturalHeight>0&&
          img.currentSrc.endsWith(".png")),
         unique:new Set(imgs.map(img=>img.currentSrc)).size,
-        back:back.querySelector("img").naturalWidth>0,
-        courts:new Set(["JC","QD","KH","JS"].map(code=>cards.find(e=>e.dataset.card===code).querySelector("img").currentSrc)).size
+        back:back.naturalWidth>0,
+        courts:new Set(["JC","QD","KH","JS"].map(code=>cards.find(e=>e.dataset.card===code).currentSrc)).size,
+        singleImage,styleClean
       };
       holder.remove();return result;
     }catch(error){holder.remove();return {error:String(error)};}
   });
-  assert.deepEqual(fullDeckArt,{total:52,png:true,unique:52,back:true,courts:4},
-    "PNG: full 52-card + card-back raster deck must decode offline");
+  assert.deepEqual(fullDeckArt,
+    {total:52,png:true,unique:52,back:true,courts:4,singleImage:true,styleClean:true},
+    "Every card must be ONE undistorted PNG with no wrapper, overlay or extra CSS frame");
   await page.locator("#qa-controls").waitFor({state:"visible"});
   // Actual rendered geometry; Node tests cannot catch clipped or overlapping
   // seats on a six-player phone table.
@@ -223,6 +244,10 @@ try{
         hero:rect(document.querySelector(".hero-spot"))};
     });
     assert.equal(actual.cards.length,5,"Must check FIVE real community cards at RIVER");
+    assert.equal(await page.locator("#qa-board-cards > img.vcard").count(),5,
+      "Revealed river must be five direct PNG images");
+    assert.equal(await page.locator("#qa-board-cards .vcard img").count(),0,
+      "Community card must not have a nested image or additional corner layer");
     const overlaps=(a,b)=>Math.min(a.right,b.right)>Math.max(a.x,b.x)+2&&
       Math.min(a.bottom,b.bottom)>Math.max(a.y,b.y)+2;
     for(const [i,seat] of actual.seats.entries()){

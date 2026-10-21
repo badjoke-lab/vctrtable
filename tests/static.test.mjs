@@ -52,7 +52,7 @@ test('mobile six-seat QA and both chat modes are bundled for WebXDC',()=>{
   'qa-chat-translation','qa-chat-form','qa-min','qa-half','qa-pot-preset','qa-max','qa-load-start'])
   assert.ok(html.includes('id="'+id+'"'),'Missing '+id);
  for(const cls of ['pos-top-left','pos-top','pos-top-right','pos-mid-left','pos-mid-right',
-  'chat-inline','chat-drawer','action-dock','vcard-illustrated','vcard-small'])
+  'chat-inline','chat-drawer','action-dock','img.vcard','vcard-small'])
   assert.ok(css.includes(cls),'Missing UI style '+cls);
  assert.ok(js.includes('layouts[h.players.length-1]'),'Six-seat layout must be driven by player count');
  for(const file of ['apps/poker/qa.js','apps/poker/cards.js','apps/poker/chat-view.js'])
@@ -172,6 +172,23 @@ test('inline chat composer and drawer share compact always-visible own cards/tim
  assert.ok(css.includes('--chat-vv-height'));
 });
 
+test('a visible poker card is exactly ONE PNG image, with NO CSS double-frame',()=>{
+ const art=readFileSync('apps/poker/cards.js','utf8');
+ const css=readFileSync('apps/poker/qa.css','utf8');
+ const browser=readFileSync('scripts/browser-smoke.mjs','utf8');
+ assert.ok(art.includes('return img;'),'A playing card must return its img node');
+ assert.ok(art.includes('img.alt='),'Whole-image accessible description required');
+ assert.ok(!art.includes('el.append(img)'),'No wrapper should ever be appended around card image');
+ assert.ok(!art.includes('img.alt=""'),'Avoid decorative alt for meaningful hole cards');
+ assert.ok(css.includes('img.vcard{display:block'),'Cards must be direct image elements');
+ assert.ok(css.includes('height:auto!important'),'Keep exact PNG aspect ratio');
+ assert.ok(css.includes('border:0!important'),'No second outside border');
+ assert.ok(css.includes('border-radius:0!important'),'No second rounded corner frame');
+ assert.ok(!css.includes('.vcard-illustrated>img'),'No nested PNG inside another card');
+ assert.ok(!css.includes('.vcard{border-color:'),'Remove legacy second frame CSS');
+ assert.ok(browser.includes('singleImage:true,styleClean:true'),
+   'Browser must reject nested images, overlaid card decoration and stretching');
+});
 test('mobile control layering is explicitly defended and visible full river cards checked',()=>{
  const css=readFileSync('apps/poker/qa.css','utf8');
  const test=readFileSync('scripts/browser-smoke.mjs','utf8');
