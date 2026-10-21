@@ -247,10 +247,68 @@ img.vcard-small{width:24px;flex-basis:24px}
 
 /* Keep the three top seats clear of the pot badge on 320px six-seat tables. */
 .poker-seat.pos-top-left,.poker-seat.pos-top,.poker-seat.pos-top-right{top:16%}
-/* No large empty reserved space once reading chat has released the dock. */
-.qa-main.qa-inline-reading .qa-chat.chat-inline{margin-bottom:16px!important}
-.qa-main.qa-inline-reading.qa-playing{padding-bottom:28px}
+/* Keep scroll geometry stable when IntersectionObserver toggles the dock.
+   Changing inline margins/padding at this point can make the composer jump out
+   of the viewport, oscillating the observer and hiding the input again. */
 
 /* Single-image invariant: even legacy height declarations elsewhere must
    not stretch a fully composed 75:113 PNG to a different card proportion. */
 img.vcard{height:auto!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important}
+
+/* Showdown: avoid flex-stretch that rendered Next hand as a giant vertical
+   rectangle beside the payout breakdown. Results flow top-to-bottom. */
+.qa-main #qa-end{
+ display:flex;flex-direction:column;align-items:stretch;gap:8px;
+ margin:9px 0 11px;min-height:0
+}
+.qa-main #qa-end #qa-result{
+ margin:0;padding:0 2px;font-size:12px;line-height:1.35
+}
+.qa-main #qa-end #qa-settlement{
+ display:grid;grid-template-columns:minmax(0,1fr);gap:7px;
+ margin:0;min-height:0
+}
+.qa-main #qa-end .qa-settlement-pot{
+ min-width:0;padding:8px 11px;gap:3px
+}
+.qa-main #qa-end .qa-settlement-ranks{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:5px 9px;font-size:11px;padding:8px 10px
+}
+.qa-main #qa-end .qa-settlement-ranks span{
+ min-width:0;overflow-wrap:anywhere
+}
+.qa-main #qa-end .qa-end-actions{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ align-items:stretch;gap:7px;margin-top:3px
+}
+.qa-main #qa-end .qa-end-actions button{
+ flex:none;display:block;min-width:0;width:100%;
+ min-height:42px;height:42px;max-height:42px;
+ margin:0!important;padding:8px 8px;font-size:12px;line-height:1.3;
+ border-radius:9px;white-space:normal;text-align:center
+}
+.qa-main #qa-end .qa-end-actions #qa-next{
+ grid-column:1 / -1;font-size:14px
+}
+/* During ordinary always-on reading the table is the priority. The chat
+   remains usable, but is not an oversized second gameplay panel. */
+.qa-main #qa-table:not(.chat-stage) .qa-chat.chat-inline{
+ padding:9px!important;margin-top:9px!important;
+}
+.qa-main #qa-table:not(.chat-stage) .qa-chat.chat-inline .chat-stream{
+ min-height:65px;height:76px;max-height:76px;padding:4px
+}
+.qa-main #qa-table:not(.chat-stage) .qa-chat.chat-inline .chat-head{
+ min-height:30px;margin-bottom:5px
+}
+.qa-main #qa-table:not(.chat-stage) .qa-chat.chat-inline .chat-line{
+ padding:6px;font-size:12px
+}
+.qa-main .qa-topbar{padding-right:64px}
+.qa-main .qa-mode-banner{margin-top:7px}
+.qa-main footer{margin-top:7px;padding:10px 4px;font-size:11px;line-height:1.45}
+@media(max-width:340px){
+ .qa-main #qa-end .qa-end-actions button{font-size:11px}
+ .qa-main #qa-end .qa-settlement-ranks{column-gap:5px;font-size:10px}
+}
