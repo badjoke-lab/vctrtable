@@ -74,7 +74,7 @@ img.vcard{display:block;width:40px;height:auto;aspect-ratio:75 / 113;
 .vcard-empty{display:block;width:40px;aspect-ratio:75 / 113;flex:0 0 40px;
  border:1px dashed #79a092;border-radius:4px;background:#21604d4d;
  box-shadow:none}
-.vcard-small{width:24px;flex-basis:24px}
+img.vcard-small{width:24px;flex-basis:24px}
 .hero-hand .vcard{width:53px;flex-basis:53px}
 .community-cards .vcard{width:38px;flex-basis:38px}
 .poker-seat-bet.payout{color:#83f0bc;font-weight:700}
