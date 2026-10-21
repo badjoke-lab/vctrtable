@@ -92,3 +92,7 @@ Approved: **6-seat phone-portrait** compact felt table with opponent positions a
 ## No-Limit betting correctness checkpoint — cumulative short all-ins
 
 The engine must reopen betting when multiple insufficient all-in raises together increase the bet a full minimum raise compared to what a previously acting player last faced. A single short all-in or multiple short all-ins below that threshold must **not** reopen raises. Track each player's last acted-to bet per street, reset on every new street and preserve this state under session replay. Add deterministic four-seat all-in tests and confirm chip conservation. This is part of the actual reusable PvP rules engine, not solely the QA interface.
+
+## QA poker settlement and betting clarity milestone
+
+Add a reusable pure betting-controls adapter with correct effective call size for short stacks and all-in-call action when betting cannot be raised. Add a showdown view model with per-pot payouts, uncalled returns, odd-chip distribution, EN/JA five-card hand rankings and net stack change. Render full per-pot breakdown at hand completion, never during betting, and only show nonfolded hands at a genuine contested showdown. Keep trusted secret game state out of the WebXDC public chat transport. Test edge cases independently of browser layout and ensure XDC bundling.
