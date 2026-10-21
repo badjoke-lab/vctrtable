@@ -114,3 +114,89 @@ a{color:#7af1c0}
  .poker-seat.pos-mid-left{left:8%}
  .poker-seat.pos-mid-right{left:92%}
 }
+
+/* Chat v2: no overlay is ever allowed above live hole cards or the timer.
+   Mobile chat is a separate scene while composing or drawer-open, and a
+   normal scrollable panel in always-on mode while not composing. */
+.qa-chat-hud{display:none}
+.qa-chat-handle{display:none}
+.qa-chat-quick,.qa-chat-settings{margin:6px 0 0;padding:0;font-size:12px}
+.qa-chat-quick summary,.qa-chat-settings summary{cursor:pointer;color:#a4e5c9;font-size:12px;padding:7px 4px;min-height:30px}
+.qa-chat-quick[open] .quick-replies{display:flex;max-width:100%;margin:5px 0}
+.qa-chat-settings[open]{background:#10282a;border-radius:8px;padding:6px 8px;max-height:28vh;overflow:auto}
+.qa-chat-settings[open] .chat-network-warning{font-size:11px}
+.qa-chat.chat-inline{margin-bottom:calc(var(--dock-height) + 28px)!important}
+.qa-chat.chat-inline .chat-stream{height:110px;max-height:110px;flex:none;overflow:auto}
+.qa-chat.chat-inline .chat-head button{display:none}
+.qa-chat .chat-head{gap:8px;margin:0 0 8px}
+.qa-chat .chat-head strong{font-size:16px}
+.qa-chat .chat-head small{font-size:11px}
+.qa-chat .chat-line{padding:10px 8px;border-bottom:1px solid #204342;font-size:14px;line-height:1.5}
+.qa-chat .chat-line b{font-size:12px;display:inline-block;min-width:53px;margin-right:8px;vertical-align:baseline}
+.qa-chat .chat-line.own{background:#14392b44}
+.qa-chat .chat-compose{display:grid;grid-template-columns:minmax(0,1fr) 72px;gap:8px;flex:0 0 auto;margin:8px 0 0}
+.qa-chat .chat-compose input{min-width:0;min-height:46px;padding:10px 12px!important;font-size:16px!important;border-radius:9px}
+.qa-chat .chat-compose button{min-height:46px;font-size:15px;padding:8px 5px;touch-action:manipulation}
+.qa-chat .qa-chat-quick .quick-replies button{font-size:12px;min-height:36px;padding:7px 10px}
+.qa-chat .chat-translation{line-height:1.5}
+.qa-main #qa-table.chat-stage{
+ position:fixed!important;
+ inset:auto 0 auto 0;
+ top:var(--chat-vv-top,0px);
+ height:var(--chat-vv-height,100dvh);
+ width:100vw;max-width:none;z-index:100;
+ background:linear-gradient(160deg,#061918,#041319);
+ display:flex!important;flex-direction:column;gap:9px;
+ padding:calc(env(safe-area-inset-top) + 8px) max(9px,calc((100vw - 520px)/2)) calc(env(safe-area-inset-bottom) + 6px);
+ box-sizing:border-box;
+ overflow:hidden;
+ overscroll-behavior:contain;
+}
+.qa-main #qa-table.chat-stage > :not(#qa-chat-hud):not(#qa-chat){display:none!important}
+.qa-main #qa-table.chat-stage #qa-chat-hud{
+ display:flex;align-items:center;justify-content:space-between;gap:8px;
+ flex:0 0 auto;min-height:73px;max-height:91px;
+ padding:8px 64px 8px 10px;border:1px solid #477665;border-radius:13px;
+ background:linear-gradient(135deg,#0b3733,#051d22);color:#f3fffa;
+}
+.qa-chat-hud-player{display:flex;flex-direction:column;gap:2px;min-width:0;font-size:12px}
+.qa-chat-hud-player strong{color:#ecc981;font-size:14px}
+.qa-chat-hud-player span{white-space:nowrap}
+.qa-chat-hud-turn{color:#91d6b7;overflow:hidden;text-overflow:ellipsis;max-width:100px;font-size:11px}
+.qa-chat-hud-cards{display:flex;gap:3px;flex:0 0 auto}
+.qa-chat-hud-cards .vcard{width:37px;height:53px;flex:0 0 37px}
+.qa-chat-hud-clock{display:flex;flex-direction:column;align-items:center;gap:3px;white-space:nowrap;color:#b4dbcf;font-size:10px}
+.qa-chat-hud-clock strong{font-size:16px;color:#96ffb8}
+.qa-main #qa-table.chat-stage #qa-chat{
+ position:relative!important;inset:auto!important;top:auto!important;bottom:auto!important;
+ left:auto!important;right:auto!important;z-index:auto!important;
+ width:100%;max-width:520px;height:auto!important;min-height:0;min-width:0;
+ margin:0 auto!important;border-radius:16px!important;padding:12px!important;
+ flex:1 1 auto;display:flex!important;flex-direction:column;
+ box-sizing:border-box;box-shadow:none;overflow:hidden;
+}
+.qa-main #qa-table.chat-stage #qa-chat .chat-head button{display:block;white-space:nowrap;flex:0 0 auto;min-height:40px}
+.qa-main #qa-table.chat-stage #qa-chat .chat-stream{
+ display:block;flex:1 1 auto;min-height:36px;height:auto;max-height:none;
+ margin:0;overflow-y:auto;overscroll-behavior:contain;
+}
+.qa-main #qa-table.chat-stage #qa-chat .qa-chat-handle{
+ display:block;width:38px;height:4px;border-radius:10px;background:#427268;
+ margin:0 auto 8px;flex:0 0 auto;
+}
+.qa-main #qa-table.chat-stage #qa-chat .chat-compose{margin-top:7px}
+.qa-main #qa-table.chat-stage #qa-chat .chat-head strong{font-size:18px}
+.qa-main #qa-table.chat-stage #qa-chat .chat-line{font-size:14px;padding:10px 8px}
+.qa-main #qa-table.chat-stage #qa-chat .qa-chat-quick,
+.qa-main #qa-table.chat-stage #qa-chat .qa-chat-settings{flex:0 0 auto}
+.qa-main.qa-chatting #qa-controls{display:none!important}
+@media(max-height:480px){
+ .qa-main #qa-table.chat-stage{gap:4px;padding-top:3px;padding-bottom:3px}
+ .qa-main #qa-table.chat-stage #qa-chat-hud{min-height:55px;max-height:55px;padding-top:2px;padding-bottom:2px}
+ .qa-chat-hud-cards .vcard{height:43px;width:30px;flex-basis:30px}
+ .qa-main #qa-table.chat-stage #qa-chat{padding:6px!important}
+ .qa-main #qa-table.chat-stage #qa-chat .qa-chat-handle{display:none}
+ .qa-main #qa-table.chat-stage #qa-chat .chat-head{margin-bottom:2px}
+ .qa-main #qa-table.chat-stage #qa-chat .chat-compose input,
+ .qa-main #qa-table.chat-stage #qa-chat .chat-compose button{min-height:38px}
+}
