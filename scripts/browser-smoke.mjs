@@ -201,7 +201,9 @@ try{
     else if(await page.locator("#qa-call").isEnabled())await page.locator("#qa-call").click();
     else throw Error("No safe non-fold river progression");
   }
-  if(await page.locator("#qa-street-label").textContent()==="RIVER"){
+  assert.equal(await page.locator("#qa-street-label").textContent(),"RIVER",
+    "Browser test must reach five real board cards before checking collisions");
+  {
     const actual=await page.evaluate(()=>{
       const rect=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom};};
       return {seats:[...document.querySelectorAll(".poker-seat")].map(rect),
