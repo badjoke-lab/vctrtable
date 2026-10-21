@@ -6,6 +6,7 @@
 <meta name="color-scheme" content="dark">
 <title>vctrtable Poker — Solo QA</title>
 <link rel="stylesheet" href="style.css"><link rel="stylesheet" href="qa.css">
+<script src="webxdc.js"></script>
 <script type="module" src="qa.js"></script>
 </head>
 <body>
@@ -68,6 +69,8 @@
       <small data-l10n="demo">Simulated messages</small>
       <button type="button" id="qa-chat-close" class="secondary" data-l10n="closeChat">Close</button>
     </div>
+    <label class="chat-network-toggle"><input type="checkbox" id="qa-chat-network"><span data-l10n="networkChat">Enable public Vector text chat</span></label>
+    <p id="qa-chat-network-warning" class="chat-network-warning" data-l10n="networkWarning">Opt-in: all Vector chat members can read text you send. Cards and bets are never sent. Local QA poker remains offline.</p>
     <div class="chat-stream" id="qa-chat-messages" role="log" aria-live="polite"></div>
     <div class="quick-replies" id="qa-quick-replies"></div>
     <form class="chat-compose" id="qa-chat-form">
