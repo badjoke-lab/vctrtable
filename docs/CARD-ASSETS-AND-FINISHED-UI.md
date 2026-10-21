@@ -17,3 +17,11 @@ In chat focus, both drawer and inline composer use a separate full-height panel 
 Only ONE betting dock exists in the DOM. Some full-page screenshot capture methods paint a fixed element twice, but an extra painted copy is not necessarily a duplicated interactive element. Test both the DOM count and live view positions.
 
 The Android Vector WebView and real soft keyboard still require device verification; Chromium cannot guarantee the same viewport behavior.
+
+## Card is a single image element (no rebuilt corners)
+
+The in-game card renderer now returns **the complete PNG file as the actual `<img class="vcard">` element**, rather than wrapping it in a styled span. This means every rank, corner suit, portrait and printed outer line belongs only to the PNG asset itself. The application adds **no second card border, rounded frame, background, rank/suit glyph, or nested content**. It scales at the PNG's native 75:113 aspect ratio with automatic height.
+
+The 52 faces, opponents' facedown backs, local hole cards, five community cards and compact chat HUD all use that single-image renderer. The one exception is an **empty** board placeholder, which has no card PNG and remains a dashed span until the card is dealt.
+
+Chromium verifies each card is a directly rendered image with no child elements, no extra border/shadow/corner framing, no distortion, all assets decoded and 5 directly rendered cards at the river. Unit/static checks prevent a wrapper or double-border from returning.
