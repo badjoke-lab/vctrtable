@@ -73,7 +73,30 @@
   <div id="qa-chat-toast" class="qa-chat-toast" role="status" aria-live="polite" hidden></div>
 
 
-  <section id="qa-controls" class="action-dock" aria-label="Poker betting controls">
+  <section id="qa-chat" class="qa-chat chat-drawer" aria-label="QA table chat">
+    <div class="qa-chat-handle" aria-hidden="true"></div>
+    <div class="chat-head">
+      <strong data-l10n="chat">Table chat</strong>
+      <small data-l10n="demo">Simulated messages</small>
+      <button type="button" id="qa-chat-close" class="secondary" data-l10n="returnToGame">Return to game</button>
+    </div>
+
+    <div class="chat-stream" id="qa-chat-messages" role="log" aria-live="polite"></div>
+    <details id="qa-chat-quick" class="qa-chat-quick">
+      <summary data-l10n="quickReplies">Quick replies</summary>
+      <div class="quick-replies" id="qa-quick-replies"></div>
+    </details>
+    <form class="chat-compose" id="qa-chat-form">
+      <input id="qa-chat-text" type="text" maxlength="500" autocomplete="off" enterkeyhint="send" data-placeholder="chatPlaceholder" placeholder="Message (local demo only)" required>
+      <button type="submit" data-l10n="send">Send</button>
+    </form>
+    <details class="qa-chat-settings">
+      <summary data-l10n="chatSettings">Chat options</summary>
+      <label class="chat-translation"><input type="checkbox" id="qa-chat-translation"><span data-l10n="translation">Translate known demo phrases (no API)</span></label>
+          <label class="chat-network-toggle"><input type="checkbox" id="qa-chat-network"><span data-l10n="networkChat">Enable public Vector text chat</span></label>
+    <p id="qa-chat-network-warning" class="chat-network-warning" data-l10n="networkWarning">Opt-in: all Vector chat members can read text you send. Cards and bets are never sent. Local QA poker remains offline.</p>
+    </details>
+  </section>  <section id="qa-controls" class="action-dock" aria-label="Poker betting controls">
     <div class="action-primary">
       <button id="qa-fold" type="button" data-l10n="fold">Fold</button>
       <button id="qa-check" type="button" data-l10n="check">Check</button>
@@ -100,30 +123,7 @@
       <button id="qa-reset" class="secondary" type="button" data-l10n="reset">New session</button>
     </div>
   </div>
-  <section id="qa-chat" class="qa-chat chat-drawer" aria-label="QA table chat">
-    <div class="qa-chat-handle" aria-hidden="true"></div>
-    <div class="chat-head">
-      <strong data-l10n="chat">Table chat</strong>
-      <small data-l10n="demo">Simulated messages</small>
-      <button type="button" id="qa-chat-close" class="secondary" data-l10n="returnToGame">Return to game</button>
-    </div>
 
-    <div class="chat-stream" id="qa-chat-messages" role="log" aria-live="polite"></div>
-    <details id="qa-chat-quick" class="qa-chat-quick">
-      <summary data-l10n="quickReplies">Quick replies</summary>
-      <div class="quick-replies" id="qa-quick-replies"></div>
-    </details>
-    <form class="chat-compose" id="qa-chat-form">
-      <input id="qa-chat-text" type="text" maxlength="500" autocomplete="off" enterkeyhint="send" data-placeholder="chatPlaceholder" placeholder="Message (local demo only)" required>
-      <button type="submit" data-l10n="send">Send</button>
-    </form>
-    <details class="qa-chat-settings">
-      <summary data-l10n="chatSettings">Chat options</summary>
-      <label class="chat-translation"><input type="checkbox" id="qa-chat-translation"><span data-l10n="translation">Translate known demo phrases (no API)</span></label>
-          <label class="chat-network-toggle"><input type="checkbox" id="qa-chat-network"><span data-l10n="networkChat">Enable public Vector text chat</span></label>
-    <p id="qa-chat-network-warning" class="chat-network-warning" data-l10n="networkWarning">Opt-in: all Vector chat members can read text you send. Cards and bets are never sent. Local QA poker remains offline.</p>
-    </details>
-  </section>
   <details id="qa-history-panel" class="qa-utilities">
     <summary data-l10n="history">Hand history</summary>
     <ol class="qa-log" id="qa-log"></ol>
