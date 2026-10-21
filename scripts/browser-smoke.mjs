@@ -49,7 +49,9 @@ try{
  for(const view of [{width:390,height:844,seats:6},{width:320,height:640,seats:2}]){
   const ctx=await browser.newContext({viewport:{width:view.width,height:view.height},isMobile:true,hasTouch:true,deviceScaleFactor:1});
   const page=await ctx.newPage();
+  const dialogs=[];
   page.on("pageerror",error=>errors.push(view.width+": "+error.message));
+  page.on("dialog",async dialog=>{dialogs.push(dialog.message());await dialog.dismiss();});
   const response=await page.goto(base+"/",{waitUntil:"networkidle"});
   assert.equal(response.status(),200);
   await page.locator("#qa-form").waitFor({state:"visible"});
@@ -58,7 +60,13 @@ try{
   await page.locator("#qa-seats").fill(String(view.seats));
   await page.locator("#qa-seconds").fill("0");
   await page.locator("#qa-form button[type=submit]").click();
-  await page.locator("#qa-table").waitFor({state:"visible"});
+  await page.waitForTimeout(500);
+  if(!await page.locator("#qa-table").isVisible()){
+   const invalid=await page.locator("#qa-form").evaluate(form=>({
+    valid:form.checkValidity(),fields:[...form.querySelectorAll("input")].map(x=>({id:x.id,value:x.value,valid:x.validity.valid}))
+   }));
+   throw new Error("Session startup failed: "+JSON.stringify({view,dialogs,errors,invalid}));
+  }
   assert.equal(await page.locator("#qa-players .poker-seat").count(),view.seats-1);
   assert.equal(await page.locator("#qa-hero-cards .vcard").count(),2);
   assert.equal(await page.locator("#qa-board-cards .vcard").count(),5);
