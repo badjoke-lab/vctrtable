@@ -72,6 +72,34 @@
   <div class="qa-turn-status" id="qa-info" role="status"></div>
   <div id="qa-chat-toast" class="qa-chat-toast" role="status" aria-live="polite" hidden></div>
 
+
+  <section id="qa-controls" class="action-dock" aria-label="Poker betting controls">
+    <div class="action-primary">
+      <button id="qa-fold" type="button" data-l10n="fold">Fold</button>
+      <button id="qa-check" type="button" data-l10n="check">Check</button>
+      <button id="qa-call" type="button" data-l10n="call">Call</button>
+    </div>
+    <div class="action-raise">
+      <label><span data-l10n="raiseTo">Raise to</span><input id="qa-raise-amount" type="number" min="1" step="1"></label>
+      <button type="button" id="qa-raise" data-l10n="raise">Raise</button>
+      <button type="button" id="qa-allin" data-l10n="allin">All-in</button>
+    </div>
+    <div class="action-presets">
+      <button type="button" class="secondary" id="qa-min" data-l10n="min">Min</button>
+      <button type="button" class="secondary" id="qa-half" data-l10n="half">½ Pot</button>
+      <button type="button" class="secondary" id="qa-pot-preset" data-l10n="potPreset">Pot</button>
+      <button type="button" class="secondary" id="qa-max" data-l10n="max">Max</button>
+    </div>
+  </section>
+  <div id="qa-end" class="qa-end" hidden>
+    <p id="qa-result" aria-live="polite"></p>
+    <div id="qa-settlement" class="qa-settlement" aria-label="Showdown and pot distribution"></div>
+    <div class="qa-end-actions" aria-label="After hand actions">
+      <button id="qa-next" type="button" data-l10n="next">Next hand</button>
+      <button id="qa-buy" type="button" data-l10n="buy">Rebuy busted seats</button>
+      <button id="qa-reset" class="secondary" type="button" data-l10n="reset">New session</button>
+    </div>
+  </div>
   <section id="qa-chat" class="qa-chat chat-drawer" aria-label="QA table chat">
     <div class="qa-chat-handle" aria-hidden="true"></div>
     <div class="chat-head">
@@ -96,32 +124,6 @@
     <p id="qa-chat-network-warning" class="chat-network-warning" data-l10n="networkWarning">Opt-in: all Vector chat members can read text you send. Cards and bets are never sent. Local QA poker remains offline.</p>
     </details>
   </section>
-
-  <section id="qa-controls" class="action-dock" aria-label="Poker betting controls">
-    <div class="action-primary">
-      <button id="qa-fold" type="button" data-l10n="fold">Fold</button>
-      <button id="qa-check" type="button" data-l10n="check">Check</button>
-      <button id="qa-call" type="button" data-l10n="call">Call</button>
-    </div>
-    <div class="action-raise">
-      <label><span data-l10n="raiseTo">Raise to</span><input id="qa-raise-amount" type="number" min="1" step="1"></label>
-      <button type="button" id="qa-raise" data-l10n="raise">Raise</button>
-      <button type="button" id="qa-allin" data-l10n="allin">All-in</button>
-    </div>
-    <div class="action-presets">
-      <button type="button" class="secondary" id="qa-min" data-l10n="min">Min</button>
-      <button type="button" class="secondary" id="qa-half" data-l10n="half">½ Pot</button>
-      <button type="button" class="secondary" id="qa-pot-preset" data-l10n="potPreset">Pot</button>
-      <button type="button" class="secondary" id="qa-max" data-l10n="max">Max</button>
-    </div>
-  </section>
-  <div id="qa-end" class="qa-end" hidden>
-    <p id="qa-result" aria-live="polite"></p>
-    <div id="qa-settlement" class="qa-settlement" aria-label="Showdown and pot distribution"></div>
-    <button id="qa-next" type="button" data-l10n="next">Next hand</button>
-    <button id="qa-buy" type="button" data-l10n="buy">Rebuy busted seats</button>
-    <button id="qa-reset" class="secondary" type="button" data-l10n="reset">New session</button>
-  </div>
   <details id="qa-history-panel" class="qa-utilities">
     <summary data-l10n="history">Hand history</summary>
     <ol class="qa-log" id="qa-log"></ol>
