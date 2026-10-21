@@ -85,3 +85,54 @@ test("worker rejects client-supplied identity and time",async t=>{
  assert.equal(res.ok,false);
  assert.equal(res.code,"UNTRUSTED_IDENTITY_OR_TIME_IN_OPERATION");
 });
+
+
+test("trusted host recovery after process crash broadcasts current PRIVATE state once to each seat",async t=>{
+ const dir=await mkdtemp(path.join(os.tmpdir(),"vctrtable-supervisor-"));
+ t.after(async()=>rm(dir,{recursive:true,force:true}));
+ const secret={file:path.join(dir,"sealed.enc"),key:randomBytes(32)};
+ const worker=await runWorker(t,secret);
+ let revision=0;
+ const advance=async(sender,op,requestId)=>{
+  const reply=await worker.send({kind:"command",sender:players[sender].id,
+   request:makeRequest(revision,op,requestId)});
+  assert.equal(reply.ok,true,reply.code);
+  revision=reply.revision;
+  return reply;
+ };
+ await advance(0,{type:"propose",settings:{
+  startingChips:100,smallBlind:1,bigBlind:2,rebuy:true,actionSeconds:30
+ }},"rules");
+ await advance(1,{type:"approve",proposalId:1},"vote1");
+ await advance(2,{type:"approve",proposalId:1},"vote2");
+ const started=await advance(0,{type:"startHand"},"hand");
+ const known=started.deliveries.map(d=>JSON.parse(d.body));
+ worker.child.kill("SIGKILL");
+ // This is the SAME encrypted journal: no decks or accounts are regenerated.
+ const restored=await runWorker(t,secret);
+ const recovery=await restored.send({kind:"recover"});
+ assert.equal(recovery.ok,true);
+ assert.equal(recovery.revision,revision);
+ assert.equal(recovery.deliveries.length,3);
+ for(let i=0;i<players.length;i++){
+  assert.equal(recovery.deliveries[i].to,players[i].id);
+  const state=JSON.parse(recovery.deliveries[i].body);
+  assert.equal(state.private.recipientId,players[i].id);
+  assert.deepEqual(state.private.ownHole,known[i].private.ownHole);
+  assert.deepEqual(state.state,known[i].state);
+  assert.equal(JSON.stringify(state.state).includes('"ownHole"'),false);
+  assert.equal(JSON.stringify(state.state).includes('"deck"'),false);
+ }
+ const reply=await restored.send({kind:"command",sender:players[0].id,
+   request:makeRequest(3,{type:"startHand"},"hand")});
+ assert.equal(reply.ok,true);
+ assert.equal(reply.receipt.replayed,true);
+ assert.equal(reply.deliveries.length,1,"duplicate after recovery must not flood every seat");
+ assert.equal(reply.revision,revision);
+ const forged=await restored.send({kind:"command",sender:players[0].id,request:{kind:"recover"}});
+ assert.equal(forged.ok,false,"a client command cannot invoke host-only recovery");
+ assert.equal(forged.deliveries.length,1);
+ const sync=await restored.send({kind:"sync",sender:players[1].id});
+ assert.equal(sync.deliveries.length,1);
+ assert.equal(sync.deliveries[0].to,players[1].id);
+});
