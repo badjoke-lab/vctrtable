@@ -52,7 +52,7 @@ test('mobile six-seat QA and both chat modes are bundled for WebXDC',()=>{
   'qa-chat-translation','qa-chat-form','qa-min','qa-half','qa-pot-preset','qa-max','qa-load-start'])
   assert.ok(html.includes('id="'+id+'"'),'Missing '+id);
  for(const cls of ['pos-top-left','pos-top','pos-top-right','pos-mid-left','pos-mid-right',
-  'chat-inline','chat-drawer','action-dock','vcard-illustrated','vcard-small'])
+  'chat-inline','chat-drawer','action-dock','img.vcard','vcard-small'])
   assert.ok(css.includes(cls),'Missing UI style '+cls);
  assert.ok(js.includes('layouts[h.players.length-1]'),'Six-seat layout must be driven by player count');
  for(const file of ['apps/poker/qa.js','apps/poker/cards.js','apps/poker/chat-view.js'])
