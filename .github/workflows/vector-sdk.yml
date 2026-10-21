@@ -19,3 +19,5 @@ jobs:
           workspaces: bots/vector
       - name: Verify Vector 0.11 SDK Bot adapter
         run: cargo check --manifest-path bots/vector/Cargo.toml
+      - name: Test bounded and complete private IPC frames
+        run: cargo test --manifest-path bots/vector/Cargo.toml --bin vctrtable-vector-bot
