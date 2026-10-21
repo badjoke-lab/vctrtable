@@ -125,6 +125,7 @@ async function sendChat(message){
 }
 function setChatMode(mode){
  chatFocused=false;
+ document.querySelector(".qa-main").classList.remove("qa-inline-reading");
  demoChat.setMode(mode);
  vectorChat.setMode(mode);
  try{localStorage.setItem(modeKey,mode);}catch{/* Memory-only fallback. */}
@@ -299,6 +300,19 @@ function newGame(){
  demoChat.messages.length=0;demoChat.unread=0;demoChat.opened=false;chatFocused=false;render();
 }
 $("qa-language").addEventListener("change",e=>{locale=e.target.value==="ja"?"ja":"en";render();});
+// The fixed betting dock may NOT cover the inline composer merely because
+// the user is reading/chatting without focusing the input. Release that dock
+// whenever the inline composer enters the visible viewport; bring it back
+// automatically as the user scrolls to the table.
+if(typeof IntersectionObserver!=="undefined"){
+ const visibleComposer=new IntersectionObserver(entries=>{
+  const near=entries.some(e=>e.isIntersecting);
+  document.querySelector(".qa-main").classList.toggle(
+   "qa-inline-reading",Boolean(table&&chat.mode==="inline"&&near)
+  );
+ },{threshold:0});
+ visibleComposer.observe($("qa-chat-form"));
+}
 $("qa-chat-mode").addEventListener("change",e=>setChatMode(e.target.value));
 $("qa-chat-network").addEventListener("change",e=>setChatSource(e.target.checked));
 $(`qa-chat-bubble`).addEventListener("click",()=>{chatFocused=false;chat.setOpen(true);$("qa-chat-toast").hidden=true;renderChat();});
