@@ -64,17 +64,19 @@ a{color:#7af1c0}
 .qa-utilities p{font-size:12px}.qa-log{max-height:160px;overflow:auto;font-size:11px;padding-left:22px}
 .qa-toolrow{display:flex;justify-content:flex-end;margin:12px 0}.qa-toolrow button{font-size:12px}
 .qa-main footer{padding:12px 3px;font-size:11px}
-/* The SVG faces are rendered from bundled CardMeister FULL (Unlicense).
-   Never stretch/overlay Unicode glyphs or handwritten portrait markup. */
-.vcard{display:block;position:relative;width:40px;height:56px;flex:0 0 40px;border-radius:5px;
- border:1px solid #d8d7c9;background:#fffdf4;box-shadow:0 2px 5px #0008;overflow:hidden}
-.vcard-illustrated{background:#fffefa}
-.vcard-illustrated>img{display:block;width:100%;height:100%;object-fit:fill;border:0;pointer-events:none}
-.vcard-back{background:#193c64}
-.vcard-empty{border:1px dashed #79a092;background:#21604d4d;box-shadow:none}
-.vcard-small{width:24px;height:34px;flex-basis:24px;border-radius:3px}
-.hero-hand .vcard{width:53px;height:74px;flex-basis:53px}
-.community-cards .vcard{width:38px;height:54px;flex-basis:38px}
+/* The PNG includes its own outer edge, corners, rank, suit and portrait.
+   A displayed card is ONE img.vcard. No second border, background, glyphs or
+   cropping/rescaling to an incorrect card aspect ratio. */
+img.vcard{display:block;width:40px;height:auto;aspect-ratio:75 / 113;
+ flex:0 0 40px;min-width:0;max-width:none;border:0;border-radius:0;
+ outline:0;box-shadow:none;background:transparent;padding:0;margin:0;
+ object-fit:contain;object-position:center;vertical-align:middle}
+.vcard-empty{display:block;width:40px;aspect-ratio:75 / 113;flex:0 0 40px;
+ border:1px dashed #79a092;border-radius:4px;background:#21604d4d;
+ box-shadow:none}
+.vcard-small{width:24px;flex-basis:24px}
+.hero-hand .vcard{width:53px;flex-basis:53px}
+.community-cards .vcard{width:38px;flex-basis:38px}
 .poker-seat-bet.payout{color:#83f0bc;font-weight:700}
 @media(min-width:521px){.qa-main{padding-top:18px}.felt{height:480px}}
 @media(max-width:370px){.qa-main{padding:10px 6px}.poker-arena{padding:6px 3px!important}.felt{height:350px;border-width:7px}.poker-seat{padding:3px 2px;min-width:70px}.poker-seat-stack{font-size:11px}.community-cards .vcard{width:31px;height:45px;flex-basis:31px}.hero-hand .vcard{width:47px;height:67px;flex-basis:47px}.poker-seat.pos-mid-left{left:8%;width:60px}.poker-seat.pos-mid-right{left:92%;width:60px}.qa-chat.chat-drawer.open{left:5px;right:5px}}
@@ -219,8 +221,8 @@ a{color:#7af1c0}
 }
 .poker-center{width:89%}
 .community-cards .vcard{width:clamp(28px,8.5vw,35px);height:clamp(42px,12vw,51px);flex-basis:clamp(28px,8.5vw,35px)}
-.vcard-illustrated>img{display:block;width:100%;height:100%;object-fit:fill;image-rendering:auto}
-.vcard{border-color:#d8d8cc}
+
+
 .qa-chat.chat-inline{position:relative!important;z-index:1;margin-bottom:calc(var(--dock-height) + 28px)!important}
 .qa-chat.chat-inline .chat-compose{scroll-margin-bottom:calc(var(--dock-height) + 22px)}
 .qa-chat.chat-inline .chat-stream{background:#061719}
@@ -248,3 +250,7 @@ a{color:#7af1c0}
 /* No large empty reserved space once reading chat has released the dock. */
 .qa-main.qa-inline-reading .qa-chat.chat-inline{margin-bottom:16px!important}
 .qa-main.qa-inline-reading.qa-playing{padding-bottom:28px}
+
+/* Single-image invariant: even legacy height declarations elsewhere must
+   not stretch a fully composed 75:113 PNG to a different card proportion. */
+img.vcard{height:auto!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important}
