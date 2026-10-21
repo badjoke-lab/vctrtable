@@ -131,6 +131,7 @@ function setChatMode(mode){
  try{localStorage.setItem(modeKey,mode);}catch{/* Memory-only fallback. */}
  $("qa-chat-toast").hidden=true;
  renderChat();updateDockHeight();
+ requestAnimationFrame(updateInlineReading);
 }
 function setChatSource(useVector){
  if(useVector&&!chatTransport.available){
@@ -310,19 +311,23 @@ function newGame(){
  demoChat.messages.length=0;demoChat.unread=0;demoChat.opened=false;chatFocused=false;render();
 }
 $("qa-language").addEventListener("change",e=>{locale=e.target.value==="ja"?"ja":"en";render();});
-// The fixed betting dock may NOT cover the inline composer merely because
-// the user is reading/chatting without focusing the input. Release that dock
-// whenever the inline composer enters the visible viewport; bring it back
-// automatically as the user scrolls to the table.
-if(typeof IntersectionObserver!=="undefined"){
- const visibleComposer=new IntersectionObserver(entries=>{
-  const near=entries.some(e=>e.isIntersecting);
-  document.querySelector(".qa-main").classList.toggle(
-   "qa-inline-reading",Boolean(table&&chat.mode==="inline"&&near)
-  );
- },{threshold:0});
- visibleComposer.observe($("qa-chat-form"));
+// A fixed betting dock may not obscure the inline composer. Decide from
+// the CURRENT visual viewport on scroll, not from an asynchronous observer:
+// moving chat at showdown/return can invalidate old intersection snapshots.
+function updateInlineReading(){
+ const visible=Boolean(table&&chat.mode==="inline"&&!chatStageActive());
+ const form=$("qa-chat-form"),rect=form.getBoundingClientRect();
+ const top=window.visualViewport?.offsetTop??0;
+ const bottom=top+(window.visualViewport?.height??window.innerHeight);
+ const near=visible&&rect.width>0&&rect.height>0&&
+   rect.top<bottom-2&&rect.bottom>top+2;
+ document.querySelector(".qa-main").classList.toggle("qa-inline-reading",near);
 }
+window.addEventListener("scroll",updateInlineReading,{passive:true});
+window.addEventListener("resize",updateInlineReading);
+window.visualViewport?.addEventListener("scroll",updateInlineReading);
+window.visualViewport?.addEventListener("resize",updateInlineReading);
+$("qa-chat-form").addEventListener("pointerdown",updateInlineReading);
 $("qa-chat-mode").addEventListener("change",e=>setChatMode(e.target.value));
 $("qa-chat-network").addEventListener("change",e=>setChatSource(e.target.checked));
 $(`qa-chat-bubble`).addEventListener("click",()=>{chatFocused=false;chat.setOpen(true);$("qa-chat-toast").hidden=true;renderChat();});
