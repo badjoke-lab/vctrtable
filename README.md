@@ -77,3 +77,10 @@ See [mobile chat specification](docs/MOBILE-TABLE-CHAT.md).
 The mobile QA screen now shows the **actual number of chips payable** for short-stack calls, including an all-in call when facing a larger wager. All-in chooses a legal raise when available, otherwise an all-in call when that is the only all-in action. The Min / Half Pot / Pot / Max presets use shared raise-to calculations instead of duplicated UI arithmetic.
 
 After each hand, the local-only results list the main pot, each side pot, any uncalled bet returned, the recipients of split pots (including odd chips), net winnings/losses after contributions, and English/Japanese hand ranking at contested showdown. Folded hands are never revealed as part of the result. These are **local result views**, not data published over WebXDC shared updates.
+
+
+## Automatic real-browser mobile QA
+
+The repository includes a separate, credential-free headless Chromium workflow (.github/workflows/browser-smoke.yml) that extracts the built poker.xdc and loads its actual index.html through a local HTTP server. It checks 320px and 390px mobile viewports, two- and six-seat rendering, the correct initial page, all five community-card positions, own cards, chat drawer/inline switching, local messages, fixed betting-dock visibility, horizontal overflow, save/reload/resume, and a real fold action. Screenshot artifacts are uploaded for review.
+
+This checks UI runtime without requiring the user to open Vector. It is NOT an Android Vector WebView test, real Nostr identity test or multi-user network test. Playwright and Chromium are installed only in CI, never in the packaged poker.xdc.
