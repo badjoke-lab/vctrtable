@@ -76,6 +76,33 @@ mod tests{
         let wrong=packet(alice,8).replace("vctrtable-poker-state","public-snapshot");
         assert!(!guard.eligible(alice,&wrong,Some(8)));
     }
+    #[tokio::test]
+    async fn racing_tick_and_player_reply_cannot_roll_back_last_sent_revision(){
+        use std::sync::Arc;
+        use tokio::sync::{Mutex,Barrier};
+        let gate=Arc::new(Mutex::new(DeliveryOrder::default()));
+        let release=Arc::new(Barrier::new(2));
+        let first_gate=gate.clone();
+        let first_release=release.clone();
+        // Simulate revision 7 from an action held up before taking its send
+        // mutex, while a subsequent tick has already produced revision 8.
+        let stale=tokio::spawn(async move{
+            first_release.wait().await;
+            tokio::task::yield_now().await;
+            let mut locked=first_gate.lock().await;
+            if locked.eligible("npub1alice",&packet("npub1alice",7),Some(7)){
+                // Under a real SDK, this record is only after DM send success.
+                locked.record_success("npub1alice",7);
+                true
+            }else{false}
+        });
+        let mut latest=gate.lock().await;
+        latest.record_success("npub1alice",8);
+        release.wait().await;
+        drop(latest);
+        assert!(!stale.await.unwrap(),"old action cannot overwrite a newer tick snapshot");
+        assert!(gate.lock().await.eligible("npub1alice",&packet("npub1alice",8),Some(8)));
+    }
     #[test]
     fn failed_delivery_does_not_claim_progress(){
         let mut gate=DeliveryOrder::default();
