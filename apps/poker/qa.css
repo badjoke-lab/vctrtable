@@ -85,3 +85,9 @@ a{color:#7af1c0}
 .chat-network-toggle span{margin:0}
 .chat-network-warning{font-size:10px;color:#d3bd91;margin:4px 0 9px;line-height:1.4}
 .qa-chat:not(.open).chat-drawer .chat-network-warning{display:none}
+
+.qa-settlement{display:grid;gap:8px;margin:10px 0}
+.qa-settlement-pot{display:grid;gap:4px;padding:8px 10px;border:1px solid #396657;border-radius:9px;background:#102a2b;color:#ddf7ec}
+.qa-settlement-pot b{font-size:13px;color:#f2d88e}
+.qa-settlement-pot span{font-size:12px;overflow-wrap:anywhere}
+.qa-settlement-ranks{display:grid;gap:3px;padding:8px 10px;border-radius:9px;background:#0a2122;color:#bdded0;font-size:12px}
