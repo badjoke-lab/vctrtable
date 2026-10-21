@@ -156,6 +156,16 @@ try{
   await page.locator("#qa-chat-mode").selectOption("inline");
   await page.locator("#qa-chat").waitFor({state:"visible"});
   assert.equal(await page.locator(".chat-line.own").count(),1,"Mode switch lost messages");
+  // No input focus yet: merely scrolling to read ALWAYS-ON chat must NOT
+  // leave the fixed betting dock covering the message composer.
+  await page.locator("#qa-chat-form").scrollIntoViewIfNeeded();
+  await page.waitForFunction(()=>document.querySelector(".qa-main").classList.contains("qa-inline-reading"));
+  assert.equal(await page.locator("#qa-controls").isVisible(),false,
+    "Inline chat must not be obscured by the betting dock");
+  const inlineInput=await page.locator("#qa-chat-text").boundingBox();
+  assert.ok(inlineInput&&inlineInput.y>=0&&inlineInput.y+inlineInput.height<=view.height,
+    "Idle inline composer is offscreen");
+  await page.screenshot({path:path.join(dist,"poker-mobile-inline-reading-"+view.width+"-"+view.seats+".png")});
   // On focus, even the inline mode must enter an isolated composer scene so
   // Android IME never covers the input behind the betting dock.
   await page.locator("#qa-chat-text").click();
@@ -168,6 +178,8 @@ try{
   await page.locator("#qa-chat-close").click();
   assert.equal(await page.locator("#qa-table.chat-stage").count(),0,
     "Closing inline composer must return betting dock");
+  await page.evaluate(()=>window.scrollTo(0,0));
+  await page.waitForFunction(()=>!document.querySelector(".qa-main").classList.contains("qa-inline-reading"));
   assert.ok(await page.locator("#qa-controls").isVisible());
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
   assert.ok(overflow<=2,"Horizontal overflow on "+view.width+"px screen: "+overflow);
@@ -220,7 +232,7 @@ try{
       assert.ok(!overlaps(seat,actual.hero),
         "Seat "+(i+2)+" obscures hero cards at "+view.width);
     }
-    await page.screenshot({path:path.join(dist,"poker-river-"+view.width+".png")});
+    await page.screenshot({path:path.join(dist,"poker-river-"+view.width+"-"+view.seats+".png")});
   }
   // No duplicate action dock may be mounted, regardless of full-page capture
   // stitching quirks in Chromium/Android screenshots.
