@@ -1,46 +1,111 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="dark">
-<title>Solo QA — Poker</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="qa.css">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>vctrtable — Poker Solo QA</title>
+<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="qa.css">
 <script type="module" src="qa.js"></script>
 </head>
-<body>
+<body class="qa-body">
 <main class="qa-main">
-<header><div><small>VCTRTABLE / POKER</small><h1 data-l10n="title">Single-device test table</h1></div><label><span data-l10n="language">Language</span><select id="qa-language"><option value="en">English</option><option value="ja">日本語</option></select></label></header>
-<div class="warning" data-l10n="warning">Local QA only: simulated opponents, no network play, no authenticated PvP. Cards stay on this device.</div>
-<p><a href="index.html" data-l10n="back">← Back to multiplayer lobby</a></p>
-<section id="qa-setup"><h2 data-l10n="setup">Start a session</h2><p data-l10n="setupHelp">Change the test settings and play against automated seats to inspect the rules yourself.</p>
-<form id="qa-form"><div class="grid">
-<label><span data-l10n="opponents">Total seats (2–6)</span><input id="qa-seats" type="number" min="2" max="6" value="3" required></label>
-<label><span data-l10n="chips">Starting chips</span><input id="qa-chips" type="number" min="3" max="1000000" value="1000" required></label>
-<label><span data-l10n="small">Small blind</span><input id="qa-small" type="number" min="1" max="1000000" value="5" required></label>
-<label><span data-l10n="big">Big blind</span><input id="qa-big" type="number" min="2" max="1000000" value="10" required></label>
-<label><span data-l10n="seconds">Your action timer (0 = unlimited)</span><input id="qa-seconds" type="number" min="0" max="3600" value="30" required></label>
-</div><label class="check"><input type="checkbox" checked id="qa-rebuy"><span data-l10n="rebuy">Allow rebuy when out of chips</span></label>
-<button type="submit" data-l10n="start">Start local session</button></form></section>
-<section id="qa-storage">
-<h2 data-l10n="saveTitle">Local QA session</h2>
-<p data-l10n="saveWarning">Save only on this device. The saved test journal includes all hidden cards and full deck order; it is NOT encrypted or shared with Vector. Resuming restarts the local action clock.</p>
-<div class="qa-end">
-<button type="button" id="qa-save" data-l10n="save">Save session</button>
-<button type="button" id="qa-load" class="secondary" data-l10n="load">Resume saved session</button>
-<button type="button" id="qa-delete" class="secondary" data-l10n="deleteSave">Delete saved session</button>
-</div><p id="qa-storage-notice" role="status"></p>
+<header class="qa-topbar">
+  <div class="qa-brand"><small>VCTRTABLE / POKER</small><h1 data-l10n="title">Single-device test table</h1></div>
+  <label class="qa-language"><span data-l10n="language">Language</span><select id="qa-language"><option value="en">English</option><option value="ja">日本語</option></select></label>
+</header>
+<div class="qa-notice"><span class="qa-status-dot" aria-hidden="true"></span><span data-l10n="warning">Local QA only: simulated opponents, no network play, no authenticated PvP. Cards stay on this device.</span></div>
+
+<section id="qa-setup" class="qa-setup">
+  <h2 data-l10n="setup">Start a session</h2>
+  <p data-l10n="setupHelp">Configure a table and play against automated seats to inspect the poker rules yourself.</p>
+  <form id="qa-form">
+    <div class="grid">
+      <label><span data-l10n="opponents">Total seats (2–6)</span><input id="qa-seats" type="number" min="2" max="6" value="3" required></label>
+      <label><span data-l10n="chips">Starting chips</span><input id="qa-chips" type="number" min="3" max="1000000" value="1000" required></label>
+      <label><span data-l10n="small">Small blind</span><input id="qa-small" type="number" min="1" max="1000000" value="5" required></label>
+      <label><span data-l10n="big">Big blind</span><input id="qa-big" type="number" min="2" max="1000000" value="10" required></label>
+      <label><span data-l10n="seconds">Your action timer (0 = unlimited)</span><input id="qa-seconds" type="number" min="0" max="3600" value="30" required></label>
+    </div>
+    <label class="check"><input type="checkbox" checked id="qa-rebuy"><span data-l10n="rebuy">Allow rebuy when out of chips</span></label>
+    <button type="submit" class="qa-primary-start" data-l10n="start">Start local session</button>
+  </form>
 </section>
-<section id="qa-table" hidden>
-<div class="between"><h2 id="qa-round">Hand</h2><strong id="qa-pot">Pot 0</strong></div>
-<div id="qa-players" class="qa-players"></div>
-<div class="qa-board"><p data-l10n="board">Community cards</p><div id="qa-board-cards" class="qa-cards"></div></div>
-<div class="qa-hero"><p data-l10n="hero">Your cards</p><div class="qa-cards" id="qa-hero-cards"></div></div>
-<div class="status" id="qa-info" role="status"></div>
-<div class="between"><span id="qa-timer"></span><button class="secondary" id="qa-pause" type="button" data-l10n="pause">QA pause (simulates agreement)</button></div>
-<div id="qa-controls" class="qa-controls">
-<button id="qa-fold" type="button" data-l10n="fold">Fold</button><button id="qa-check" type="button" data-l10n="check">Check</button><button id="qa-call" type="button" data-l10n="call">Call</button>
-<label><span data-l10n="raiseTo">Raise to (street total)</span><input id="qa-raise-amount" type="number" min="1" step="1"></label><button id="qa-raise" type="button" data-l10n="raise">Bet / Raise</button><button id="qa-allin" type="button" data-l10n="allin">All-in</button>
-</div>
-<div class="qa-end" id="qa-end" hidden><p id="qa-result"></p><button id="qa-next" type="button" data-l10n="next">Next hand</button><button id="qa-buy" type="button" data-l10n="buy">Rebuy busted seats</button><button id="qa-reset" class="secondary" type="button" data-l10n="reset">New session</button></div>
-<h2 data-l10n="history">Hand history</h2><ol class="qa-log" id="qa-log"></ol>
+
+<section id="qa-table" class="qa-play" hidden>
+  <div class="qa-game-heading">
+    <div><div class="qa-small-caption" data-l10n="tableLabel">LOCAL POKER</div><h2 id="qa-round">Hand 1 — PREFLOP</h2></div>
+    <div class="qa-pot-total" id="qa-pot">Pot 0</div>
+  </div>
+
+  <div class="qa-felt" aria-label="Poker table">
+    <div class="qa-opponents" id="qa-players"></div>
+    <div class="qa-felt-center">
+      <span class="qa-board-label" data-l10n="board">Community cards</span>
+      <div class="qa-cards qa-board-cards" id="qa-board-cards"></div>
+    </div>
+  </div>
+
+  <div class="qa-your-seat">
+    <div class="qa-your-topline">
+      <div><strong id="qa-your-name" data-l10n="you">You</strong><span id="qa-self-stack">Stack: —</span></div>
+      <div class="qa-turn-clock"><span class="qa-clock-dot" aria-hidden="true"></span><span id="qa-timer">—</span></div>
+    </div>
+    <div class="qa-hero-cards-row">
+      <div><div class="qa-small-caption" data-l10n="hero">Your cards</div><div id="qa-hero-cards" class="qa-cards qa-hole-cards"></div></div>
+      <div class="qa-action-hint" id="qa-info" role="status"></div>
+    </div>
+  </div>
+
+  <div class="qa-action-dock">
+    <div id="qa-controls" class="qa-controls">
+      <div class="qa-main-actions">
+        <button id="qa-fold" class="qa-fold-action" type="button" data-l10n="fold">Fold</button>
+        <button id="qa-check" class="qa-check-action" type="button" data-l10n="check">Check</button>
+        <button id="qa-call" class="qa-call-action" type="button" data-l10n="call">Call</button>
+      </div>
+      <div class="qa-raise-actions">
+        <label class="qa-raise-input"><span data-l10n="raiseTo">Raise to (street total)</span><input id="qa-raise-amount" type="number" min="1" step="1" inputmode="numeric"></label>
+        <button id="qa-raise" type="button" data-l10n="raise">Bet / Raise</button>
+        <button id="qa-allin" class="qa-allin-action" type="button" data-l10n="allin">All-in</button>
+      </div>
+    </div>
+    <div class="qa-end" id="qa-end" hidden>
+      <strong id="qa-result"></strong>
+      <div class="qa-end-actions">
+        <button id="qa-next" type="button" data-l10n="next">Next hand</button>
+        <button id="qa-buy" type="button" data-l10n="buy">Rebuy busted seats</button>
+        <button id="qa-reset" class="secondary" type="button" data-l10n="reset">New session</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="qa-lower">
+    <button class="secondary qa-pause-button" id="qa-pause" type="button" data-l10n="pause">QA pause (simulates agreement)</button>
+    <details class="qa-history">
+      <summary data-l10n="history">Hand history</summary>
+      <ol class="qa-log" id="qa-log"></ol>
+    </details>
+  </div>
 </section>
-<footer data-l10n="footer">Test-only automated seats do not represent a production PvE feature.</footer>
-</main></body></html>
+
+<details id="qa-storage" class="qa-storage">
+  <summary data-l10n="saveTitle">Local QA session</summary>
+  <div class="qa-storage-inner">
+    <p data-l10n="saveWarning">Saved only on this device. Contains hidden cards and the full test deck, without encryption. Never share the save file. Resuming restarts the local action timer.</p>
+    <div class="qa-save-buttons">
+      <button type="button" id="qa-save" data-l10n="save">Save session</button>
+      <button type="button" id="qa-load" class="secondary" data-l10n="load">Resume saved session</button>
+      <button type="button" id="qa-delete" class="secondary" data-l10n="deleteSave">Delete saved session</button>
+    </div>
+    <p id="qa-storage-notice" role="status"></p>
+  </div>
+</details>
+
+<details class="qa-developer-info">
+  <summary data-l10n="aboutTest">About this test</summary>
+  <p data-l10n="footer">Test-only automated seats do not represent a production PvE feature.</p>
+  <p><a href="index.html" data-l10n="back">← Back to multiplayer lobby</a></p>
+</details>
+</main>
+</body>
+</html>
