@@ -108,3 +108,7 @@ The Rust SDK Bot must retain its timeout scheduler even after the local Node dea
 ## Private state delivery ordering (Rust SDK)
 
 Every authenticated seat must see a nondecreasing sequence of authoritative dealer revisions even when timeout ticks and player DMs overlap. Add a per-recipient last-successful-send revision gate; validate each private envelope's recipient, room and revision before sending; serialize batches without blocking the dealer's own command application; send to the 2–6 recipients concurrently inside a batch with a bounded SDK wait. Permit same-revision sync retries. Test stale action-vs-tick race and wrong-recipient packets, but do not claim an actual relay delivery guarantee or completed Mini App bridge.
+
+## Developer DM handoff state and safety
+
+Implement local UI statuses (empty, prepared, awaiting, delayed, imported, needs-sync), user-acknowledged manual sending, exact command/requestId reuse after uncertainty and an explicit new sync. Reject older revisions and conflicting same-revision snapshots. Block new action drafts until the outstanding operation has been reconciled. Preserve EN/JA labels and include a real-browser smoke. The Mini App↔Bot automatic private channel is NOT implemented.
