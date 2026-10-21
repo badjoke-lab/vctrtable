@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
-const scripts=['apps/poker/main.js','apps/poker/qa.js','apps/poker/cards.js','apps/poker/chat-view.js','apps/poker/public-chat.js','apps/poker/dm.js','packages/poker/dm-seat.js','packages/poker/engine.js','packages/poker/hand.js','packages/poker/session.js','packages/poker/dealer-room.js','packages/poker/message-boundary.js','packages/poker/dealer-journal.js','packages/poker/dealer-store.js','packages/poker/persistent-dealer.js'];
+const scripts=['apps/poker/main.js','apps/poker/qa.js','apps/poker/cards.js','apps/poker/chat-view.js','apps/poker/public-chat.js','apps/poker/dm.js','packages/poker/dm-seat.js','packages/poker/engine.js','packages/poker/hand.js','packages/poker/session.js','packages/poker/betting-controls.js','packages/poker/showdown-summary.js','packages/poker/dealer-room.js','packages/poker/message-boundary.js','packages/poker/dealer-journal.js','packages/poker/dealer-store.js','packages/poker/persistent-dealer.js'];
 for(const f of scripts)test('JavaScript syntax: '+f,()=>{
  assert.doesNotThrow(()=>execFileSync(process.execPath,['--check',f],{encoding:'utf8'}));
 });
@@ -93,4 +93,20 @@ test('public Vector chat is explicitly opt-in and isolated from private poker st
  assert.ok(chat.includes('sendUpdate({payload:e}'));
  assert.ok(!chat.includes('room.table'));
  assert.ok(!chat.includes('table.hand'));
+});
+
+test('mobile UI exposes all-in call and precise side-pot summaries without new secrets in public chat',()=>{
+ const ui=readFileSync('apps/poker/qa.js','utf8');
+ const html=readFileSync('apps/poker/qa.html','utf8');
+ const build=readFileSync('scripts/build.mjs','utf8');
+ const publicChat=readFileSync('apps/poker/public-chat.js','utf8');
+ assert.ok(ui.includes('bettingControls(L'));
+ assert.ok(ui.includes('bets.callAmount'));
+ assert.ok(ui.includes('bets.isAllInCall'));
+ assert.ok(ui.includes('if(bet.allIn)move(bet.allIn.kind'));
+ assert.ok(ui.includes('settlementSummary(table'));
+ assert.ok(html.includes('id="qa-settlement"'));
+ for(const file of ['betting-controls.js','showdown-summary.js'])assert.ok(build.includes(file));
+ assert.ok(!publicChat.includes('showdown-summary'));
+ assert.ok(!publicChat.includes('betting-controls'));
 });

@@ -71,3 +71,9 @@ The mobile test table now supports a **separate opt-in public text-chat mode**. 
 This is **not an authenticated PvP command channel**. No cards, decks, chip balances, dealer state or hand actions are sent through group chat. Unsolicited historic chat updates are rendered without new-message notification when their sender timestamp is old. Real multi-account Vector sync is still unverified, as requested.
 
 See [mobile chat specification](docs/MOBILE-TABLE-CHAT.md).
+
+## Poker betting and showdown clarity
+
+The mobile QA screen now shows the **actual number of chips payable** for short-stack calls, including an all-in call when facing a larger wager. All-in chooses a legal raise when available, otherwise an all-in call when that is the only all-in action. The Min / Half Pot / Pot / Max presets use shared raise-to calculations instead of duplicated UI arithmetic.
+
+After each hand, the local-only results list the main pot, each side pot, any uncalled bet returned, the recipients of split pots (including odd chips), net winnings/losses after contributions, and English/Japanese hand ranking at contested showdown. Folded hands are never revealed as part of the result. These are **local result views**, not data published over WebXDC shared updates.
