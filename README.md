@@ -63,3 +63,11 @@ See [the mobile table and chat specification](docs/MOBILE-TABLE-CHAT.md). This U
 ## Start screen / corrected entry point
 
 From this update forward, **index.html launches the mobile solo poker UI directly** (the new six-seat table is shown after pressing Start local session). The old shared multiplayer prototype has moved to `lobby.html`, accessible via the header's Lobby link; `qa.html` remains a direct alias for single-device testing, and `dm.html` links back to the preserved lobby. Existing already-opened Vector Mini App messages may continue showing the older embedded app bundle. Open a newly shared updated `.xdc` to see the changed entry point. Never assume that editing a GitHub release asset live-upgrades old messages.
+
+## Optional public Vector text chat on the game table
+
+The mobile test table now supports a **separate opt-in public text-chat mode**. Without opting in, scripted demo chat stays local. When enabled inside a Vector WebXDC app, text messages alone are published through the standard WebXDC shared-update API. Everyone in the same Vector chat can read them. The UI reuses the existing always-on/drawer modes, unread badge, local phrase translations and quick replies.
+
+This is **not an authenticated PvP command channel**. No cards, decks, chip balances, dealer state or hand actions are sent through group chat. Unsolicited historic chat updates are rendered without new-message notification when their sender timestamp is old. Real multi-account Vector sync is still unverified, as requested.
+
+See [mobile chat specification](docs/MOBILE-TABLE-CHAT.md).

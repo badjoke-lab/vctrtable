@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
-const scripts=['apps/poker/main.js','apps/poker/qa.js','apps/poker/cards.js','apps/poker/chat-view.js','apps/poker/dm.js','packages/poker/dm-seat.js','packages/poker/engine.js','packages/poker/hand.js','packages/poker/session.js','packages/poker/dealer-room.js','packages/poker/message-boundary.js','packages/poker/dealer-journal.js','packages/poker/dealer-store.js','packages/poker/persistent-dealer.js'];
+const scripts=['apps/poker/main.js','apps/poker/qa.js','apps/poker/cards.js','apps/poker/chat-view.js','apps/poker/public-chat.js','apps/poker/dm.js','packages/poker/dm-seat.js','packages/poker/engine.js','packages/poker/hand.js','packages/poker/session.js','packages/poker/dealer-room.js','packages/poker/message-boundary.js','packages/poker/dealer-journal.js','packages/poker/dealer-store.js','packages/poker/persistent-dealer.js'];
 for(const f of scripts)test('JavaScript syntax: '+f,()=>{
  assert.doesNotThrow(()=>execFileSync(process.execPath,['--check',f],{encoding:'utf8'}));
 });
@@ -75,4 +75,22 @@ test('Vector opens the new mobile solo game, with old lobby preserved separately
  assert.ok(qa.includes('href="lobby.html"'));
  assert.ok(dm.includes('href="lobby.html"'));
  assert.ok(build.includes('"lobby.html"'),'lobby included in released .xdc');
+});
+
+test('public Vector chat is explicitly opt-in and isolated from private poker state',()=>{
+ const build=readFileSync('scripts/build.mjs','utf8');
+ const html=readFileSync('apps/poker/index.html','utf8');
+ const js=readFileSync('apps/poker/qa.js','utf8');
+ const qa=readFileSync('apps/poker/qa.html','utf8');
+ const chat=readFileSync('apps/poker/public-chat.js','utf8');
+ assert.ok(build.includes('public-chat.js'));
+ assert.ok(html.includes('src="webxdc.js"'));
+ assert.ok(qa.includes('src="webxdc.js"'));
+ assert.ok(qa.includes('id="qa-chat-network"'));
+ assert.ok(js.includes('if(chatTransport.available)chatTransport.subscribe()'));
+ assert.ok(js.includes('chat===vectorChat'));
+ assert.ok(!js.includes('sendUpdate('));
+ assert.ok(chat.includes('sendUpdate({payload:e}'));
+ assert.ok(!chat.includes('room.table'));
+ assert.ok(!chat.includes('table.hand'));
 });

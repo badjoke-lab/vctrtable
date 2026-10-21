@@ -39,13 +39,13 @@ export class ChatViewModel {
   if(this.visible())this.unread=0;
  }
  setTranslation(enabled){this.automaticTranslation=Boolean(enabled);}
- add({id,author,text,own=false,at=Date.now()}){
+ add({id,author,text,own=false,at=Date.now(),silent=false}){
   if(typeof id!=="string"||!id||typeof author!=="string"||author.length>60||typeof text!=="string"||!text.trim()||text.length>500||!Number.isSafeInteger(at))throw new Error("Invalid chat message");
   if(this.messages.some(m=>m.id===id))return false;
   const msg={id,author,text:text.trim(),own:Boolean(own),at};
   this.messages.push(msg);
   if(this.messages.length>this.limit)this.messages.shift();
-  if(!msg.own&&!this.visible()){
+  if(!msg.own&&!this.visible()&&!silent){
    this.unread=Math.min(999,this.unread+1);
    this.lastPreview={author:msg.author,text:msg.text};
   }

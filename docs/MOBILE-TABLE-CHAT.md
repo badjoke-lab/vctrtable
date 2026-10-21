@@ -31,3 +31,13 @@ The single-device screen includes **simulated chat messages** from scripted oppo
 The existing separate lobby has rudimentary shared WebXDC chat. Before production, consolidate its shared public chat transport with this UI model, then integrate the authenticated PvP hand/command channel once a safe private Vector transport is available. Never publish secret hands, deck or dealer journal through WebXDC status updates.
 
 Real-device usability still needs checking on Android and narrow screen sizes; automated code/unit checks alone do not prove the layout visually correct.
+
+## Public text chat opt-in (implemented after initial mock)
+
+QA chat defaults to **local demonstration**. A separate checkbox allows real WebXDC **public text chat** when the Vector host makes its API available. Checking the box is explicit consent to send the user's *text messages* to everyone who can access that WebXDC chat. When the box is not checked, demo messages are private local QA display and never posted.
+
+The transport serializes an exact allowlist with app ID, version, kind, UUID-style random ID, message text, nickname, and client time. It ignores malformed payloads and rejects unexpected fields such as private cards or decks. The transport does not send betting commands or invoke the trusted Bot's private DM interface. The sender ID comes from the WebXDC host's update metadata, not the message text. This is public text chat only.
+
+Incoming messages are shown using the same inline/drawer chat UI; they share their own history/unread state, separate from simulated messages. Previously recorded history is not intentionally replayed as new notifications. Because client timestamps are not cryptographically trusted, timing-based replay suppression is a **UX heuristic**, not an abuse/security guarantee.
+
+**Not yet implemented:** actual shared real poker hand synchronization, arbitrary-language translation, moderator/abuse controls, text chat testing with multiple real users. A normal Vector host can support text updates, but no multi-user device test has been performed yet.
