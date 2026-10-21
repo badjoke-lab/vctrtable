@@ -168,6 +168,7 @@ function render(){
  $("qa-my-stack").textContent=fmt(h.players[0].stack);
  $("qa-end").hidden=!end;
  $("qa-controls").hidden=end;
+ document.querySelector(".qa-main").classList.toggle("qa-playing",!end);
  $("qa-info").textContent=end?t("done")+" — "+t("win")+" "+fmt(h.awards[0])+" · "+t("net")+" "+(h.awards[0]-h.players[0].total>=0?"+":"")+fmt(h.awards[0]-h.players[0].total):paused?t("paused"):h.turn===0?t("turn")+" · "+t("toCall")+" "+fmt(L?.toCall??0):t("wait");
  const canAct=Boolean(L&&L.seat===0&&!paused);
  $("qa-fold").disabled=!canAct;
@@ -260,6 +261,7 @@ function restore(){
 }
 function newGame(){
  table=null;session=null;paused=false;chatterHand=0;lastTurnKey="";
+ document.querySelector(".qa-main").classList.remove("qa-playing");
  $("qa-setup").hidden=false;$("qa-table").hidden=true;
  demoChat.messages.length=0;demoChat.unread=0;demoChat.opened=false;render();
 }
