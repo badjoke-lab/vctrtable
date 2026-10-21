@@ -41,3 +41,34 @@ The transport serializes an exact allowlist with app ID, version, kind, UUID-sty
 Incoming messages are shown using the same inline/drawer chat UI; they share their own history/unread state, separate from simulated messages. Previously recorded history is not intentionally replayed as new notifications. Because client timestamps are not cryptographically trusted, timing-based replay suppression is a **UX heuristic**, not an abuse/security guarantee.
 
 **Not yet implemented:** actual shared real poker hand synchronization, arbitrary-language translation, moderator/abuse controls, text chat testing with multiple real users. A normal Vector host can support text updates, but no multi-user device test has been performed yet.
+
+## Mobile chat redesign after Android overlap report
+
+**Always on / 常設:** the normal panel flows BELOW the table and has its own
+bounded, scrollable message list. Quick replies and network/translation settings
+are collapsed by default. During text composition, the UI switches to a
+full-height focused chat scene: the betting dock and large felt disappear, a
+compact top strip shows both of your REAL hole cards, own stack, turn status and
+live timer, and the input+send button remain within the visual viewport.
+Closing chat focus returns to the same table and inline panel.
+
+**Drawer / ドロワー:** opening chat switches to the SAME dedicated full-height
+chat scene instead of layering a chat window over opponent/player cards. Its
+top strip always exposes the private local player's own two cards, remaining
+time and current stack; "Back to table" closes the scene and restores the
+betting dock. No poker operation, card or deck is transmitted by this display
+change.
+
+**Android keyboard:** the scene's fixed bounds derive from the platform
+`window.visualViewport.offsetTop` and `height`, with resize/scroll listeners.
+This handles cases where the soft keyboard shrinks or pans the visual viewport
+without moving the browser's layout viewport. Chat buttons and the input are
+laid out at the bottom of a flex column, while the message list scrolls on its
+own. The short player HUD stays above the list. A keyboard appearing does not
+pause the hand's actual timer.
+
+**CI:** headless Chromium checks drawer and inline focus mode, two own cards,
+visible time, composer's geometry with a reduced mobile viewport and absent
+fixed betting dock, and return-to-table behavior. Chromium simulates a smaller
+viewport, not the actual Android IME. Final Vector Android keyboard screenshots
+are still required before claiming real-device acceptance.
