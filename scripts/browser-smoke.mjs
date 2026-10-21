@@ -313,13 +313,13 @@ try{
   const finishedInline=await page.evaluate(()=>{
     const chat=document.querySelector("#qa-chat"),history=document.querySelector("#qa-history-panel");
     return {height:chat.querySelector(".chat-stream").getBoundingClientRect().height,
-      resultsTop:document.querySelector("#qa-end").getBoundingClientRect().top,
+      resultsBottom:document.querySelector("#qa-end").getBoundingClientRect().bottom,
       chatTop:chat.getBoundingClientRect().top,
       historyTop:history.getBoundingClientRect().top,
       chatBottom:chat.getBoundingClientRect().bottom};
   });
   assert.ok(finishedInline.height<=85,"Inline message window too tall");
-  assert.ok(finishedInline.chatTop>=resultBoxes.end.bottom-2,
+  assert.ok(finishedInline.chatTop>=finishedInline.resultsBottom-2,
     "Completed result must precede inline chat: "+JSON.stringify(finishedInline));
   assert.ok(finishedInline.historyTop>=finishedInline.chatBottom-2,
     "History should follow inline chat");
