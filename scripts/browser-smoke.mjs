@@ -79,7 +79,11 @@ try{
   const placement=await page.evaluate(()=>{
     const rect=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height};};
     return {seats:[...document.querySelectorAll(".poker-seat")].map(rect),
-      board:rect(document.querySelector("#qa-board-cards")),
+      board:(()=>{
+        const cards=[...document.querySelectorAll("#qa-board-cards .vcard")].map(rect);
+        return {x:Math.min(...cards.map(c=>c.x)),right:Math.max(...cards.map(c=>c.right)),
+          y:Math.min(...cards.map(c=>c.y)),bottom:Math.max(...cards.map(c=>c.bottom))};
+      })(),
       hero:rect(document.querySelector(".hero-spot")),
       arena:rect(document.querySelector(".poker-arena")),
       viewport:innerWidth};
