@@ -180,7 +180,16 @@ try{
   // No input focus yet: merely scrolling to read ALWAYS-ON chat must NOT
   // leave the fixed betting dock covering the message composer.
   await page.locator("#qa-chat-form").scrollIntoViewIfNeeded();
-  await page.waitForFunction(()=>document.querySelector(".qa-main").classList.contains("qa-inline-reading"));
+  await page.waitForTimeout(160);
+  const composerState=await page.evaluate(()=>{
+    const node=document.querySelector("#qa-chat-form"),r=node.getBoundingClientRect();
+    return {classes:document.querySelector(".qa-main").className,
+      mode:document.querySelector("#qa-chat-mode").value,
+      form:{y:r.y,bottom:r.bottom,h:r.height},viewport:innerHeight,
+      stage:document.querySelector("#qa-table").className,scrollY};
+  });
+  assert.ok(composerState.classes.includes("qa-inline-reading"),
+    "Inline composer must disable dock when visible: "+JSON.stringify(composerState));
   assert.equal(await page.locator("#qa-controls").isVisible(),false,
     "Inline chat must not be obscured by the betting dock");
   const inlineInput=await page.locator("#qa-chat-text").boundingBox();
