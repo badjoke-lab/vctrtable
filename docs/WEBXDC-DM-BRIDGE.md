@@ -32,3 +32,15 @@ The imported private state is kept only in volatile JavaScript memory; the UI cl
 An actual automatic bridge requires **Vector host-client support** for Mini App ↔ Bot authenticated private actions/responses, or another peer-reviewed design that preserves source authentication, confidentiality, and user consent within the Mini App sandbox. It must not depend on leaking private cards to a group update.
 
 Before a real Vector session: verify the feature exists on each supported Vector platform, design capability scoping per app and room, protect native bridges from unauthorized Mini Apps, and complete SDK/device integration. This milestone does **not** require coordinating real users; it gives the single developer a full end-to-end message format and UI to test later.
+
+## Manual private sync status (UI milestone)
+
+The development-only DM seat now has explicit EN/JA local handoff states: no private state, command prepared, awaiting manually pasted reply, delayed reply, imported current snapshot and sync required.
+
+Preparing a command is NOT sending it. Clicking "I sent the DM" acknowledges only the user's own action, and the 15-second delay label is a UI heuristic, NOT a verified Vector relay state.
+
+"Reuse same DM command" preserves the EXACT original requestId. Preparing a new sync can supersede the local draft but cannot cancel an action already sent to the dealer.
+
+Incoming state is accepted only for the entered room and public npub. An older revision or a conflicting payload at the SAME revision is refused without changing displayed private cards. An identical same-revision snapshot does not claim to acknowledge a pending action. A pasted error such as STALE_REVISION requires a fresh sync before another action.
+
+This remains a manual developer bridge. A pasted string cannot cryptographically prove who sent the original Vector DM. No automatic private bridge, WebXDC group broadcast of secrets or localStorage persistence was added. Browser CI tests basic status progression.
