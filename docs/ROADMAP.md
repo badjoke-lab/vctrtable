@@ -88,3 +88,7 @@ A per-player table view in `dm.html` displays imported, recipient-specific Bot s
 ## Mobile table/UI milestone
 
 Approved: **6-seat phone-portrait** compact felt table with opponent positions around the rim, large local hand, illustrated face cards and correct number-card pips, sticky betting actions, scrollable history/settings. **Do not use a horizontal chat side panel on mobile.** Users can switch between inline permanent chat below the table and a bottom drawer. Collapsed drawer has unread badge and timed toast preview. Chat shares the same history across modes; quick replies and English/Japanese QA phrase translations remain local mock messages for one-person validation. Full production chat/translation integration and authenticated live PvP still pending. See MOBILE-TABLE-CHAT.md.
+
+## No-Limit betting correctness checkpoint — cumulative short all-ins
+
+The engine must reopen betting when multiple insufficient all-in raises together increase the bet a full minimum raise compared to what a previously acting player last faced. A single short all-in or multiple short all-ins below that threshold must **not** reopen raises. Track each player's last acted-to bet per street, reset on every new street and preserve this state under session replay. Add deterministic four-seat all-in tests and confirm chip conservation. This is part of the actual reusable PvP rules engine, not solely the QA interface.

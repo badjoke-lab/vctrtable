@@ -26,7 +26,7 @@ function revealNext(h){
  else if(h.streetName==='flop'){draw(h);h.board.push(draw(h));h.streetName='turn';}
  else if(h.streetName==='turn'){draw(h);h.board.push(draw(h));h.streetName='river';}
  else throw new Error('No more streets');
- h.currentBet=0;h.lastFullRaise=h.bigBlind;h.acted=[];for(const p of h.players)p.street=0;
+ h.currentBet=0;h.lastFullRaise=h.bigBlind;h.acted=[];h.lastActedBet=Array(h.players.length).fill(null);for(const p of h.players)p.street=0;
  h.pending=roundSeats(h);h.turn=nextPending(h,h.button);
  h.events.push({kind:'street',street:h.streetName,board:[...h.board]});
 }
@@ -72,7 +72,7 @@ export function startHand(table,{deck}={}){
  if(eligible.length<2)throw new Error('Need two players with chips; rebuy or reset session');
  if(deck!==undefined&&(!Array.isArray(deck)||deck.length!==52||new Set(deck).size!==52||deck.some(c=>!fullDeck().includes(c))))throw new Error('Deck must be a 52-card permutation');
  table.button=nextFrom(table.players,table.button,p=>p.stack>0);
- const h={number:++table.handNumber,players:table.players.map(p=>({id:p.id,name:p.name,stack:p.stack,hole:[],inHand:p.stack>0,folded:false,street:0,total:0})),button:table.button,smallBlind:table.settings.smallBlind,bigBlind:table.settings.bigBlind,board:[],deck:deck?[...deck]:shuffleDeck(),streetName:'preflop',currentBet:table.settings.bigBlind,lastFullRaise:table.settings.bigBlind,acted:[],pending:[],turn:-1,status:'betting',pots:[],awards:[],events:[]};
+ const h={number:++table.handNumber,players:table.players.map(p=>({id:p.id,name:p.name,stack:p.stack,hole:[],inHand:p.stack>0,folded:false,street:0,total:0})),button:table.button,smallBlind:table.settings.smallBlind,bigBlind:table.settings.bigBlind,board:[],deck:deck?[...deck]:shuffleDeck(),streetName:'preflop',currentBet:table.settings.bigBlind,lastFullRaise:table.settings.bigBlind,acted:[],lastActedBet:Array(table.players.length).fill(null),pending:[],turn:-1,status:'betting',pots:[],awards:[],events:[]};
  const sb=nextFrom(h.players,h.button,p=>p.inHand),sbSeat=eligible.length===2?h.button:sb,bb=nextFrom(h.players,sbSeat,p=>p.inHand);
  h.sbSeat=sbSeat;h.bbSeat=bb;
  const firstToDeal=eligible.length===2?h.button:nextFrom(h.players,h.button,p=>p.inHand);
@@ -85,7 +85,12 @@ function syncStacks(table){if(!table.hand)return;for(let i=0;i<table.players.len
 export function legalActions(table){
  const h=table.hand;if(!h||h.status!=='betting'||h.turn<0)return null;
  const p=h.players[h.turn],toCall=Math.max(0,h.currentBet-p.street),maxTotal=p.street+p.stack;
- const canRaise=capable(h).length>=2&&!h.acted.includes(h.turn)&&maxTotal>h.currentBet;
+ // Several short all-in raises may cumulatively reopen betting to a player
+ // who already acted. Compare against the bet they last faced, not just the
+ // presence of their seat in a Boolean 'acted' set (TDA full-bet rule).
+ const previouslyFaced=h.lastActedBet[h.turn];
+ const reopened=previouslyFaced===null||h.currentBet-previouslyFaced>=h.lastFullRaise;
+ const canRaise=capable(h).length>=2&&reopened&&maxTotal>h.currentBet;
  const minRaiseTo=h.currentBet===0?h.bigBlind:h.currentBet+h.lastFullRaise;
  return {seat:h.turn,playerId:p.id,stack:p.stack,toCall,canCheck:toCall===0,canCall:toCall>0,canFold:true,canRaise,minRaiseTo,maxRaiseTo:maxTotal,shortAllInOnly:canRaise&&maxTotal<minRaiseTo};
 }
@@ -103,6 +108,9 @@ export function act(table,playerId,kind,target){
   if(fullRaise){h.lastFullRaise=target-old;h.acted=[actor];h.pending=roundSeats(h).filter(i=>i!==actor);}
   else{h.acted.push(actor);h.pending=[...new Set([...h.pending.filter(i=>i!==actor),...roundSeats(h).filter(i=>i!==actor&&h.players[i].street<target)])];}
  }else throw new Error('Unknown action');
+ // Remember the bet level at the end of THIS player's latest action.
+ // The next street resets this record for every seat.
+ h.lastActedBet[actor]=h.currentBet;
  h.events.push({kind:'action',seat:actor,action:kind,target:kind==='raise'?target:null});
  h.turn=nextPending(h,actor);progress(h);syncStacks(table);return h;
 }
