@@ -74,6 +74,10 @@ try{
   assert.equal(await page.locator(".chat-line.own").count(),1,"Mode switch lost messages");
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
   assert.ok(overflow<=2,"Horizontal overflow on "+view.width+"px screen: "+overflow);
+  await page.evaluate(()=>window.scrollTo(0,0));
+  const dock=await page.locator("#qa-controls").boundingBox();
+  assert.ok(dock && dock.y>=0 && dock.y+dock.height<=view.height+2,
+    "Betting action dock is not visible in the initial phone viewport");
   await page.locator("#qa-chat-mode").selectOption("drawer");
   await page.evaluate(()=>window.scrollTo(0,0));
   fs.mkdirSync(dist,{recursive:true});
