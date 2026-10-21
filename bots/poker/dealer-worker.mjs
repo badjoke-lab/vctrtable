@@ -39,7 +39,7 @@ export async function makeHandler({dealer,players,clock=()=>Date.now()}){
   const serverNow=()=>clock();
   return async function handle(input){
     if(!input||typeof input!=="object"||Array.isArray(input))return {ok:false,code:"INVALID_INPUT"};
-    if(input.kind==="sync"&&bounded(input.sender)&&roster.has(input.sender)){
+    // Host-only IPC operation. Rust never forwards a client DM as this kind.\n    // After crash recovery, republish current snapshots through private DMs.\n    if(input.kind==="recover")return stateDeliveries(dealer,players);\n    if(input.kind==="sync"&&bounded(input.sender)&&roster.has(input.sender)){
       // Reconnect is always a full private snapshot, never a shared update.
       return deliverTo(dealer,players,input.sender);
     }
