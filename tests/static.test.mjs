@@ -156,3 +156,20 @@ test('real 52-card SVG deck bundled offline, not old handmade court markup',()=>
  assert.ok(css.includes('.vcard-illustrated>img'));
  assert.ok(!css.includes('.vcard-court'),'Old court CSS still included');
 });
+
+test('inline chat composer and drawer share compact always-visible own cards/timer during input',()=>{
+ const html=readFileSync('apps/poker/qa.html','utf8');
+ const css=readFileSync('apps/poker/qa.css','utf8');
+ const js=readFileSync('apps/poker/qa.js','utf8');
+ for(const id of ['qa-chat-hud','qa-hud-cards','qa-hud-timer','qa-chat-quick','qa-chat-text','qa-chat-close'])
+  assert.ok(html.includes('id="'+id+'"'));
+ assert.ok(js.includes('chatStageActive()'));
+ assert.ok(js.includes('visualViewport'));
+ assert.ok(js.includes('chatFocused=true'));
+ assert.ok(js.includes('syncChatStage()'));
+ assert.ok(js.includes('makeCard(c,{small:true})'));
+ assert.ok(css.includes('#qa-table.chat-stage'));
+ assert.ok(css.includes('.qa-chat-hud-clock'));
+ assert.ok(css.includes('.qa-main.qa-chatting #qa-controls{display:none!important}'));
+ assert.ok(css.includes('--chat-vv-height'));
+});
