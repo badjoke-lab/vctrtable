@@ -156,6 +156,16 @@ function render(){
  renderChat();
  if(!table)return;
  const h=table.hand,L=legalActions(table),pot=h.players.reduce((sum,p)=>sum+p.total,0),end=h.status==="complete";
+ // During live play keep chat immediately after the felt/info, as expected
+ // by the viewport observer. At showdown move it BELOW the compact payout
+ // actions; don't let an always-on chat push the primary result off-screen.
+ // Only move on phase change so IntersectionObserver does not oscillate.
+ const chatPanel=$("qa-chat");
+ if(end){
+  if(chatPanel.previousElementSibling!==$("qa-end"))$("qa-end").after(chatPanel);
+ }else if(chatPanel.nextElementSibling!==$("qa-controls")){
+  $("qa-controls").before(chatPanel);
+ }
  const bets=bettingControls(L,{pot,currentBet:h.currentBet});
  $("qa-round").textContent=t("hand")+" "+h.number+" · "+(end?t("showdown"):h.streetName.toUpperCase());
  $("qa-street-label").textContent=end?t("showdown"):h.streetName.toUpperCase();
