@@ -96,3 +96,7 @@ The engine must reopen betting when multiple insufficient all-in raises together
 ## QA poker settlement and betting clarity milestone
 
 Add a reusable pure betting-controls adapter with correct effective call size for short stacks and all-in-call action when betting cannot be raised. Add a showdown view model with per-pot payouts, uncalled returns, odd-chip distribution, EN/JA five-card hand rankings and net stack change. Render full per-pot breakdown at hand completion, never during betting, and only show nonfolded hands at a genuine contested showdown. Keep trusted secret game state out of the WebXDC public chat transport. Test edge cases independently of browser layout and ensure XDC bundling.
+
+## Reconnection and timeout-delivery hardening
+
+A lost Vector DM response must be recoverable with a recipient-specific sync or idempotent retry. Command retries with no new authoritative revision notify only their originating seat, not all 2–6 players. In contrast, if a late command caused a timeout to persist before failing its revision check, the error response still fans out the new per-recipient **encrypted** snapshots to every seat. The Rust Bot must not drop these updates solely because the command status is an error. Add fake-clock 3-seat regression tests for allowed sync, malicious identities, replay, stale rejection, persisted timeout recovery and check-on-expiry street progression. Real Vector relay and automatic Mini App integration remain unverified.
