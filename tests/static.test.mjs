@@ -129,7 +129,7 @@ test('DM screen visibly distinguishes prepared, delayed and imported private sta
  for(const id of ['dm-link-state','dm-link-detail','dm-mark-sent','dm-retry','dm-request-sync'])
   assert.ok(html.includes('id="'+id+'"'),'Missing DM status UI '+id);
  assert.ok(js.includes('new SeatSyncTracker'));
- assert.ok(js.includes('link.retryText()'));
+ assert.ok(js.includes('connection().retryText()'));
  assert.ok(js.includes('link.importReply('));
  assert.ok(archive.includes('dm-sync-state.js'));
  for(const src of [js,sm]){
