@@ -21,6 +21,20 @@
 </div>
 <p data-t="privacy">Copy an action only into the dealer Bot's 1-to-1 Vector DM. Copy the Bot's JSON reply back here. This browser cannot verify who sent pasted JSON; check the sender in Vector.</p>
 </section>
+<section class="dm-link-status" aria-label="Manual DM sync status">
+<h2 data-t="linkTitle">Private DM handoff status</h2>
+<div class="dm-link-row">
+ <strong id="dm-link-state" role="status" aria-live="polite">Not synchronized</strong>
+ <span id="dm-link-revision">—</span>
+</div>
+<p id="dm-link-detail" class="dm-link-detail"></p>
+<p data-t="linkWarning" class="dm-link-note">This is a manual DM handoff, NOT a live Vector connection. Prepared commands are not automatically sent.</p>
+<div class="dm-actions">
+ <button id="dm-mark-sent" type="button" class="secondary" data-t="markSent">I sent the DM</button>
+ <button id="dm-retry" type="button" class="secondary" data-t="retryDm">Reuse same DM command</button>
+ <button id="dm-request-sync" type="button" data-t="requestSync">Prepare new sync request</button>
+</div>
+</section>
 <section>
 <h2 data-t="table">Table</h2>
 <div class="between"><strong id="phase">—</strong><strong id="pot">—</strong></div>

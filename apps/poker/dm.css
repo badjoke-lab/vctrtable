@@ -6,3 +6,15 @@ textarea{width:100%;padding:12px;border:1px solid #45736c;border-radius:9px;back
 #seats:empty:after{content:"—";color:#adc7c0}
 #status{white-space:pre-line;overflow-wrap:anywhere}
 #inbox{min-height:125px}
+
+.dm-link-status{border:1px solid #3f786c;background:#112b2d}
+.dm-link-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+#dm-link-state{display:inline-flex;padding:7px 11px;border:1px solid #438874;border-radius:18px;background:#183c3d;color:#d4fae9;font-size:13px}
+#dm-link-state[data-phase="delayed"],#dm-link-state[data-phase="needs-sync"]{background:#48321e;border-color:#bd8a4c;color:#fff1d5}
+#dm-link-state[data-phase="prepared"],#dm-link-state[data-phase="awaiting"]{background:#19384b;border-color:#477eae;color:#d9f0ff}
+#dm-link-revision{font-size:12px;color:#b7dbd0}
+.dm-link-detail{font-size:12px;color:#ffe2b0;overflow-wrap:anywhere;margin:7px 0}
+.dm-link-detail:empty{display:none}
+.dm-link-note{font-size:12px;color:#c0e2d7;line-height:1.45}
+.dm-link-status .dm-actions{margin-bottom:0}
+.dm-link-status .dm-actions button{font-size:12px;padding:7px 9px}

@@ -156,6 +156,34 @@ try{
   assert.deepEqual(dialogs,[],"Unexpected dialogs during full hand");
   await ctx.close();
  }
+ // Exercise the bundled manual DM seat UI: this is NOT a simulated live DM
+ // connection. No WebXDC shared update is available in this local browser.
+ {
+  const context=await browser.newContext({viewport:{width:360,height:740},isMobile:true,hasTouch:true});
+  const page=await context.newPage();
+  page.on("pageerror",error=>errors.push("DM: "+error.message));
+  const response=await page.goto(base+"/dm.html",{waitUntil:"networkidle"});
+  assert.equal(response.status(),200);
+  await page.locator("#dm-link-state").waitFor({state:"visible"});
+  assert.equal(await page.locator("#dm-link-state").getAttribute("data-phase"),"empty");
+  await page.locator("#room").fill("room-browser-test");
+  await page.locator("#identity").fill("npub1alice-test");
+  await page.locator("#dm-request-sync").click();
+  assert.equal(await page.locator("#dm-link-state").getAttribute("data-phase"),"prepared");
+  const raw=await page.locator("#outbox").inputValue();
+  assert.equal(raw,'{"kind":"sync"}');
+  await page.locator("#dm-mark-sent").click();
+  assert.equal(await page.locator("#dm-link-state").getAttribute("data-phase"),"awaiting");
+  await page.locator("#dm-retry").click();
+  assert.equal(await page.locator("#outbox").inputValue(),raw,"Sync retry changed message");
+  await page.locator("#inbox").fill("poker error: STALE_REVISION");
+  await page.locator("#import").click();
+  assert.equal(await page.locator("#dm-link-state").getAttribute("data-phase"),"needs-sync");
+  await page.locator("#dm-request-sync").click();
+  assert.equal(await page.locator("#dm-link-state").getAttribute("data-phase"),"prepared");
+  await page.screenshot({path:path.join(dist,"poker-manual-dm-sync-360.png")});
+  await context.close();
+ }
  assert.deepEqual(errors,[],"Browser runtime errors");
  console.log("Chromium QA smoke OK: 2-6 seats, 320/360/390px overlap checks, live browser complete hands, storage+chat");
 }finally{
