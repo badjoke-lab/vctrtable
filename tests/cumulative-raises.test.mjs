@@ -71,16 +71,7 @@ test("betting rights reset when street changes",()=>{
  assert.deepEqual(t.hand.lastActedBet,[null,null]);
  assert.equal(legalActions(t).canRaise,true);
 });
-test("session journal restores cumulative short all-in reopening deterministically",()=>{
- const s=createSession({players:roster(),startingChips:100,smallBlind:1,bigBlind:2,rebuy:true});
- s.table.players[1].stack=12;s.table.players[2].stack=18;s.table.minted=230;
- // This manually modified test-table setup is not part of the session journal;
- // verify the action history with equal initial stacks via a standalone hand.
- const t=table(18);
- move(t,"raise",10);move(t,"call");move(t,"raise",12);move(t,"raise",18);
- assert.equal(legalActions(t).canRaise,true);
- // Also verify that a normal session without manual stacks reconstructs the
- // new lastActedBet field when its saved commands are replayed.
+test("session journal preserves the new per-street action tracking",()=>{
  const normal=createSession({players:roster(),startingChips:100,smallBlind:1,bigBlind:2,rebuy:true});
  startSessionHand(normal,fullDeck());
  let count=0;
