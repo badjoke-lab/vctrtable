@@ -104,3 +104,7 @@ A lost Vector DM response must be recoverable with a recipient-specific sync or 
 ## Dealer process supervision and crash recovery
 
 The Rust SDK Bot must retain its timeout scheduler even after the local Node dealer process crashes. Bound handshake and response framing, deadline each IPC operation, abort wedged children, restore the authoritative room from the encrypted journal and privately resend each recipient's latest snapshot after restoration. Never blindly retry an uncertain mutation. A fixed error code lets a user reissue the original requestId or ask for a 1:1 sync. Add Rust frame-reader tests and Node real-process crash/recovery tests. This is not proof of real Vector relay availability, durable DM delivery or automated Mini App-to-Bot private messaging.
+
+## Private state delivery ordering (Rust SDK)
+
+Every authenticated seat must see a nondecreasing sequence of authoritative dealer revisions even when timeout ticks and player DMs overlap. Add a per-recipient last-successful-send revision gate; validate each private envelope's recipient, room and revision before sending; serialize batches without blocking the dealer's own command application; send to the 2–6 recipients concurrently inside a batch with a bounded SDK wait. Permit same-revision sync retries. Test stale action-vs-tick race and wrong-recipient packets, but do not claim an actual relay delivery guarantee or completed Mini App bridge.
