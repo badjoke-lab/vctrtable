@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
-const scripts=['apps/poker/main.js','apps/poker/qa.js','apps/poker/cards.js','apps/poker/chat-view.js','apps/poker/public-chat.js','apps/poker/dm.js','packages/poker/dm-seat.js','packages/poker/engine.js','packages/poker/hand.js','packages/poker/session.js','packages/poker/betting-controls.js','packages/poker/showdown-summary.js','packages/poker/dealer-room.js','packages/poker/message-boundary.js','packages/poker/dealer-journal.js','packages/poker/dealer-store.js','packages/poker/persistent-dealer.js'];
+const scripts=['apps/poker/main.js','apps/poker/qa.js','apps/poker/cards.js','apps/poker/chat-view.js','apps/poker/public-chat.js','apps/poker/dm.js','packages/poker/dm-seat.js','packages/poker/dm-sync-state.js','packages/poker/engine.js','packages/poker/hand.js','packages/poker/session.js','packages/poker/betting-controls.js','packages/poker/showdown-summary.js','packages/poker/dealer-room.js','packages/poker/message-boundary.js','packages/poker/dealer-journal.js','packages/poker/dealer-store.js','packages/poker/persistent-dealer.js'];
 for(const f of scripts)test('JavaScript syntax: '+f,()=>{
  assert.doesNotThrow(()=>execFileSync(process.execPath,['--check',f],{encoding:'utf8'}));
 });
@@ -119,4 +119,21 @@ test('WebXDC root and solo QA HTML remain identical after every UI update',()=>{
  assert.ok(build.includes('path.join(src,"qa.html"),path.join(temp,"index.html")'),
    'Built WebXDC entry must derive from the current QA HTML');
  for(const id of ['qa-chat-network','qa-settlement'])assert.ok(root.includes('id="'+id+'"'),'Missing entry point ID '+id);
+});
+
+test('DM screen visibly distinguishes prepared, delayed and imported private state',()=>{
+ const html=readFileSync('apps/poker/dm.html','utf8');
+ const js=readFileSync('apps/poker/dm.js','utf8');
+ const sm=readFileSync('packages/poker/dm-sync-state.js','utf8');
+ const archive=readFileSync('scripts/build.mjs','utf8');
+ for(const id of ['dm-link-state','dm-link-detail','dm-mark-sent','dm-retry','dm-request-sync'])
+  assert.ok(html.includes('id="'+id+'"'),'Missing DM status UI '+id);
+ assert.ok(js.includes('new SeatSyncTracker'));
+ assert.ok(js.includes('link.retryText()'));
+ assert.ok(js.includes('link.importReply('));
+ assert.ok(archive.includes('dm-sync-state.js'));
+ for(const src of [js,sm]){
+  assert.ok(!src.includes('sendUpdate('),'No private seat data in public WebXDC updates');
+  assert.ok(!src.includes('localStorage.'),'Never persist private seat data');
+ }
 });
