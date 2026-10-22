@@ -1,19 +1,26 @@
 /**
- * Deterministic offline PNG assets in poker.xdc.
- * Source: saulspatz/SVGCards public domain, pinned commit.
- * Download happens ONLY at build time (never inside Vector).
+ * Traditional 52-card CC0 playing-card artwork, bundled as real full-face PNGs.
+ * Source: safe-acid/Playing-cards-assets (CC0-1.0), pinned immutable commit.
+ * Replaces the former Vertical2 deck whose *original raster image* contained
+ * the conspicuous internal rectangular pip frame seen in Android screenshots.
+ *
+ * No CSS overlays, generated faux-card borders or runtime network requests.
+ * Small 127x177 originals are 4-13 KiB, lightweight enough for WebXDC.
  */
 import fs from "node:fs";
 import path from "node:path";
-const pinned="f8df28774736ea2545fc8e7fb693eb55ce031945";
-const base="https://raw.githubusercontent.com/saulspatz/SVGCards/"+pinned+"/Decks/Vertical2/pngs/";
-const suitNames={C:"club",D:"diamond",H:"heart",S:"spade"};
-const rankNames={A:"Ace",K:"King",Q:"Queen",J:"Jack",T:"10"};
+const pinned="ae925833a28f587ec6abed561822889eb044a18c";
+const base="https://raw.githubusercontent.com/safe-acid/Playing-cards-assets/"+
+ pinned+"/Playing%20Cards/PNG%20Cards/Cards%20127x177px/";
+const suitNames={C:"clubs",D:"diamonds",H:"hearts",S:"spades"};
+const rankNames={T:"10"};
 export const CARD_NAMES=Object.freeze(Object.fromEntries(
  Array.from("CDHS").flatMap(suit=>Array.from("23456789TJQKA").map(rank=>{
   const code=rank+suit;
-  return [code,suitNames[suit]+(rankNames[rank]||rank)+".png"];
- })).concat([["BACK","blueBack.png"]])
+  const filename=rank==="A"&&suit==="H"?"A__hearts.png":
+   (rankNames[rank]||rank)+"_"+suitNames[suit]+".png";
+  return [code,filename];
+ })).concat([["BACK","backdesign_1.png"]])
 ));
 export function cardAsset(code){
  if(!Object.hasOwn(CARD_NAMES,code))throw new Error("Unsupported PNG card "+String(code));
@@ -23,7 +30,7 @@ function pngDimensions(buffer){
  const header=Buffer.from("89504e470d0a1a0a","hex");
  if(buffer.length<80||!buffer.subarray(0,8).equals(header))throw Error("Not PNG");
  const w=buffer.readUInt32BE(16),h=buffer.readUInt32BE(20);
- if(w<40||h<40||w>10000||h>10000)throw Error("Unexpected PNG dimensions");
+ if(w!==127||h!==177)throw Error("Card PNG must be the same 127x177 image dimensions");
  return {w,h};
 }
 export async function downloadCardAssets(destination,{fetcher=globalThis.fetch}={}){
@@ -42,7 +49,9 @@ export async function downloadCardAssets(destination,{fetcher=globalThis.fetch}=
      if(!result.ok)throw Error("PNG download HTTP "+result.status+": "+file);
      const bytes=Buffer.from(await result.arrayBuffer());
      pngDimensions(bytes);
-     if(bytes.length>300000)throw Error("Oversized PNG "+file);
+     // The public-domain raster deck is tiny. Refuse accidental enormous
+     // high-resolution upstream replacements that bloat every .xdc share.
+     if(bytes.length<500||bytes.length>60000)throw Error("Unexpected PNG size "+file);
      fs.writeFileSync(target,bytes);
      last=null;break;
     }catch(error){last=error;}
