@@ -9,6 +9,7 @@
  * stderr: no full errors, cards, journal, keys or message contents.
  */
 import {PersistentDealer} from "../../packages/poker/persistent-dealer.js";
+import {acquireDealerLease} from "../../packages/poker/dealer-lease.js";
 import {parsePlayerRequest,makeOutboundPackets,assertPacketRouting} from "../../packages/poker/message-boundary.js";
 import readline from "node:readline";
 import {Buffer} from "node:buffer";
@@ -106,6 +107,10 @@ function stateDeliveries(dealer,players){
 
 export async function main(){
   const cfg=configFromEnvironment();
+  // Acquire before ANY store load/save, including new-journal initialization.
+  // If another local worker has this journal, startup fails without writing.
+  const lease=await acquireDealerLease(cfg.filename);
+  try{
   const dealer=await PersistentDealer.open(cfg);
   const handle=await makeHandler({dealer,players:cfg.players});
   const lineReader=readline.createInterface({input:process.stdin,crlfDelay:Infinity,terminal:false});
@@ -125,6 +130,11 @@ export async function main(){
       break;
     }
     process.stdout.write(JSON.stringify(response)+"\n");
+  }
+  }finally{
+    // Normal shutdown frees the lease immediately; SIGKILL frees the OS
+    // listen socket automatically without stale PID/lockfile removal.
+    await lease.release();
   }
 }
 if(process.argv[1]&&fileURLToPath(import.meta.url)===path.resolve(process.argv[1])){

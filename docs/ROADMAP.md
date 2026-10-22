@@ -124,3 +124,15 @@ Unit tests check independent journal ownership, conflicts, releasing and
 file privacy. This protects **one cooperating Rust Bot per journal on the same
 host**, not arbitrary Node scripts or distributed multi-host filesystems.
 Private Mini App integration and live multiplayer remain incomplete.
+
+## Single-host journal exclusivity
+
+The Node Vector Bot worker now guards encrypted dealer journals with a
+process-lifetime localhost-only exclusive lease acquired before
+PersistentDealer.open. It rejects simultaneous local workers and permits
+immediate restart after SIGKILL; tests exercise real competing processes,
+identity/path aliases, original-journal preservation and restored revision.
+**Scope remains a single host** (not a cross-machine distributed lease).
+The remaining major production blocker is the authenticated, automatic
+Mini App <-> Vector SDK private DM bridge. No player secrets may pass through
+shared WebXDC sendUpdate.

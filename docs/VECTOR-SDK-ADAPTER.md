@@ -109,3 +109,26 @@ durable outbound DM queue, or live multi-user relay verification.
 Automated Rust tests cover collision, release/re-acquire, independent
 journals, invalid paths and Unix file permissions. This improves safe
 deployment of the dealer, but must never be described as live PvP completion.
+
+## Local single-writer protection for the dealer journal
+
+The Node dealer **worker entrypoint** now obtains an exclusive, process-lifetime
+single-host lease **before** opening/creating the encrypted journal. It uses a
+deterministic port bound only to 127.0.0.1, derived from a canonical journal
+path. This is an OS-released lease (not a stale PID file): if the worker exits,
+crashes or is SIGKILLed, its port is released and the Rust supervisor can
+safely relaunch the worker with the same encrypted room state. A second
+worker with the same local journal is refused before any journal write or
+private card delivery. Real two-process tests cover takeover attempts,
+preserving the committed journal, symlinked directory aliases and restart.
+
+**Operational boundaries:** this protects one machine only. It is not a
+distributed lock, does not protect a journal concurrently accessed on
+different machines over NFS and is not a substitute for process isolation.
+A conflicting local service on the derived port causes a safe startup failure
+rather than authorizing two writers. Applications importing
+`PersistentDealer.open()` directly bypass the worker's lease and must not be
+used as independent production writers. No network API is exposed on the
+loopback listener; connections are closed immediately, and secrets are never
+placed on the network socket. Real Vector transport integration is still
+pending.

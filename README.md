@@ -93,3 +93,12 @@ Mobile browser CI now checks 6 seats at widths **320, 360, 390 pixels**, 2 seats
 ## Manual Bot DM status
 
 The developer Bot DM seat has visible EN/JA handoff states and safe exact-command retry. Generated JSON is NEVER described as an automatically sent message. The user can mark a DM as manually sent, re-use its original requestId after delivery uncertainty, and prepare a private resync. Imported older and same-revision-conflicting responses cannot replace the displayed state. The local delayed indicator does not establish a live Vector connection. A credential-free Chromium test checks these controls.
+
+## Dealer process safety
+
+The development Vector Bot's Node dealer worker now enforces a
+**single-host, OS-released journal lease**, preventing accidental second
+workers from corrupting the same encrypted room file. Crash/restart and
+duplicate-process attempts are tested on real child processes. This is NOT a
+distributed file lock or a completed Vector Mini App↔Bot private transport;
+the current in-app game still uses its single-player QA simulator.
