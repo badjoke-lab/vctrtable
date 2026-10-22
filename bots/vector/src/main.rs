@@ -83,14 +83,22 @@ impl DealerChild {
     }
 }
 
+/// Node dealer needs roster/journal encryption, not the Vector Bot signing
+/// identity. The child must never receive VECTOR_NSEC through inherited env.
+fn dealer_command()->Command{
+    let mut command=Command::new("node");
+    command
+        .arg("bots/poker/dealer-worker.mjs")
+        .env_remove("VECTOR_NSEC")
+        .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::inherit())
+        .kill_on_drop(true);
+    command
+}
+
 async fn spawn_dealer()->Result<(DealerChild,u64),DynError>{
     // Rust and Node must have the same private environment; the Node worker
     // is NOT a HTTP service, and no identity keys appear in IPC JSON.
-    let mut child=Command::new("node")
-        .arg("bots/poker/dealer-worker.mjs")
-        .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::inherit())
-        .kill_on_drop(true)
-        .spawn()?;
+    let mut child=dealer_command().spawn()?;
     let stdin=child.stdin.take().ok_or("Missing dealer stdin")?;
     let stdout=child.stdout.take().ok_or("Missing dealer stdout")?;
     let mut io=DealerChild{_child:child,stdin,stdout:BufReader::new(stdout)};
@@ -361,6 +369,16 @@ async fn main()->Result<(),DynError>{
 mod tests{
     use super::*;
     use tokio::io::duplex;
+
+    #[test]
+    fn dealer_child_drops_vector_identity_even_when_parent_has_one(){
+        // std::process::Command exposes explicitly removed env keys; no
+        // network, secrets or Node process is started by this test.
+        let command=dealer_command();
+        assert!(command.as_std().get_envs().any(|(key,value)|
+            key=="VECTOR_NSEC" && value.is_none()),
+            "Node dealer must never inherit the Bot's private Vector identity");
+    }
 
     #[tokio::test]
     async fn sdk_send_deadline_is_bounded_on_stall_and_failure(){
