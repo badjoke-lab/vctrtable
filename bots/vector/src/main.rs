@@ -18,6 +18,8 @@ mod delivery_guard;
 use delivery_guard::DeliveryOrder;
 mod writer_lock;
 use writer_lock::DealerWriterLease;
+mod roster;
+use roster::PlayerRoster;
 mod dm_play;
 use dm_play::{TextCommand,parse as parse_text_poker,render_private};
 
@@ -220,6 +222,8 @@ async fn main()->Result<(),DynError>{
     // may own a journal, even if two supervisors race during restart.
     // Keep the descriptor alive until this process exits; OS frees on crash.
     let _journal_writer_lease=DealerWriterLease::from_env()?;
+    // Fail closed before opening a Vector identity or loading any private cards.
+    let roster=Arc::new(PlayerRoster::from_env()?);
     let nsec=std::env::var("VECTOR_NSEC").map_err(|_|"VECTOR_NSEC not configured")?;
     let bot=VectorBot::builder().nsec(nsec).build().await?;
     let dealer=Arc::new(Mutex::new(DealerSupervisor::start().await?));
@@ -270,11 +274,14 @@ async fn main()->Result<(),DynError>{
         let delivery_order=delivery_order.clone();
         let text_seats=text_seats.clone();
         let room_id=room_id.clone();
+        let roster=roster.clone();
         async move{
             if msg.is_mine()||msg.is_group||msg.is_file{return;}
             // NIP-17 sender is obtained from authenticated Vector SDK metadata.
             let Some(author)=msg.message.npub.clone() else{return;};
-            if !author.starts_with("npub1")||msg.chat_id!=author{return;}
+            // Uninvited users get no reply, no state, no parser response, and
+            // no dealer IPC request. Only the SDK-authenticated roster enters.
+            if !roster.accepts_dm(&author,&msg.chat_id){return;}
             let text=msg.text().trim();
             if text.len()>8192 {return;}
             // Text poker is opt-in. Keep the raw JSON developer seat usable.
