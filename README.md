@@ -119,3 +119,36 @@ for existing developer manual WebXDC import. See
 This is a separate *text DM player interface*, **not automatic Mini App PvP**.
 It still requires Bot deployment with a static roster, and real Vector relay
 and multi-device end-to-end tests are not complete. Do not send private keys.
+
+## Vector private poker Bot operator package (development)
+
+The existing private-DM dealer can be built into separate Linux x64 and
+**Intel macOS** runtime packages. A manual/PR GitHub Action builds the Rust
+SDK binary and copies only the Node dealer implementation, the offline
+operator script and public documentation. Build artifacts never contain a
+Bot identity, player keys, a dealer encryption key or journal files.
+
+On a trusted computer, with Node.js 20+ installed, use the repository or
+extract the matching unsigned Actions artifact and run:
+
+```sh
+npm run vector:init
+# Edit the locally created owner-only ~/.config/vctrtable/private.json
+# Fill in a DEDICATED Bot nsec and 2-6 public player npubs (no personal nsec).
+npm run vector:check
+npm run vector:start
+```
+
+The key material is generated or entered **on the operator's machine** and
+saved only in a local 0600 config under an owner-only directory; the default
+dealer journal is under ~/.local/share/vctrtable (0700 directory). `init`
+refuses to overwrite existing private configuration and journal keys.
+`check` does no network communication. `start` runs the Bot in the
+foreground; Ctrl+C stops it. A downloaded binary avoids having to install a
+Rust compiler; the source-tree version falls back to building with Cargo.
+
+No actual Vector relay session or real-player exchange has been run yet.
+After a dedicated Bot is operational, have each configured seat perform the
+private `poker probe` → `poker ack TOKEN` handshake, followed by seat-only
+`poker status`. See [DM-first game and relay acceptance](docs/DM-FIRST-POKER.md).
+Do not put the private config, key, or journal into Git, chat, issues or CI.
