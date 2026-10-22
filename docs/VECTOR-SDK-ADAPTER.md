@@ -132,3 +132,7 @@ used as independent production writers. No network API is exposed on the
 loopback listener; connections are closed immediately, and secrets are never
 placed on the network socket. Real Vector transport integration is still
 pending.
+
+## Bounded private DM acknowledgments
+
+All private SDK DM sends, including dealer-unavailable notices after uncertain persistence, now use the same five-second bounded wait. A stalled relay must not keep a player callback waiting without a deadline. Send failure or timeout is logged without message content, keys or cards. SDK send success still does **not** establish recipient delivery. After uncertainty, a client must retry the *exact same* requestId or send its authenticated private `sync`; the Bot must not replay an unknown committed action automatically. This is a transport-liveness correction, **not** a Mini App private-channel implementation or real multiplayer proof.
