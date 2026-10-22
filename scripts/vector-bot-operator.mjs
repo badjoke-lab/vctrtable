@@ -67,7 +67,7 @@ export function configurationToEnvironment(config){
   VCTR_DEALER_KEY_HEX:config.VCTR_DEALER_KEY_HEX,
  };
 }
-export async function createConfiguration(file=DEFAULT_CONFIG,{root=ROOT}={}){
+export async function createConfiguration(file=DEFAULT_CONFIG,{root=ROOT,journal=DEFAULT_JOURNAL}={}){
  const abs=path.resolve(file);
  if(contained(root,abs))throw new Error("Private config must be outside Git");
  const directory=path.dirname(abs);
@@ -77,7 +77,6 @@ export async function createConfiguration(file=DEFAULT_CONFIG,{root=ROOT}={}){
   throw new Error("Config directory must be an owner-only, non-symlink directory (0700)");
  }
  // Private journal directory is created only for the default isolated path.
- const journal=DEFAULT_JOURNAL;
  await mkdir(path.dirname(journal),{recursive:true,mode:0o700});
  const parent=lstatSync(path.dirname(journal));
  if(!parent.isDirectory()||!unixPrivate(parent,0o700)||!owned(parent)){
