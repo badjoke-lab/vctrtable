@@ -4,6 +4,7 @@
 use serde::Deserialize;
 use serde_json::{json,Value};
 use std::error::Error;
+use std::future::Future;
 use std::process::Stdio;
 use std::sync::Arc;
 use std::time::Duration;
@@ -162,6 +163,11 @@ impl DealerSupervisor {
 /// snapshot from arriving after a newer one. Within a batch, send to all
 /// recipients concurrently so a slow DM does not block the other five seats.
 /// Actual relay delivery is not guaranteed; clients can resync explicitly.
+async fn send_with_deadline<F,T,E>(duration:Duration,send:F)->bool
+where F:Future<Output=Result<T,E>>{
+    matches!(timeout(duration,send).await,Ok(Ok(_)))
+}
+
 async fn send_deliveries(
     bot:&VectorBot,reply:WorkerReply,requester:Option<&str>,order:&mut DeliveryOrder
 ){
@@ -171,8 +177,10 @@ async fn send_deliveries(
             let bot=bot.clone();
             let sender=sender.to_owned();
             let notice=format!("poker error: {}",code);
-            let _=timeout(Duration::from_secs(5),
-                async move {bot.dm(sender).send(&notice).await}).await;
+            if !send_with_deadline(Duration::from_secs(5),
+                async move {bot.dm(sender).send(&notice).await}).await {
+                eprintln!("Failed to deliver private command-rejection notice");
+            }
         }
     }
     let mut pending=tokio::task::JoinSet::new();
@@ -185,9 +193,8 @@ async fn send_deliveries(
         }
         let bot=bot.clone();
         pending.spawn(async move {
-            let sent=matches!(timeout(Duration::from_secs(5),
-                async {bot.dm(delivery.to.clone()).send(&delivery.body).await}).await,
-                Ok(Ok(_)));
+            let sent=send_with_deadline(Duration::from_secs(5),
+                async {bot.dm(delivery.to.clone()).send(&delivery.body).await}).await;
             (delivery.to,sent)
         });
     }
@@ -277,9 +284,8 @@ async fn main()->Result<(),DynError>{
                     // A dead relay or blocked DM send must never keep a player
                     // callback alive indefinitely after uncertain persistence.
                     // Do not auto-retry: the action may already be committed.
-                    let sent=matches!(timeout(Duration::from_secs(5),
-                        async {bot.dm(author).send("poker error: DEALER_UNAVAILABLE_RETRY_SAME_REQUEST_ID_OR_SYNC").await}).await,
-                        Ok(Ok(_)));
+                    let sent=send_with_deadline(Duration::from_secs(5),
+                        async {bot.dm(author).send("poker error: DEALER_UNAVAILABLE_RETRY_SAME_REQUEST_ID_OR_SYNC").await}).await;
                     if !sent {eprintln!("Could not send private recovery notice; player must retry same requestId or sync");}
                 }
             }
@@ -292,6 +298,13 @@ async fn main()->Result<(),DynError>{
 mod tests{
     use super::*;
     use tokio::io::duplex;
+
+    #[tokio::test]
+    async fn sdk_send_deadline_is_bounded_on_stall_and_failure(){
+        assert!(send_with_deadline(Duration::from_millis(20),async {Ok::<(),()>(())}).await);
+        assert!(!send_with_deadline(Duration::from_millis(20),async {Err::<(),()>(())}).await);
+        assert!(!send_with_deadline(Duration::from_millis(20),std::future::pending::<Result<(),()>>()).await);
+    }
 
     #[tokio::test]
     async fn framed_reader_accepts_two_messages_in_sequence(){
