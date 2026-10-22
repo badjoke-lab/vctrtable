@@ -289,7 +289,8 @@ async fn main()->Result<(),DynError>{
                     return;
                 }
             };
-            let request=if let Some(TextCommand::Action(mut request))=command {
+            let request=if let Some(TextCommand::Action(action))=command.as_ref() {
+                let mut request=action.clone();
                 request["roomId"]=json!(room_id);
                 Some(request)
             }else if command.is_none(){
