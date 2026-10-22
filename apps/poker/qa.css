@@ -67,11 +67,11 @@ a{color:#7af1c0}
 /* Traditional CC0 card PNG includes its own printed rank, pips and portraits.
    A displayed card is ONE img.vcard. No second border, background, glyphs or
    cropping/rescaling to an incorrect card aspect ratio. */
-img.vcard{display:block;width:40px;height:auto;aspect-ratio:127 / 177;
+img.vcard{display:block;width:40px;height:auto;aspect-ratio:240 / 336;
  flex:0 0 40px;min-width:0;max-width:none;border:0;border-radius:0;
  outline:0;box-shadow:none;background:transparent;padding:0;margin:0;
  object-fit:contain;object-position:center;vertical-align:middle}
-.vcard-empty{display:block;width:40px;aspect-ratio:127 / 177;flex:0 0 40px;
+.vcard-empty{display:block;width:40px;aspect-ratio:240 / 336;flex:0 0 40px;
  border:1px dashed #79a092;border-radius:4px;background:#21604d4d;
  box-shadow:none}
 img.vcard-small{width:24px;flex-basis:24px}
@@ -251,7 +251,7 @@ img.vcard-small{width:24px;flex-basis:24px}
    Changing inline margins/padding at this point can make the composer jump out
    of the viewport, oscillating the observer and hiding the input again. */
 
-/* Single-image invariant: preserve the full 127:177 print artwork. */
+/* Single-image invariant: preserve the full 240:336 print artwork. */
 img.vcard{height:auto!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important}
 
 /* Showdown: avoid flex-stretch that rendered Next hand as a giant vertical
