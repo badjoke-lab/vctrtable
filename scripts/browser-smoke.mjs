@@ -114,16 +114,17 @@ try{
         back:back.naturalWidth>0,
         courts:new Set(["JC","QD","KH","JS"].map(code=>cards.find(e=>e.dataset.card===code).currentSrc)).size,
         singleImage,styleClean,
-        originalSize:[...imgs,back].every(img=>img.naturalWidth===127&&img.naturalHeight===177),
-        traditionalDeck:imgs.every(img=>img.currentSrc.includes("/card-png/"))&&
-          cards.find(img=>img.dataset.card==="2D").currentSrc.includes("/2_diamonds.png")&&
-          cards.find(img=>img.dataset.card==="5C").currentSrc.includes("/5_clubs.png")
+        originalSize:[...imgs,back].every(img=>img.naturalWidth===240&&img.naturalHeight===336),
+        approvedDeck:imgs.every(img=>img.currentSrc.includes("/card-png/"))&&
+          cards.find(img=>img.dataset.card==="2D").currentSrc.endsWith("/2D.png")&&
+          cards.find(img=>img.dataset.card==="5C").currentSrc.endsWith("/5C.png")&&
+          back.currentSrc.endsWith("/BACK.png")
       };
       holder.remove();return result;
     }catch(error){holder.remove();return {error:String(error)};}
   });
   assert.deepEqual(fullDeckArt,
-    {total:52,png:true,unique:52,back:true,courts:4,singleImage:true,styleClean:true,originalSize:true,traditionalDeck:true},
+    {total:52,png:true,unique:52,back:true,courts:4,singleImage:true,styleClean:true,originalSize:true,approvedDeck:true},
     "Every card must be ONE undistorted PNG with no wrapper, overlay or extra CSS frame");
   await page.locator("#qa-controls").waitFor({state:"visible"});
   // Actual rendered geometry; Node tests cannot catch clipped or overlapping
