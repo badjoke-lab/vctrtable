@@ -7,6 +7,8 @@ import path from "node:path";
 import {createConfiguration,inspectConfiguration,configurationToEnvironment,
         validateConfigFile,parseArgs} from "../scripts/vector-bot-operator.mjs";
 import {packageVectorBot} from "../scripts/vector-bot-package.mjs";
+import {createDedicatedBotIdentity} from "../scripts/vector-bot-identity.mjs";
+import {isNip19Key} from "../scripts/vector-bot-preflight.mjs";
 
 const alphabet="qpzry9x8gf2tvdw0s3jn54khce6mua7l";
 const generators=[0x3b6a57b2,0x26508e6d,0x1ea119fa,0x3d4233dd,0x2a1462b3];
@@ -31,13 +33,15 @@ test("operator init makes private config and random journal key, never overwrite
  t.after(()=>rm(dir,{recursive:true,force:true}));
  const conf=path.join(dir,"config","private.json"),journal=path.join(dir,"state","dealer.enc");
  const created=await createConfiguration(conf,{journal});
- assert.equal(created,conf);
+ assert.equal(created.path,conf);
+ assert.ok(isNip19Key(created.publicNpub,"npub"));
  const raw=await readFile(conf,"utf8");
  const value=JSON.parse(raw);
  assert.equal(value.VCTR_DEALER_FILE,journal);
  assert.match(value.VCTR_DEALER_KEY_HEX,/^[0-9a-f]{64}$/);
  assert.equal(value.VCTR_PLAYERS_JSON.length,2);
- assert.equal(value.VECTOR_NSEC,"");
+ assert.ok(isNip19Key(value.VECTOR_NSEC,"nsec"));
+ assert.ok(!raw.includes(created.publicNpub),"public Bot identity need not be persisted");
  if(process.platform!=="win32"){
   assert.equal((await stat(conf)).mode&0o777,0o600);
   assert.equal((await stat(path.dirname(conf))).mode&0o777,0o700);
@@ -54,8 +58,7 @@ test("operator detects bad and valid private config before network access",async
  await createConfiguration(file,{journal});
  const config=JSON.parse(await readFile(file,"utf8"));
  const invalid=await inspectConfiguration(file);
- assert.ok(invalid.some(x=>x.includes("VECTOR_NSEC")));
- assert.ok(invalid.some(x=>x.includes("2-6")||x.includes("Player entries")));
+ assert.ok(invalid.some(x=>x.includes("Player entries")));
  config.VECTOR_NSEC=nip19("nsec",7);
  config.VCTR_PLAYERS_JSON=[{id:nip19("npub",1),name:"Alice"},
                           {id:nip19("npub",2),name:"Bob"}];
@@ -74,6 +77,14 @@ test("operator detects bad and valid private config before network access",async
   await chmod(path.dirname(file),0o755);
   assert.ok((await inspectConfiguration(file)).some(x=>x.includes("0700")));
  }
+});
+test("two independent offline Bot identities have distinct valid public and private NIP-19 keys",()=>{
+ const a=createDedicatedBotIdentity(),b=createDedicatedBotIdentity();
+ assert.ok(isNip19Key(a.nsec,"nsec"));
+ assert.ok(isNip19Key(a.npub,"npub"));
+ assert.notEqual(a.nsec,b.nsec);
+ assert.notEqual(a.npub,b.npub);
+ assert.ok(!a.npub.includes(a.nsec));
 });
 test("reject putting a private config inside Git and reject unsupported CLI args",async t=>{
  const inRepo=path.join(process.cwd(),".vctrtable-insecure","private.json");
