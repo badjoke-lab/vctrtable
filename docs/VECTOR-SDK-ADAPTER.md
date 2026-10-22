@@ -136,3 +136,31 @@ pending.
 ## Bounded private DM acknowledgments
 
 All private SDK DM sends, including dealer-unavailable notices after uncertain persistence, now use the same five-second bounded wait. A stalled relay must not keep a player callback waiting without a deadline. Send failure or timeout is logged without message content, keys or cards. SDK send success still does **not** establish recipient delivery. After uncertainty, a client must retry the *exact same* requestId or send its authenticated private `sync`; the Bot must not replay an unknown committed action automatically. This is a transport-liveness correction, **not** a Mini App private-channel implementation or real multiplayer proof.
+
+## Roster admission and offline operator preflight (October 2026)
+
+The Rust Bot now parses `VCTR_PLAYERS_JSON` before SDK login and rejects
+malformed, duplicate or non-NIP-19 bech32 `npub` identities, unsafe names and
+unknown JSON fields. An incoming message must be a non-group, non-file DM,
+carry a verified SDK author, match the author's DM chat and be a member of the
+configured roster **before any parser error, help message, sync, or game
+command can receive a response**. Unknown authors are silently ignored.
+These are exact Nostr pubkey identities, not Vector display names.
+
+`npm run vector:preflight` runs a credential-safe, non-network operator check
+for the NIP-19 public/private key formats, 2–6 unique participants, 32-byte
+encrypted journal key, room ID and owner-only journal directory. It reports
+failure *categories*, never actual identities, secrets or journal contents.
+Preflight does not generate keys, change host permissions, deploy the Bot or
+contact a relay. The operationally required Node dealer and Rust SDK Bot run
+on the same single host with existing single-writer guards.
+
+The Bot also accepts human-readable private DM poker commands described in
+[DM-first poker](DM-FIRST-POKER.md); raw JSON remains supported for manual
+WebXDC developer import. Real Vector login, multi-device receipt and
+automatic Mini App private state are still unverified.
+
+The Node dealer child is launched with `VECTOR_NSEC` **explicitly removed**
+from its inherited environment. It only needs the journal encryption key and
+room/roster settings; the Bot signing identity remains in the Rust SDK host.
+A Rust test checks the process environment contract without starting Node.

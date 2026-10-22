@@ -18,6 +18,8 @@ mod delivery_guard;
 use delivery_guard::DeliveryOrder;
 mod writer_lock;
 use writer_lock::DealerWriterLease;
+mod roster;
+use roster::PlayerRoster;
 mod dm_play;
 use dm_play::{TextCommand,parse as parse_text_poker,render_private};
 
@@ -81,14 +83,22 @@ impl DealerChild {
     }
 }
 
+/// Node dealer needs roster/journal encryption, not the Vector Bot signing
+/// identity. The child must never receive VECTOR_NSEC through inherited env.
+fn dealer_command()->Command{
+    let mut command=Command::new("node");
+    command
+        .arg("bots/poker/dealer-worker.mjs")
+        .env_remove("VECTOR_NSEC")
+        .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::inherit())
+        .kill_on_drop(true);
+    command
+}
+
 async fn spawn_dealer()->Result<(DealerChild,u64),DynError>{
     // Rust and Node must have the same private environment; the Node worker
     // is NOT a HTTP service, and no identity keys appear in IPC JSON.
-    let mut child=Command::new("node")
-        .arg("bots/poker/dealer-worker.mjs")
-        .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::inherit())
-        .kill_on_drop(true)
-        .spawn()?;
+    let mut child=dealer_command().spawn()?;
     let stdin=child.stdin.take().ok_or("Missing dealer stdin")?;
     let stdout=child.stdout.take().ok_or("Missing dealer stdout")?;
     let mut io=DealerChild{_child:child,stdin,stdout:BufReader::new(stdout)};
@@ -220,6 +230,8 @@ async fn main()->Result<(),DynError>{
     // may own a journal, even if two supervisors race during restart.
     // Keep the descriptor alive until this process exits; OS frees on crash.
     let _journal_writer_lease=DealerWriterLease::from_env()?;
+    // Fail closed before opening a Vector identity or loading any private cards.
+    let roster=Arc::new(PlayerRoster::from_env()?);
     let nsec=std::env::var("VECTOR_NSEC").map_err(|_|"VECTOR_NSEC not configured")?;
     let bot=VectorBot::builder().nsec(nsec).build().await?;
     let dealer=Arc::new(Mutex::new(DealerSupervisor::start().await?));
@@ -270,11 +282,14 @@ async fn main()->Result<(),DynError>{
         let delivery_order=delivery_order.clone();
         let text_seats=text_seats.clone();
         let room_id=room_id.clone();
+        let roster=roster.clone();
         async move{
             if msg.is_mine()||msg.is_group||msg.is_file{return;}
             // NIP-17 sender is obtained from authenticated Vector SDK metadata.
             let Some(author)=msg.message.npub.clone() else{return;};
-            if !author.starts_with("npub1")||msg.chat_id!=author{return;}
+            // Uninvited users get no reply, no state, no parser response, and
+            // no dealer IPC request. Only the SDK-authenticated roster enters.
+            if !roster.accepts_dm(&author,&msg.chat_id){return;}
             let text=msg.text().trim();
             if text.len()>8192 {return;}
             // Text poker is opt-in. Keep the raw JSON developer seat usable.
@@ -354,6 +369,16 @@ async fn main()->Result<(),DynError>{
 mod tests{
     use super::*;
     use tokio::io::duplex;
+
+    #[test]
+    fn dealer_child_drops_vector_identity_even_when_parent_has_one(){
+        // std::process::Command exposes explicitly removed env keys; no
+        // network, secrets or Node process is started by this test.
+        let command=dealer_command();
+        assert!(command.as_std().get_envs().any(|(key,value)|
+            key=="VECTOR_NSEC" && value.is_none()),
+            "Node dealer must never inherit the Bot's private Vector identity");
+    }
 
     #[tokio::test]
     async fn sdk_send_deadline_is_bounded_on_stall_and_failure(){

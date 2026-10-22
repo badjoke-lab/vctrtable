@@ -60,3 +60,36 @@ POKER HELP で全コマンドを確認できます。コマンドは英語ファ
 
 Rust cargo check/test plus existing Node tests and XDC build must pass.
 These are development tests, not real Vector account/relay integration.
+## Operator preflight (before any actual relay test)
+
+The static roster must contain **2–6 actual Vector npubs** (public only), one
+per player. The Rust Bot now checks canonical lowercase NIP-19 bech32 keys and
+requires a matching authenticated SDK author and DM channel **before** any
+command, help reply or dealer request. Unregistered senders receive nothing.
+
+On the operator's trusted machine, load the dedicated Bot identity and a
+32-byte dealer journal encryption key from a private environment. Keep keys out
+of Git, messages, shell history and CI. The Bot requires `VECTOR_NSEC`,
+`VCTR_ROOM_ID`, `VCTR_PLAYERS_JSON`, `VCTR_DEALER_FILE` and
+`VCTR_DEALER_KEY_HEX` as already documented in VECTOR-SDK-ADAPTER.md. The
+parent of the absolute journal path must exist, belong to the running user and
+be private (Unix mode `0700`); an existing journal must be `0600`.
+
+From the repository root:
+
+```sh
+npm run vector:preflight
+# Only on a trusted, configured host after the preflight succeeds:
+cargo run --manifest-path bots/vector/Cargo.toml
+```
+
+Preflight checks key **format**, checksum, duplicates, player names, Node,
+working directory and filesystem permissions **without printing keys or
+connecting to any relay**. It does not prove possession of participant keys,
+delivery to any actual device, relay authentication, unattended uptime or
+successful multi-person play. Never provide the Bot's nsec to a player; the
+players send `poker status` to the Bot from their own Vector accounts.
+
+The Node worker's local IPC regression now also completes 2-, 3- and 6-seat
+hands, with unanimous pause/resume, recipient-private snapshots and showdown
+chip accounting. These fake test identities do not replace real Vector tests.
