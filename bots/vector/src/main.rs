@@ -8,7 +8,7 @@ use std::collections::HashSet;
 use std::future::Future;
 use std::process::Stdio;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration,Instant};
 use tokio::io::{AsyncBufRead,AsyncBufReadExt,AsyncWriteExt,BufReader};
 use tokio::process::{Child,ChildStdin,ChildStdout,Command};
 use tokio::sync::Mutex;
@@ -22,6 +22,8 @@ mod roster;
 use roster::PlayerRoster;
 mod dm_play;
 use dm_play::{TextCommand,parse as parse_text_poker,render_private};
+mod dm_probe;
+use dm_probe::{ProbeInput,ProbeManager};
 
 type DynError=Box<dyn Error+Send+Sync>;
 const HANDSHAKE_TIMEOUT:Duration=Duration::from_secs(10);
@@ -237,6 +239,8 @@ async fn main()->Result<(),DynError>{
     let dealer=Arc::new(Mutex::new(DealerSupervisor::start().await?));
     let delivery_order=Arc::new(Mutex::new(DeliveryOrder::default()));
     let text_seats=Arc::new(Mutex::new(HashSet::<String>::new()));
+    // Ephemeral one-use DM challenges; no cards or shared updates.
+    let probes=Arc::new(Mutex::new(ProbeManager::default()));
     let room_id=std::env::var("VCTR_ROOM_ID").map_err(|_|"VCTR_ROOM_ID not configured")?;
     println!("Poker Bot DM adapter initialized as {}",bot.npub());
 
@@ -283,6 +287,7 @@ async fn main()->Result<(),DynError>{
         let text_seats=text_seats.clone();
         let room_id=room_id.clone();
         let roster=roster.clone();
+        let probes=probes.clone();
         async move{
             if msg.is_mine()||msg.is_group||msg.is_file{return;}
             // NIP-17 sender is obtained from authenticated Vector SDK metadata.
@@ -292,6 +297,33 @@ async fn main()->Result<(),DynError>{
             if !roster.accepts_dm(&author,&msg.chat_id){return;}
             let text=msg.text().trim();
             if text.len()>8192 {return;}
+            // This private DM diagnostic never touches a poker revision or
+            // its encrypted journal. Exact SDK identity/roster check ran above.
+            let probe=match dm_probe::parse(text){
+                Ok(probe)=>probe,
+                Err(usage)=>{
+                    let _=send_with_deadline(Duration::from_secs(5),
+                        async {bot.dm(author).send(usage).await}).await;
+                    return;
+                }
+            };
+            if let Some(probe)=probe{
+                let reply=match probe{
+                    ProbeInput::Start=>{
+                        let mut manager=probes.lock().await;
+                        manager.start(&author,&msg.message.id,Instant::now())
+                            .unwrap_or_else(|_|"Could not start private DM probe. Retry later.".to_owned())
+                    },
+                    ProbeInput::Ack(token)=>{
+                        let mut manager=probes.lock().await;
+                        dm_probe::response(manager.acknowledge(&author,&token,Instant::now())).to_owned()
+                    }
+                };
+                let sent=send_with_deadline(Duration::from_secs(5),
+                    async {bot.dm(author).send(&reply).await}).await;
+                if !sent {eprintln!("Private DM diagnostic response could not be sent");}
+                return;
+            }
             // Text poker is opt-in. Keep the raw JSON developer seat usable.
             // Text commands carry their visible revision and use the immutable
             // SDK message ID for dealer idempotency after Nostr redelivery.
