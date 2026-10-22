@@ -12,3 +12,5 @@ serde_json = "1"
 
 # OS-level advisory flock lock, released automatically on process exit/crash.
 fs2 = "0.4"
+# NIP-19 roster validation, before connecting to a relay.
+bech32 = "0.11"
