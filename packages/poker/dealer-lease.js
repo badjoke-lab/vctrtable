@@ -11,7 +11,7 @@
  * The listener accepts NO data and exposes NO HTTP/network dealer interface.
  */
 import {createHash} from "node:crypto";
-import {realpath} from "node:fs/promises";
+import {mkdir,realpath} from "node:fs/promises";
 import {createServer} from "node:net";
 import path from "node:path";
 
@@ -27,6 +27,7 @@ export async function acquireDealerLease(filename){
   throw new Error("Absolute dealer journal filename required");
  // realpath(parent) prevents aliasing the same journal via symlinked folders.
  // Store itself atomically renames its file, so never realpath the file.
+ await mkdir(path.dirname(filename),{recursive:true,mode:0o700});
  const canonical=path.join(await realpath(path.dirname(filename)),path.basename(filename));
  const port=journalLeasePort(canonical);
  const listener=createServer(socket=>socket.destroy());
