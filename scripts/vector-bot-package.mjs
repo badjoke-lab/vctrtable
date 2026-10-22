@@ -13,6 +13,7 @@ const FILES=[
  ["packages/poker","packages/poker"],
  ["bots/vector/Cargo.toml","bots/vector/Cargo.toml"],
  ["scripts/vector-bot-operator.mjs","scripts/vector-bot-operator.mjs"],
+ ["scripts/vector-bot-identity.mjs","scripts/vector-bot-identity.mjs"],
  ["scripts/vector-bot-preflight.mjs","scripts/vector-bot-preflight.mjs"],
  ["docs/DM-FIRST-POKER.md","docs/DM-FIRST-POKER.md"],
  ["docs/VECTOR-SDK-ADAPTER.md","docs/VECTOR-SDK-ADAPTER.md"]
