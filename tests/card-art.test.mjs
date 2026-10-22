@@ -17,10 +17,10 @@ test("52 cards resolve to distinct PNG files and single blue card back",()=>{
  }
  assert.equal(ids.size,52);
  assert.equal(Object.keys(CARD_NAMES).length,53);
- assert.equal(cardPngPath("BACK"),"./card-png/blueBack.png");
- assert.equal(cardAsset("BACK"),"card-png/blueBack.png");
+ assert.equal(cardPngPath("BACK"),"./card-png/backdesign_1.png");
+ assert.equal(cardAsset("BACK"),"card-png/backdesign_1.png");
 });
-test("PNG sprite deck retains 12 court identities and numeric faces",()=>{
+test("Traditional CC0 raster deck retains 12 court identities and numeric faces",()=>{
  for(const suit of "CDHS")for(const rank of "JQK"){
   assert.equal(cardModel(rank+suit).court,true);
   assert.ok(CARD_NAMES[rank+suit].endsWith(".png"));

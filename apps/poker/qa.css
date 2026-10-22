@@ -64,18 +64,18 @@ a{color:#7af1c0}
 .qa-utilities p{font-size:12px}.qa-log{max-height:160px;overflow:auto;font-size:11px;padding-left:22px}
 .qa-toolrow{display:flex;justify-content:flex-end;margin:12px 0}.qa-toolrow button{font-size:12px}
 .qa-main footer{padding:12px 3px;font-size:11px}
-/* The PNG includes its own outer edge, corners, rank, suit and portrait.
+/* Traditional CC0 card PNG includes its own printed rank, pips and portraits.
    A displayed card is ONE img.vcard. No second border, background, glyphs or
    cropping/rescaling to an incorrect card aspect ratio. */
-img.vcard{display:block;width:40px;height:auto;aspect-ratio:75 / 113;
+img.vcard{display:block;width:40px;height:auto;aspect-ratio:127 / 177;
  flex:0 0 40px;min-width:0;max-width:none;border:0;border-radius:0;
  outline:0;box-shadow:none;background:transparent;padding:0;margin:0;
  object-fit:contain;object-position:center;vertical-align:middle}
-.vcard-empty{display:block;width:40px;aspect-ratio:75 / 113;flex:0 0 40px;
+.vcard-empty{display:block;width:40px;aspect-ratio:127 / 177;flex:0 0 40px;
  border:1px dashed #79a092;border-radius:4px;background:#21604d4d;
  box-shadow:none}
 img.vcard-small{width:24px;flex-basis:24px}
-.hero-hand .vcard{width:53px;flex-basis:53px}
+.hero-hand .vcard{width:60px;flex-basis:60px}
 .community-cards .vcard{width:38px;flex-basis:38px}
 .poker-seat-bet.payout{color:#83f0bc;font-weight:700}
 @media(min-width:521px){.qa-main{padding-top:18px}.felt{height:480px}}
@@ -251,8 +251,7 @@ img.vcard-small{width:24px;flex-basis:24px}
    Changing inline margins/padding at this point can make the composer jump out
    of the viewport, oscillating the observer and hiding the input again. */
 
-/* Single-image invariant: even legacy height declarations elsewhere must
-   not stretch a fully composed 75:113 PNG to a different card proportion. */
+/* Single-image invariant: preserve the full 127:177 print artwork. */
 img.vcard{height:auto!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important}
 
 /* Showdown: avoid flex-stretch that rendered Next hand as a giant vertical

@@ -119,3 +119,25 @@ for existing developer manual WebXDC import. See
 This is a separate *text DM player interface*, **not automatic Mini App PvP**.
 It still requires Bot deployment with a static roster, and real Vector relay
 and multi-device end-to-end tests are not complete. Do not send private keys.
+
+## Card artwork correction: original raster design replaced
+
+The previously bundled `saulspatz/SVGCards/Vertical2` artwork drew a large
+internal rectangle within number cards (especially conspicuous on 2♦ and
+5♣). Those rectangles were **part of the actual PNGs** and could not be
+corrected by CSS border removal. The mobile poker table now bundles an
+alternative traditional **CC0** full-card PNG deck from
+[safe-acid/Playing-cards-assets](https://github.com/safe-acid/Playing-cards-assets),
+pinned to commit `ae925833a28f587ec6abed561822889eb044a18c`.
+The 52 fronts and one blue-pattern back are stored in the built XDC; the
+Vector client does not download or generate images at runtime.
+
+The originals are 127×177 pixels and are displayed as direct `<img>`
+elements without additional borders or corner-symbol overlays. The
+two visible hole cards, five board cards and opponent backs all use the
+same deck. Browser CI verifies all 53 PNGs load and keep their original
+aspect ratio, including the problematic **2♦** and **5♣**.
+
+**Important:** a previously shared `poker.xdc` message contains its old
+artwork forever. Rebuild/re-upload and open the NEW XDC; re-opening an old
+chat message will continue showing the old card images.
