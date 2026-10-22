@@ -124,7 +124,10 @@ pub fn render_private(packet: &str) -> Option<String> {
             id,s["startingChips"],s["smallBlind"],s["bigBlind"],s["actionSeconds"],
             s["rebuy"],approvals));
         if public.get("settings").is_none_or(Value::is_null) {
-            out.push_str(&format!("Approve: poker {} approve {}\n",revision,id));
+            let approved=proposal["approvals"].as_array().is_some_and(|a|
+                a.iter().any(|v|v.as_str()==Some(recipient)));
+            if approved {out.push_str("Waiting for other seats to approve\n");}
+            else {out.push_str(&format!("Approve: poker {} approve {}\n",revision,id));}
         }
     }
     if let Some(hand)=public.get("hand").filter(|h|!h.is_null()) {
@@ -175,10 +178,17 @@ pub fn render_private(packet: &str) -> Option<String> {
             cmds.push(format!("call ({} owed)",legal["toCall"]));
         }
         if legal["canRaise"].as_bool()==Some(true) {
-            cmds.push(format!("raise TOTAL (min {} / max {})",legal["minRaiseTo"],legal["maxRaiseTo"]));
+            if legal["shortAllInOnly"].as_bool()==Some(true){
+                cmds.push(format!("raise {} (short all-in only)",legal["maxRaiseTo"]));
+            } else {
+                cmds.push(format!("raise TOTAL (min {} / max {})",legal["minRaiseTo"],legal["maxRaiseTo"]));
+            }
         }
         out.push_str(&cmds.join(" · "));
-        out.push_str(&format!("\nSend: poker {} call (or check/fold/raise TOTAL)\n",revision));
+        let suggested=if legal["canCheck"].as_bool()==Some(true) {"check"}
+            else if legal["canCall"].as_bool()==Some(true) {"call"}
+            else {"fold"};
+        out.push_str(&format!("\nSend: poker {} {} (or another legal action above)\n",revision,suggested));
     }
     out.push_str("For fresh state: poker status");
     Some(out)
@@ -234,5 +244,22 @@ mod tests {
         assert!(text.contains("YOUR TURN"));
         assert!(!text.contains("npub1bob"));
         assert!(!text.contains("deck"));
+    }
+    #[test]
+    fn check_and_short_all_in_hints_never_advise_an_illegal_call_or_minimum(){
+        let p=json!({
+            "kind":"vctrtable-poker-state","roomId":"a","revision":12,
+            "state":{"roomId":"a","revision":12,"pause":{"paused":false,"request":null},
+                "hand":{"number":1,"status":"betting","street":"turn","board":["AS"],"pot":50,
+                    "playerToAct":"npub1alice","players":[]}},
+            "private":{"recipientId":"npub1alice","ownHole":["QC","JD"],
+                "legal":{"canCheck":true,"canCall":false,"toCall":0,"canRaise":true,
+                    "shortAllInOnly":true,"minRaiseTo":200,"maxRaiseTo":75}}
+        });
+        let text=render_private(&p.to_string()).unwrap();
+        assert!(text.contains("poker 12 check"));
+        assert!(text.contains("raise 75 (short all-in only)"));
+        assert!(!text.contains("poker 12 call"));
+        assert!(!text.contains("raise TOTAL (min 200"));
     }
 }
