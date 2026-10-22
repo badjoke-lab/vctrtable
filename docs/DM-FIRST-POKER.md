@@ -139,3 +139,32 @@ latency. Source-level and CI tests cannot replace a real Vector-device run.
 - Only then consider testing full two-person hands on the actual Vector relay.
 
 No test record above is marked successful until the evidence exists.
+
+## One-time private operator setup (source tree or portable Bot artifact)
+
+On your **own trusted Mac/Linux computer**, from the vctrtable repository or
+extracted portable Bot archive, run `npm run vector:init` once. This securely
+creates a **new dedicated Nostr Bot signing identity on that computer**, a
+random 32-byte AES journal key, a 0600 private config at
+`~/.config/vctrtable/private.json`, and a 0700 private journal directory.
+The command displays **only the new Bot's public npub**, never its signing
+nsec. Never use your personal Vector account's nsec as the dealer identity.
+
+Edit the private configuration locally to replace the two placeholder
+`VCTR_PLAYERS_JSON` entries with the actual **public npubs** of the
+participants. Add up to six total entries, no duplicate keys. Keep the
+generated `VECTOR_NSEC` and `VCTR_DEALER_KEY_HEX` unchanged; otherwise old
+encrypted saved hands may become unreadable and the Bot's identity will change.
+
+Then `npm run vector:check` performs offline validation and
+`npm run vector:start` starts the SDK Bot in the foreground. Press Ctrl+C
+to stop. The release artifact includes the already-built Rust binary; source
+installations use Cargo if a bundled binary is unavailable. Node 20+ is
+required either way. Do not run multiple Bots with the same dealer journal.
+
+After the Bot is actually running, have each invited player send the Bot
+`poker probe` in a private Vector DM, followed by `poker ack TOKEN` within
+120 seconds. Confirm both players can independently complete the round-trip
+before testing the table. **No live relays or player accounts are involved
+in package building or CI.** Do not submit keys or the config file in GitHub,
+issues, chat or bug reports.
