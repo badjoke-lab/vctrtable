@@ -93,3 +93,49 @@ players send `poker status` to the Bot from their own Vector accounts.
 The Node worker's local IPC regression now also completes 2-, 3- and 6-seat
 hands, with unanimous pause/resume, recipient-private snapshots and showdown
 chip accounting. These fake test identities do not replace real Vector tests.
+
+## Real Vector DM round-trip probe (new, not yet run on relay)
+
+The Rust SDK Bot now supports a **private, game-state-independent** diagnostic
+for checking that a registered Vector seat can both receive and send DMs:
+
+1. On a trusted operator host, use the existing preflight and launch
+   instructions. The Bot must be configured with 2–6 registered public npubs.
+2. From a **registered player's own Vector DM** to the dedicated Bot, send
+   `poker probe`. The Bot returns a random, single-use, 32-hex challenge
+   privately to that exact SDK-verified sender.
+3. Within **120 seconds**, copy the line `poker ack TOKEN` from the Bot's
+   DM response and send it back in the same DM.
+4. The Bot verifies that the token is fresh, matches the sender and has never
+   been used, then replies with a clear confirmation. A wrong sender,
+   expired/replayed token or incorrect challenge cannot succeed.
+
+The Bot never asks the user for an nsec, password, seed or wallet signature.
+The probe never calls the Node dealer, changes a revision, bets or deals a
+card; no challenge or private cards are broadcast through `sendUpdate()`.
+The Bot does not persist the challenge (a restart invalidates it) and does
+not print it to logs. Repeated delivery of the *same Vector probe event*
+resends its identical outstanding challenge rather than issuing a new one.
+A newly submitted probe replaces that sender's previous challenge.
+
+**Meaning of a successful result:** the Bot accepted a matching reply from
+the expected SDK-authenticated DM sender after generating a private reply.
+This is useful evidence of one account's **application-level DM round-trip**.
+It does **not** establish the performance or availability of all relays,
+automated WebXDC integration, proper dealing or other players' message
+receipt. The elapsed human interaction time is not measured as network
+latency. Source-level and CI tests cannot replace a real Vector-device run.
+
+### Real-device acceptance record (fill in only after actual testing)
+
+- Bot starts on a trusted host with secrets kept outside chat/Git.
+- Player A probe challenge received and acknowledged in their Vector DM.
+- Player B independently receives and acknowledges *their own* challenge.
+- Unknown sender receives no Bot response; Player B cannot acknowledge
+  Player A's challenge.
+- Registered players can obtain `poker status` after probe with independent
+  seat-specific private cards once a hand starts.
+- On device reconnect, `poker status` resyncs to the current room revision.
+- Only then consider testing full two-person hands on the actual Vector relay.
+
+No test record above is marked successful until the evidence exists.
