@@ -150,8 +150,10 @@ test('52 PNG images embedded during WebXDC build, never remote in Vector',()=>{
  assert.ok(art.includes('document.createElement("img")'));
  assert.ok(art.includes('img.src=cardPngPath('));
  assert.ok(!art.includes('playing-card'));
- assert.ok(source.includes('ae925833a28f587ec6abed561822889eb044a18c'));
- assert.ok(source.includes('safe-acid/Playing-cards-assets'));
+ assert.ok(source.includes('6612233288e54d73ee1c144e59b5f984bdde7979eef4c4755cb264263c074c36'));
+ assert.ok(source.includes('vctrtable-approved-deck-53-png.zip'));
+ assert.ok(!source.includes('raw.githubusercontent.com'));
+ assert.ok(!source.includes('fetch('),'Building the approved deck must not download third-party imagery');
  assert.ok(!art.includes('fetch('),'No card downloads from Vector runtime');
 });
 
