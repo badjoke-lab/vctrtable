@@ -1,3 +1,15 @@
 dist/
 node_modules/
 .DS_Store
+
+# NEVER commit live operator signing keys, encrypted private dealer state or config.
+.env
+.env.*
+!.env.example
+.vctrtable/
+.private/
+.local/
+private.json
+*.nsec
+*.enc
+*.writer.lock
