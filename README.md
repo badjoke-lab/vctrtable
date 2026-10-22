@@ -102,3 +102,20 @@ workers from corrupting the same encrypted room file. Crash/restart and
 duplicate-process attempts are tested on real child processes. This is NOT a
 distributed file lock or a completed Vector Mini App↔Bot private transport;
 the current in-app game still uses its single-player QA simulator.
+
+## Private DM text poker (development)
+
+For users who want to play using only **authenticated Vector Bot DMs** while
+standard WebXDC still lacks an automatic private per-seat reply bridge, the
+Rust SDK Bot now accepts English-first commands. Send **poker status** to the
+operator-provisioned Bot in a one-to-one DM, then use **poker REV call**,
+**poker REV raise 100**, **poker REV fold**, plus unanimous rules/pause voting.
+The Bot returns a readable private state to each opted-in seat, not the other
+players' hole cards. Every mutation uses the visible revision and stable
+incoming Vector message ID for idempotency. **poker json** restores raw state
+for existing developer manual WebXDC import. See
+[DM-first poker development guide](docs/DM-FIRST-POKER.md).
+
+This is a separate *text DM player interface*, **not automatic Mini App PvP**.
+It still requires Bot deployment with a static roster, and real Vector relay
+and multi-device end-to-end tests are not complete. Do not send private keys.

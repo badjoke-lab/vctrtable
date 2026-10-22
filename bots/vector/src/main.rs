@@ -4,6 +4,7 @@
 use serde::Deserialize;
 use serde_json::{json,Value};
 use std::error::Error;
+use std::collections::HashSet;
 use std::future::Future;
 use std::process::Stdio;
 use std::sync::Arc;
@@ -17,6 +18,8 @@ mod delivery_guard;
 use delivery_guard::DeliveryOrder;
 mod writer_lock;
 use writer_lock::DealerWriterLease;
+mod dm_play;
+use dm_play::{TextCommand,parse as parse_text_poker,render_private};
 
 type DynError=Box<dyn Error+Send+Sync>;
 const HANDSHAKE_TIMEOUT:Duration=Duration::from_secs(10);
@@ -169,7 +172,8 @@ where F:Future<Output=Result<T,E>>{
 }
 
 async fn send_deliveries(
-    bot:&VectorBot,reply:WorkerReply,requester:Option<&str>,order:&mut DeliveryOrder
+    bot:&VectorBot,reply:WorkerReply,requester:Option<&str>,order:&mut DeliveryOrder,
+    text_seats:&HashSet<String>
 ){
     if !reply.ok {
         if let Some(sender)=requester{
@@ -191,10 +195,14 @@ async fn send_deliveries(
             eprintln!("Skipped invalid or stale private poker snapshot");
             continue;
         }
+        let body=if text_seats.contains(&delivery.to){
+            render_private(&delivery.body).unwrap_or_else(||
+                "Poker private state could not be displayed. Send poker status or poker json.".to_owned())
+        }else{delivery.body.clone()};
         let bot=bot.clone();
         pending.spawn(async move {
             let sent=send_with_deadline(Duration::from_secs(5),
-                async {bot.dm(delivery.to.clone()).send(&delivery.body).await}).await;
+                async {bot.dm(delivery.to.clone()).send(&body).await}).await;
             (delivery.to,sent)
         });
     }
@@ -216,6 +224,8 @@ async fn main()->Result<(),DynError>{
     let bot=VectorBot::builder().nsec(nsec).build().await?;
     let dealer=Arc::new(Mutex::new(DealerSupervisor::start().await?));
     let delivery_order=Arc::new(Mutex::new(DeliveryOrder::default()));
+    let text_seats=Arc::new(Mutex::new(HashSet::<String>::new()));
+    let room_id=std::env::var("VCTR_ROOM_ID").map_err(|_|"VCTR_ROOM_ID not configured")?;
     println!("Poker Bot DM adapter initialized as {}",bot.npub());
 
     // Keep the timeout/supervision loop ALIVE after a dealer crash. A later
@@ -224,6 +234,7 @@ async fn main()->Result<(),DynError>{
         let dealer=dealer.clone();
         let bot=bot.clone();
         let delivery_order=delivery_order.clone();
+        let text_seats=text_seats.clone();
         tokio::spawn(async move{
             let mut interval=tokio::time::interval(Duration::from_secs(1));
             interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
@@ -237,8 +248,9 @@ async fn main()->Result<(),DynError>{
                 match next{
                     Ok(reply)=>{
                         failures=0;
+                        let modes=text_seats.lock().await.clone();
                         let mut order=delivery_order.lock().await;
-                        send_deliveries(&bot,reply,None,&mut order).await;
+                        send_deliveries(&bot,reply,None,&mut order,&modes).await;
                     }
                     Err(_)=>{
                         failures=failures.saturating_add(1);
@@ -256,17 +268,60 @@ async fn main()->Result<(),DynError>{
     bot.on_message(move |bot,msg|{
         let dealer=dealer.clone();
         let delivery_order=delivery_order.clone();
+        let text_seats=text_seats.clone();
+        let room_id=room_id.clone();
         async move{
             if msg.is_mine()||msg.is_group||msg.is_file{return;}
             // NIP-17 sender is obtained from authenticated Vector SDK metadata.
             let Some(author)=msg.message.npub.clone() else{return;};
             if !author.starts_with("npub1")||msg.chat_id!=author{return;}
             let text=msg.text().trim();
-            if text.len()>8192||!text.starts_with('{'){return;}
-            let Ok(request)=serde_json::from_str::<Value>(text) else{return;};
+            if text.len()>8192 {return;}
+            // Text poker is opt-in. Keep the raw JSON developer seat usable.
+            // Text commands carry their visible revision and use the immutable
+            // SDK message ID for dealer idempotency after Nostr redelivery.
+            let command=match parse_text_poker(text,&msg.message.id){
+                Ok(Some(command))=>Some(command),
+                Ok(None)=>None,
+                Err(message)=>{
+                    let _=send_with_deadline(Duration::from_secs(5),
+                        async {bot.dm(author).send(message).await}).await;
+                    return;
+                }
+            };
+            let request=if let Some(TextCommand::Action(action))=command.as_ref() {
+                let mut request=action.clone();
+                request["roomId"]=json!(room_id);
+                Some(request)
+            }else if command.is_none(){
+                if !text.starts_with('{'){return;}
+                let Ok(raw)=serde_json::from_str::<Value>(text) else{return;};
+                Some(raw)
+            }else{None};
+            let sync=match command{
+                Some(TextCommand::Help)=>{
+                    let _=send_with_deadline(Duration::from_secs(5),
+                        async {bot.dm(author).send(dm_play::help()).await}).await;
+                    return;
+                },
+                Some(TextCommand::JsonMode)=>{
+                    text_seats.lock().await.remove(&author);
+                    true
+                },
+                Some(TextCommand::Sync)=>{
+                    text_seats.lock().await.insert(author.clone());
+                    true
+                },
+                Some(TextCommand::Action(_))=>{
+                    text_seats.lock().await.insert(author.clone());
+                    false
+                },
+                None=>request.as_ref().and_then(|v|v.get("kind"))
+                    .and_then(Value::as_str)==Some("sync"),
+            };
             let next={
                 let mut proc=dealer.lock().await;
-                if request.get("kind").and_then(Value::as_str)==Some("sync"){
+                if sync {
                     proc.request(json!({"kind":"sync","sender":author})).await
                 }else{
                     proc.request(json!({"kind":"command","sender":author,"request":request})).await
@@ -274,8 +329,9 @@ async fn main()->Result<(),DynError>{
             };
             match next{
                 Ok(reply)=>{
+                    let modes=text_seats.lock().await.clone();
                     let mut order=delivery_order.lock().await;
-                    send_deliveries(&bot,reply,Some(&author),&mut order).await;
+                    send_deliveries(&bot,reply,Some(&author),&mut order,&modes).await;
                 },
                 Err(_)=>{
                     // The command may have been committed before IPC failed.
