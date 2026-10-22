@@ -274,7 +274,13 @@ async fn main()->Result<(),DynError>{
                     // The command may have been committed before IPC failed.
                     // Never retry an unknown-mutating command automatically.
                     eprintln!("Dealer IPC failed; private action acknowledgement uncertain");
-                    let _=bot.dm(author).send("poker error: DEALER_UNAVAILABLE_RETRY_SAME_REQUEST_ID_OR_SYNC").await;
+                    // A dead relay or blocked DM send must never keep a player
+                    // callback alive indefinitely after uncertain persistence.
+                    // Do not auto-retry: the action may already be committed.
+                    let sent=matches!(timeout(Duration::from_secs(5),
+                        async {bot.dm(author).send("poker error: DEALER_UNAVAILABLE_RETRY_SAME_REQUEST_ID_OR_SYNC").await}).await,
+                        Ok(Ok(_)));
+                    if !sent {eprintln!("Could not send private recovery notice; player must retry same requestId or sync");}
                 }
             }
         }
