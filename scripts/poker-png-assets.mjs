@@ -1,66 +1,58 @@
 /**
- * Traditional 52-card CC0 playing-card artwork, bundled as real full-face PNGs.
- * Source: safe-acid/Playing-cards-assets (CC0-1.0), pinned immutable commit.
- * Replaces the former Vertical2 deck whose *original raster image* contained
- * the conspicuous internal rectangular pip frame seen in Android screenshots.
+ * Approved vctrtable card images, exactly 52 faces and the blue back.
+ * Source of truth: previous user-approved vctrtable-approved-deck-53-png.zip
+ * of original 240×336 cards (NOT any third-party substitute).
  *
- * No CSS overlays, generated faux-card borders or runtime network requests.
- * Small 127x177 originals are 4-13 KiB, lightweight enough for WebXDC.
+ * Keep deck offline. An absent or mismatched archive MUST fail the build
+ * rather than silently fetching an incorrect third-party set.
  */
 import fs from "node:fs";
 import path from "node:path";
-const pinned="ae925833a28f587ec6abed561822889eb044a18c";
-const base="https://raw.githubusercontent.com/safe-acid/Playing-cards-assets/"+
- pinned+"/Playing%20Cards/PNG%20Cards/Cards%20127x177px/";
-const suitNames={C:"clubs",D:"diamonds",H:"hearts",S:"spades"};
-const rankNames={T:"10"};
+import {execFileSync} from "node:child_process";
+import {createHash} from "node:crypto";
+
+const archiveName="assets/approved-cards/vctrtable-approved-deck-53-png.zip";
+const ranks="23456789TJQKA", suits="CDHS";
 export const CARD_NAMES=Object.freeze(Object.fromEntries(
- Array.from("CDHS").flatMap(suit=>Array.from("23456789TJQKA").map(rank=>{
-  const code=rank+suit;
-  const filename=rank==="A"&&suit==="H"?"A__hearts.png":
-   (rankNames[rank]||rank)+"_"+suitNames[suit]+".png";
-  return [code,filename];
- })).concat([["BACK","backdesign_1.png"]])
+ [...suits].flatMap(suit=>[...ranks].map(rank=>[rank+suit,rank+suit+".png"]))
+ .concat([["BACK","BACK.png"]])
 ));
 export function cardAsset(code){
  if(!Object.hasOwn(CARD_NAMES,code))throw new Error("Unsupported PNG card "+String(code));
  return "card-png/"+CARD_NAMES[code];
 }
-function pngDimensions(buffer){
- const header=Buffer.from("89504e470d0a1a0a","hex");
- if(buffer.length<80||!buffer.subarray(0,8).equals(header))throw Error("Not PNG");
+export function pngDimensions(buffer){
+ if(buffer.length<60 || buffer.subarray(0,8).toString("hex")!=="89504e470d0a1a0a") throw Error("Not PNG");
  const w=buffer.readUInt32BE(16),h=buffer.readUInt32BE(20);
- if(w!==127||h!==177)throw Error("Card PNG must be the same 127x177 image dimensions");
+ if(w!==240||h!==336)throw Error("Approved PNG must be 240x336");
  return {w,h};
 }
-export async function downloadCardAssets(destination,{fetcher=globalThis.fetch}={}){
- if(typeof fetcher!=="function")throw Error("Fetch API required to bundle offline cards");
- fs.mkdirSync(path.join(destination,"card-png"),{recursive:true});
- const entries=Object.entries(CARD_NAMES);
- let next=0;
- async function worker(){
-  while(next<entries.length){
-   const [code,file]=entries[next++];
-   const target=path.join(destination,cardAsset(code));
-   let last;
-   for(let tries=0;tries<3;tries++){
-    try{
-     const result=await fetcher(base+encodeURIComponent(file),{signal:AbortSignal.timeout(25000)});
-     if(!result.ok)throw Error("PNG download HTTP "+result.status+": "+file);
-     const bytes=Buffer.from(await result.arrayBuffer());
-     pngDimensions(bytes);
-     // The public-domain raster deck is tiny. Refuse accidental enormous
-     // high-resolution upstream replacements that bloat every .xdc share.
-     if(bytes.length<500||bytes.length>60000)throw Error("Unexpected PNG size "+file);
-     fs.writeFileSync(target,bytes);
-     last=null;break;
-    }catch(error){last=error;}
-   }
-   if(last)throw last;
-  }
+function inspectZip(file){
+ // Node 22 does not provide a built-in ZIP reader, so use system unzip,
+ // which is already required by the WebXDC packaging workflow.
+ const output=execFileSync("unzip",["-Z","-1",file],{encoding:"utf8"});
+ const names=output.trim().split(/\r?\n/);
+ const expected=Object.values(CARD_NAMES);
+ if(names.length!==53 || new Set(names).size!==53 ||
+    names.some(name=>!expected.includes(name)) ||
+    expected.some(name=>!names.includes(name)))
+    throw Error("Approved deck ZIP must contain exactly 52 faces and BACK.png");
+ return names;
+}
+export async function downloadCardAssets(destination,{archive=archiveName}={}){
+ if(!fs.existsSync(archive))throw Error("Missing approved poker card ZIP: "+archive+" — never fall back to third-party imagery");
+ inspectZip(archive);
+ const folder=path.join(destination,"card-png");
+ fs.mkdirSync(folder,{recursive:true});
+ const fingerprints=new Set();
+ for(const [code,file] of Object.entries(CARD_NAMES)){
+  const image=execFileSync("unzip",["-p",archive,file],{maxBuffer:1024*1024});
+  pngDimensions(image);
+  const fingerprint=createHash("sha256").update(image).digest("hex");
+  if(fingerprints.has(fingerprint))throw Error("Duplicate source card image for "+code);
+  fingerprints.add(fingerprint);
+  fs.writeFileSync(path.join(folder,file),image);
  }
- await Promise.all(Array.from({length:6},worker));
- if(fs.readdirSync(path.join(destination,"card-png")).length!==53)
-  throw Error("Full 52-card PNG deck plus back was not bundled");
- return entries.length;
+ if(fs.readdirSync(folder).length!==53)throw Error("Approved deck incomplete");
+ return 53;
 }
