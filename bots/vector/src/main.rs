@@ -14,6 +14,8 @@ use tokio::time::{timeout,MissedTickBehavior};
 use vector_sdk::VectorBot;
 mod delivery_guard;
 use delivery_guard::DeliveryOrder;
+mod writer_lock;
+use writer_lock::DealerWriterLease;
 
 type DynError=Box<dyn Error+Send+Sync>;
 const HANDSHAKE_TIMEOUT:Duration=Duration::from_secs(10);
@@ -199,6 +201,10 @@ async fn send_deliveries(
 
 #[tokio::main]
 async fn main()->Result<(),DynError>{
+    // Acquire BEFORE starting the SDK or Node child. Only one Bot process
+    // may own a journal, even if two supervisors race during restart.
+    // Keep the descriptor alive until this process exits; OS frees on crash.
+    let _journal_writer_lease=DealerWriterLease::from_env()?;
     let nsec=std::env::var("VECTOR_NSEC").map_err(|_|"VECTOR_NSEC not configured")?;
     let bot=VectorBot::builder().nsec(nsec).build().await?;
     let dealer=Arc::new(Mutex::new(DealerSupervisor::start().await?));
