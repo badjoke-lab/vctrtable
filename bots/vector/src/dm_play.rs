@@ -16,6 +16,8 @@ vctrtable poker — private Vector DM mode\n\
 poker status           show your table / switch to readable replies\n\
 poker json             switch back to raw JSON replies for WebXDC manual import\n\
 poker help             show commands\n\
+poker probe            request a private DM delivery challenge\n\
+poker ack TOKEN        acknowledge a one-use private reply\n\
 poker REV propose CHIPS SB BB SECONDS yes|no\n\
 poker REV approve PROPOSAL_ID\n\
 poker REV start        deal next hand\n\
