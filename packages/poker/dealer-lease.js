@@ -40,7 +40,7 @@ export async function acquireDealerLease(filename){
    listener.listen({host:"127.0.0.1",port,exclusive:true});
   });
  }catch{
-  listener.close();
+  listener.close(()=>{}); // failed listen may not be in the listening state
   throw new Error("Dealer single-host journal lease unavailable; possible duplicate instance or local port conflict");
  }
  let released=false;
