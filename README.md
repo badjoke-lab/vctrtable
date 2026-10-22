@@ -133,13 +133,13 @@ extract the matching unsigned Actions artifact and run:
 
 ```sh
 npm run vector:init
-# Edit the locally created owner-only ~/.config/vctrtable/private.json
-# Fill in a DEDICATED Bot nsec and 2-6 public player npubs (no personal nsec).
+# Bot signing identity is generated locally by init (public npub is printed).
+# Edit the owner-only ~/.config/vctrtable/private.json and fill in 2-6 PLAYER PUBLIC npubs.
 npm run vector:check
 npm run vector:start
 ```
 
-The key material is generated or entered **on the operator's machine** and
+The Bot's dedicated signing identity and dealer-journal key are generated **on the operator's machine** and
 saved only in a local 0600 config under an owner-only directory; the default
 dealer journal is under ~/.local/share/vctrtable (0700 directory). `init`
 refuses to overwrite existing private configuration and journal keys.
