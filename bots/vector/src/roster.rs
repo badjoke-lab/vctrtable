@@ -91,7 +91,7 @@ mod tests {
     fn bad_roster_fails_before_sdk_login_or_dealer_start() {
         let a=npub(1);
         assert!(PlayerRoster::from_json(&players(&[a.clone()])).is_err());
-        assert!(PlayerRoster::from_json(&players(&[a.clone();7])).is_err());
+        assert!(PlayerRoster::from_json(&players(&vec![a.clone();7])).is_err());
         assert!(PlayerRoster::from_json(&players(&[a.clone(),a.clone()])).is_err());
         assert!(PlayerRoster::from_json(&players(&[a.clone(),"nsec1secret".into()])).is_err());
         assert!(PlayerRoster::from_json(&players(&[a.clone(),format!("{}x",&a[0..62])])).is_err());
