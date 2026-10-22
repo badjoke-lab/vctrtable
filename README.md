@@ -120,24 +120,23 @@ This is a separate *text DM player interface*, **not automatic Mini App PvP**.
 It still requires Bot deployment with a static roster, and real Vector relay
 and multi-device end-to-end tests are not complete. Do not send private keys.
 
-## Card artwork correction: original raster design replaced
+## Approved 53-card PNG deck — source of truth
 
-The previously bundled `saulspatz/SVGCards/Vertical2` artwork drew a large
-internal rectangle within number cards (especially conspicuous on 2♦ and
-5♣). Those rectangles were **part of the actual PNGs** and could not be
-corrected by CSS border removal. The mobile poker table now bundles an
-alternative traditional **CC0** full-card PNG deck from
-[safe-acid/Playing-cards-assets](https://github.com/safe-acid/Playing-cards-assets),
-pinned to commit `ae925833a28f587ec6abed561822889eb044a18c`.
-The 52 fronts and one blue-pattern back are stored in the built XDC; the
-Vector client does not download or generate images at runtime.
+The user's approved deck is stored as
+[`vctrtable-approved-deck-53-png.zip`](vctrtable-approved-deck-53-png.zip)
+in this repository, with exactly 52 card fronts (`2D.png`, `5C.png`,
+`JS.png`, etc.) and a blue `BACK.png` image. They are complete **240×336**
+PNG images, including all twelve J/Q/K courts. **No third-party PNG art is
+downloaded during the build or at runtime.** The approved ZIP is checked against
+SHA-256 `6612233288e54d73ee1c144e59b5f984bdde7979eef4c4755cb264263c074c36`.
+The previously defective 2♦/5♣ images are pinned individually as well.
 
-The originals are 127×177 pixels and are displayed as direct `<img>`
-elements without additional borders or corner-symbol overlays. The
-two visible hole cards, five board cards and opponent backs all use the
-same deck. Browser CI verifies all 53 PNGs load and keep their original
-aspect ratio, including the problematic **2♦** and **5♣**.
+Run `npm test && npm run build` to validate the unchanged approved ZIP,
+extract all 53 embedded PNGs, and produce `dist/poker.xdc`. Missing, altered,
+duplicated or incorrectly sized images **fail the build** rather than silently
+falling back to incorrect card designs. Mobile browser CI checks that cards
+decode at their original 240×336 dimensions and that 2♦, 5♣ and BACK resolve
+to their approved filenames.
 
-**Important:** a previously shared `poker.xdc` message contains its old
-artwork forever. Rebuild/re-upload and open the NEW XDC; re-opening an old
-chat message will continue showing the old card images.
+**Important:** an older `poker.xdc` in Vector messages never updates itself.
+Open a newly published XDC package to see the corrected deck.
