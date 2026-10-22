@@ -17,6 +17,7 @@ import os from "node:os";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 import {checkVectorEnvironment} from "./vector-bot-preflight.mjs";
+import {createDedicatedBotIdentity} from "./vector-bot-identity.mjs";
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const HOME=os.homedir();
@@ -76,14 +77,15 @@ export async function createConfiguration(file=DEFAULT_CONFIG,{root=ROOT,journal
  if(!info.isDirectory()||!unixPrivate(info,0o700)||!owned(info)){
   throw new Error("Config directory must be an owner-only, non-symlink directory (0700)");
  }
- // Private journal directory is created only for the default isolated path.
+ // The journal directory is kept separate from the signing identity.
  await mkdir(path.dirname(journal),{recursive:true,mode:0o700});
  const parent=lstatSync(path.dirname(journal));
  if(!parent.isDirectory()||!unixPrivate(parent,0o700)||!owned(parent)){
   throw new Error("Dealer journal directory is not owner-only (0700)");
  }
+ const dedicated=createDedicatedBotIdentity();
  const config={
-  VECTOR_NSEC:"",
+  VECTOR_NSEC:dedicated.nsec,
   VCTR_ROOM_ID:"private-poker-table",
   VCTR_PLAYERS_JSON:[
    {id:"",name:"Player 1"},
@@ -98,7 +100,7 @@ export async function createConfiguration(file=DEFAULT_CONFIG,{root=ROOT,journal
   await fileHandle.writeFile(JSON.stringify(config,null,2)+"\n");
   await fileHandle.sync();
  }finally{await fileHandle.close();}
- return abs;
+ return {path:abs,publicNpub:dedicated.npub};
 }
 export async function inspectConfiguration(filename,{root=ROOT}={}){
  const problems=validateConfigFile(filename,{root});
@@ -135,8 +137,10 @@ export async function run(argv=process.argv.slice(2)){
  const {command,filename}=parseArgs(argv);
  if(command==="init"){
   const created=await createConfiguration(filename);
-  console.log("Created owner-only private configuration: "+created);
-  console.log("Edit this LOCAL file with a dedicated Bot nsec and two to six players' PUBLIC npubs.");
+  console.log("Created owner-only private configuration: "+created.path);
+  console.log("New dedicated Bot public npub (safe to share): "+created.publicNpub);
+  console.log("Bot signing nsec is generated locally and stored in the private file; it is NOT printed.");
+  console.log("Edit this LOCAL file and enter two to six players' PUBLIC npubs.");
   console.log("Never paste the file, signing key, or journal key into chat or Git.");
   console.log("Then run: node scripts/vector-bot-operator.mjs check");
   return 0;
