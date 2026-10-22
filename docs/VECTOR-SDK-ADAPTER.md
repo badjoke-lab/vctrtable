@@ -159,3 +159,8 @@ The Bot also accepts human-readable private DM poker commands described in
 [DM-first poker](DM-FIRST-POKER.md); raw JSON remains supported for manual
 WebXDC developer import. Real Vector login, multi-device receipt and
 automatic Mini App private state are still unverified.
+
+The Node dealer child is launched with `VECTOR_NSEC` **explicitly removed**
+from its inherited environment. It only needs the journal encryption key and
+room/roster settings; the Bot signing identity remains in the Rust SDK host.
+A Rust test checks the process environment contract without starting Node.
