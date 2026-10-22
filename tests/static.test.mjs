@@ -150,8 +150,8 @@ test('52 PNG images embedded during WebXDC build, never remote in Vector',()=>{
  assert.ok(art.includes('document.createElement("img")'));
  assert.ok(art.includes('img.src=cardPngPath('));
  assert.ok(!art.includes('playing-card'));
- assert.ok(source.includes('f8df28774736ea2545fc8e7fb693eb55ce031945'));
- assert.ok(source.includes('saulspatz/SVGCards'));
+ assert.ok(source.includes('ae925833a28f587ec6abed561822889eb044a18c'));
+ assert.ok(source.includes('safe-acid/Playing-cards-assets'));
  assert.ok(!art.includes('fetch('),'No card downloads from Vector runtime');
 });
 
