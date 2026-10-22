@@ -112,3 +112,15 @@ Every authenticated seat must see a nondecreasing sequence of authoritative deal
 ## Developer DM handoff state and safety
 
 Implement local UI statuses (empty, prepared, awaiting, delayed, imported, needs-sync), user-acknowledged manual sending, exact command/requestId reuse after uncertainty and an explicit new sync. Reject older revisions and conflicting same-revision snapshots. Block new action drafts until the outstanding operation has been reconciled. Preserve EN/JA labels and include a real-browser smoke. The Mini App↔Bot automatic private channel is NOT implemented.
+
+## Exclusive single-writer dealer Bot lock
+
+The Rust SDK adapter now holds an OS-level exclusive advisory file lock
+on the encrypted journal's sibling `.writer.lock` path throughout its
+lifetime, before any Vector Bot or Node child starts. Second Bot instance
+against the same journal must exit without sending/processing commands,
+and a crashed process releases the lock through the operating system.
+Unit tests check independent journal ownership, conflicts, releasing and
+file privacy. This protects **one cooperating Rust Bot per journal on the same
+host**, not arbitrary Node scripts or distributed multi-host filesystems.
+Private Mini App integration and live multiplayer remain incomplete.
