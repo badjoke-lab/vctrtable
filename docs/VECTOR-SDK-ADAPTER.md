@@ -44,7 +44,7 @@ The full state DM is JSON with the current room revision, public state and recip
 1. Connect the WebXDC player UI to this authenticated DM channel, with a safe (SDK-supported) return path and card-only rendering for the correct recipient. A Mini App's shared `sendUpdate()` is **not** a substitute.
 2. Verify NIP-17 message sender metadata and recipient privacy end to end on real Vector builds. This has not been tested on-device.
 3. Audit DMs and decrypted messages for stale/offline delivery, roster admission, app reloads, duplicate events and full reconnect without leaking state into chat logs.
-4. Production durability requires a single-writer lock, lifecycle management, key rotation, monitoring and redaction.
+4. Production durability still requires lifecycle management, key rotation, monitoring and redaction. A **same-host, cooperating Rust Bot single-writer lock** is now implemented; direct Node writers and distributed hosts are not guarded.
 5. Human multi-device test only when remaining game and UI work is near complete.
 
 The Node IPC test suite runs a real Node worker with **fake npub-shaped IDs** and confirms routing and restart behavior. It is not proof of real Nostr/Vector cryptographic integrity.
@@ -78,3 +78,34 @@ The Rust adapter now serializes whole **private-delivery batches** with an in-pr
 Up to six distinct recipients are dispatched **concurrently within one batch**, each with a bounded SDK send wait, to avoid serial head-of-line delays between players. A per-seat last-delivered revision is recorded only when the SDK's send call reports success. Failure is not treated as delivery; the player can request a new private sync. Rust tests check out-of-order tick/action races, other-seat/malformed packets, replayed revisions, and failed-send behavior.
 
 Limitations: SDK send success is **not** proof of relay/device receipt, and a timeout/cancellation may not stop an already accepted network message. Clients must independently reject older revisions, as the manual seat parser already does. This gate is per running Rust process; it is **not a distributed lock or durable outbound DM queue**. Do not deploy two Bot processes against the same journal.
+
+## Exclusive dealer journal ownership (single host, October 2026)
+
+The **Rust SDK adapter** now acquires an OS-level exclusive advisory file lock on
+`VCTR_DEALER_FILE.writer.lock` **before** connecting a Vector identity or
+starting its Node dealer child. It holds the descriptor for the Bot process's
+entire lifetime, across Node child crashes and journal recovery. A second Rust
+Bot using the same journal fails immediately rather than simultaneously
+dealing or modifying a stale copy. A different journal has an independent lock.
+
+The lock is backed by an operating-system `flock`-style primitive
+(`fs2::FileExt::try_lock_exclusive`) on the **same host and filesystem**,
+not a best-effort heartbeat or PID lease. Crashes/SIGKILL close the
+descriptor so a restarted Bot can acquire the lock automatically. The empty
+lock file deliberately remains on disk after exit: **do not delete it** to
+work around an already-running Bot. On Unix a newly created file is mode
+0600. The directory holding the journal and lock **must be private** to the
+operator, and the journal path must be absolute.
+
+Limitations: this is **advisory and only enforced by the Rust adapter**.
+Someone running `node bots/poker/dealer-worker.mjs` directly, a noncooperating
+writer, a shared/distributed filesystem with unreliable locks, or multiple
+machines pointed at mirrored paths can bypass it. Production operators must
+run one Rust adapter and one local Node child on a single host, and
+must not open the same journal through another independent process.
+It does **not** implement Vector WebXDC↔Bot private transport, a
+durable outbound DM queue, or live multi-user relay verification.
+
+Automated Rust tests cover collision, release/re-acquire, independent
+journals, invalid paths and Unix file permissions. This improves safe
+deployment of the dealer, but must never be described as live PvP completion.
