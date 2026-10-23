@@ -139,3 +139,20 @@ latency. Source-level and CI tests cannot replace a real Vector-device run.
 - Only then consider testing full two-person hands on the actual Vector relay.
 
 No test record above is marked successful until the evidence exists.
+
+## Credential-safe first run
+
+In the source repository or an Intel macOS/Linux Bot package, run
+`npm run vector:init`. A dedicated Bot Nostr signing keypair and the dealer
+journal encryption key are generated **on your local trusted computer only**.
+Only the public Bot npub is displayed. Edit the newly generated
+`~/.config/vctrtable/private.json` to enter the 2–6 invited players'
+**public npubs**. Preserve both generated secret values and the encrypted
+journal between restarts. Never use your personal account's nsec, paste
+the private config into chat, or store the config in GitHub.
+
+Run `npm run vector:check`, then `npm run vector:start`. The Bot remains
+in the foreground. Send `poker probe` and `poker ack TOKEN` from each
+registered Vector account to the Bot in a separate private DM; no hidden
+cards should reach WebXDC group updates. The operator still needs two
+real Vector accounts to prove real encrypted delivery.

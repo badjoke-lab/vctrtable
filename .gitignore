@@ -1,3 +1,13 @@
 dist/
 node_modules/
 .DS_Store
+
+# Local Bot credentials / dealer encrypted state: never commit
+.env
+.env.*
+!.env.example
+private.json
+*.nsec
+*.enc
+*.writer.lock
+.vctrtable/
