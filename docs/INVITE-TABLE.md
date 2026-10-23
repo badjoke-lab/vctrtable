@@ -40,6 +40,40 @@ from the packaged XDC. It verifies that host and guest UIs converge after
 receiving the same WebXDC updates and that reopening restores the shared
 lobby. These are not live Vector relay/device tests.
 
+## Consensus and replay safety (next milestone)
+
+The public lobby now replays **table membership, readiness, rules approvals,
+pause requests, and public chat together in the messenger's serial order**.
+Previously, a "last rules" lookup and separate history-wide vote scan could
+count replies from users who had already left, proposals posted before
+admission, or old votes after a member rejoined.
+
+The new reducer requires:
+- rules and pause proposals from currently admitted seats only, with the
+  **exact present roster** (2–6);
+- votes from current seats only, referencing **the currently pending request**,
+  arriving after the request in WebXDC serial order;
+- membership changes invalidate everyone else's Ready state, prior approved
+  rules, pending/approved pause state and old votes — even if someone leaves
+  and rejoins under the same name/address;
+- a pause requester counts as agreeing; **the clock cannot be considered
+  paused until all remaining participants approve**, and resume requires
+  a separate unanimous round;
+- the schema of all shared updates is allowlisted, including rule settings:
+  arbitrary private fields like `ownHole`, `deck` or `nsec` are rejected;
+- chat entries from nonmembers and events for old room IDs are ignored.
+
+Node and two-browser Chromium tests cover these transitions using a simulated
+WebXDC host and the actual packaged XDC file.
+
+**Security limit remains crucial:** an attacker who can forge the
+client-controlled `payload.by` string can still impersonate another seat,
+including the nominal host. The standard WebXDC update object does not
+expose a verifiable sender signature. These checks prevent state-machine
+errors, **not hostile identity impersonation**. Until real Vector SDK sender
+authentication and private delivery are integrated, this public lobby MUST
+NEVER authorize betting or reveal secret hands.
+
 ## Known blockers before playable PvP
 
 - **Not authenticated:** Standard WebXDC payloads include client-authored
