@@ -17,3 +17,16 @@ label{font-size:12px;color:#b8d8cd}label span{display:block;margin-bottom:5px}he
 #chat-form{display:flex;gap:8px;margin:10px 0}#chat-form input{min-width:0}
 footer{text-align:center;padding:18px}#transport{font-size:11px;color:#7bdaa6}
 @media(max-width:440px){.grid{grid-template-columns:1fr}h1{font-size:24px}main{padding:12px 10px}}
+
+/* Shared invite-and-join lobby. This does not visually imply live dealing. */
+.private-table-lobby .table-actions{display:flex;flex-wrap:wrap;align-items:end;gap:9px;margin:12px 0}
+.private-table-lobby .table-actions>label{flex:1 1 135px;max-width:220px}
+.private-table-lobby .table-actions button{min-height:42px}
+.private-table-lobby #table-status{font-weight:600;color:#b9ead3}
+.private-table-lobby #lobby-feedback{min-height:17px;color:#9fdeb9}
+.private-table-lobby #table-open h3{font-size:15px;margin:14px 0 0}
+.private-table-lobby [hidden]{display:none!important}
+@media(max-width:440px){
+ .private-table-lobby .table-actions button{flex:1 1 auto}
+ .private-table-lobby .table-actions>label{max-width:none;flex:1 1 100%}
+}
