@@ -33,7 +33,7 @@ jobs:
       - name: Install browser testing tools
         run: |
           npm install --no-save --no-package-lock playwright@1.55.0
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
       - name: Test phone-width Poker UI in Chromium
         run: node scripts/browser-smoke.mjs
       - name: Simulate two Vector chat participants joining the same packaged lobby
