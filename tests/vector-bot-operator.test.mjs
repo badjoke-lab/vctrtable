@@ -7,7 +7,7 @@ import path from "node:path";
 import {createConfiguration,inspectConfiguration,configurationToEnvironment,
         validateConfigFile,parseArgs} from "../scripts/vector-bot-operator.mjs";
 import {packageVectorBot} from "../scripts/vector-bot-package.mjs";
-import {createDedicatedBotIdentity} from "../scripts/vector-bot-identity.mjs";
+import {createDedicatedBotIdentity,identityFromPrivateScalar} from "../scripts/vector-bot-identity.mjs";
 import {isNip19Key} from "../scripts/vector-bot-preflight.mjs";
 
 const alphabet="qpzry9x8gf2tvdw0s3jn54khce6mua7l";
@@ -109,4 +109,19 @@ test("release packager copies only allowlisted runtime, not CI artifacts or env 
  assert.equal(pkg.type,"module");
  await assert.rejects(packageVectorBot({binary,output:dir,target:"../traversal"}),/Invalid/);
  await assert.rejects(packageVectorBot({binary:path.join(dir,"missing"),output:dir,target:"test"}));
+});
+
+test("leading zero in valid 32-byte secp256k1 Bot scalar stays part of NIP-19 nsec",()=>{
+ const scalar=Buffer.alloc(32);
+ scalar[31]=1; // valid curve scalar, represented with 31 leading zero octets
+ const bot=identityFromPrivateScalar(scalar);
+ assert.equal(isNip19Key(bot.nsec,"nsec"),true);
+ assert.equal(isNip19Key(bot.npub,"npub"),true);
+ assert.equal(bot.nsec.length,63);
+ assert.equal(bot.npub.length,63);
+ assert.equal(scalar.length,32);
+ assert.deepEqual(scalar.subarray(0,31),Buffer.alloc(31));
+ assert.throws(()=>identityFromPrivateScalar(Buffer.alloc(31)),/exactly 32/);
+ assert.throws(()=>identityFromPrivateScalar(Buffer.alloc(32)));
+ scalar.fill(0);
 });

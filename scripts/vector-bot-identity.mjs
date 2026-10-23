@@ -33,21 +33,40 @@ function bech32Encode(hrp,bytes){
  const checksum=Array.from({length:6},(_,i)=>(check>>>(5*(5-i)))&31);
  return hrp+"1"+[...data,...checksum].map(i=>ALPHABET[i]).join("");
 }
-export function createDedicatedBotIdentity(){
+/**
+ * Nostr secrets are ALWAYS fixed-width 32-byte scalars. Node/OpenSSL may
+ * return a 31-byte ECDH private key when its leading byte is zero.
+ * The zero is part of the 32-byte NIP-19 payload and must be restored.
+ */
+export function identityFromPrivateScalar(privateScalar){
+ if(!Buffer.isBuffer(privateScalar)||privateScalar.length!==32)
+  throw new Error("Nostr private scalar must be exactly 32 bytes");
  const key=createECDH("secp256k1");
- key.generateKeys();
- const secret=key.getPrivateKey();
+ key.setPrivateKey(privateScalar);
  const uncompressed=key.getPublicKey(undefined,"uncompressed");
  try{
-  if(secret.length!==32||uncompressed.length!==65||uncompressed[0]!==4)
-   throw new Error("Unexpected key format from the operating system");
-  const nsec=bech32Encode("nsec",secret);
+  if(uncompressed.length!==65||uncompressed[0]!==4)
+   throw new Error("Unexpected public key format");
+  const nsec=bech32Encode("nsec",privateScalar);
   const npub=bech32Encode("npub",uncompressed.subarray(1,33));
   if(!isNip19Key(nsec,"nsec")||!isNip19Key(npub,"npub"))
    throw new Error("Generated invalid NIP-19 identity");
   return {nsec,npub};
  }finally{
-  secret.fill(0);
   uncompressed.fill(0);
+ }
+}
+export function createDedicatedBotIdentity(){
+ const key=createECDH("secp256k1");
+ key.generateKeys();
+ const raw=key.getPrivateKey(),secret=Buffer.alloc(32);
+ try{
+  if(raw.length<1||raw.length>32)
+   throw new Error("Unexpected private key length");
+  raw.copy(secret,32-raw.length);
+  return identityFromPrivateScalar(secret);
+ }finally{
+  raw.fill(0);
+  secret.fill(0);
  }
 }
