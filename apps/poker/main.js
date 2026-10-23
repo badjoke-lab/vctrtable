@@ -5,7 +5,7 @@
  * This is an unauthenticated roster prototype, not the SDK-authorized dealer:
  * payload.by is display metadata and cannot authorize game actions.
  */
-import {TABLE_EVENT_KINDS,validTableEvent,deriveSharedTable,tableInvitationText} from "./table-lobby.js";
+import {TABLE_EVENT_KINDS,validTableEvent,validPublicEvent,deriveSharedTable,tableInvitationText} from "./table-lobby.js";
 const strings={
 en:{
  title:"Private Poker Table",language:"Language",warning:"SHARED LOBBY ONLY · No live betting or private dealing. Join the SAME Vector chat to share this table.",players:"Players",create:"Create Table",maxSeats:"Maximum players",join:"Join Table",joined:"Joined",leave:"Leave Table",close:"Close Table",ready:"I'm Ready",unready:"Not Ready",invite:"Invite Players",inviteHelp:"Invite friends to this same Vector group using Vector's native group invitation. A different DM/Note is NOT the same table.",inviteDraft:"Prepare invitation message",inviteResult:"Vector opened a message draft. Sending and joining are NOT confirmed.",inviteManual:"Open Vector's group invitation controls and invite friends to this chat, then share/open this same Poker Mini App message.",roomMissing:"No table yet. Create one here; other chat participants can then tap Join Table.",roomActive:"Shared table — same chat only",roomFull:"This table is full",host:"Host",status:"Waiting for players",readyCount:"Ready",rules:"Agree on table rules",rulesHelp:"Every seated player must approve the same proposal. Ready status does not start betting.",chips:"Starting chips",sb:"Small blind",bb:"Big blind",timer:"Action limit in seconds (0 = unlimited)",rebuy:"Allow chip rebuy between hands",propose:"Propose rules",pause:"Pause agreement",pauseHelp:"Unanimous pause/resume demonstration; no live game clock yet.",pauseRequest:"Request pause",resumeRequest:"Request resume",pending:"Pending approvals",approve:"Approve",approved:"Approved",paused:"Pause approved (demo)",notPaused:"Not paused",repropose:"Seats changed; propose again",chat:"Table chat",send:"Send",translation:"Chat here is a shared WebXDC prototype, not private dealing.",footer:"Recreational chips only. No money, no automatic private cards, no real PvP yet.",local:"Local preview — no network",shared:"WebXDC shared — not authenticated",two:"At least two seats are required",joinFirst:"Join this table first",invalid:"Check chips, blinds and time settings",confirmClose:"Close this shared table for everyone?",feedback:"Invite via Vector to this SAME chat; do not open a separate XDC in another DM."
@@ -29,38 +29,15 @@ const uid=()=>{
  return now().toString(36)+Math.random().toString(36).slice(2);
 };
 const integer=(x,min,max)=>Number.isSafeInteger(x)&&x>=min&&x<=max;
-const validSeats=v=>Array.isArray(v)&&v.length>=2&&v.length<=6&&new Set(v).size===v.length&&v.every(id=>typeof id==="string"&&id.length>0&&id.length<=300);
-function valid(e){
- if(validTableEvent(e))return true;
- if(!e||e.v!==1||e.app!=="poker"||!["rules","vote","pause","pause-vote","chat"].includes(e.kind))return false;
- if(typeof e.id!=="string"||e.id.length<6||e.id.length>100||
-    typeof e.tableId!=="string"||e.tableId.length<6||e.tableId.length>100||
-    typeof e.by!=="string"||e.by.length<1||e.by.length>300||
-    !integer(e.at,0,Number.MAX_SAFE_INTEGER))return false;
- if(e.kind==="chat")return typeof e.text==="string"&&e.text.trim().length>0&&e.text.length<=500;
- if(e.kind==="rules"){
-  const c=e.settings;
-  return Boolean(c&&integer(c.chips,1,100000000)&&integer(c.sb,1,100000000)&&
-    integer(c.bb,2,100000000)&&c.sb<c.bb&&c.bb<c.chips&&
-    integer(c.timer,0,3600)&&typeof c.rebuy==="boolean"&&validSeats(e.seats));
- }
- if(e.kind==="pause")return ["pause","resume"].includes(e.action)&&validSeats(e.seats);
- return typeof e.target==="string"&&e.target.length>=6&&e.target.length<=100;
-}
+// Event shape validation is shared with the serial-replay state machine.
+const valid=e=>validTableEvent(e)||validPublicEvent(e);
 function ingest(e,serial){
  if(!valid(e)||events.has(e.id))return;
  events.set(e.id,{...e,_serial:Number.isSafeInteger(serial)&&serial>0?serial:++localSerial});
  draw();
 }
 function roomState(){
- return deriveSharedTable([...events.values()]
-  .filter(e=>TABLE_EVENT_KINDS.includes(e.kind))
-  .map(e=>({event:e,serial:e._serial})));
-}
-function ordered(kind,roomId){
- return [...events.values()]
-  .filter(e=>(!kind||e.kind===kind)&&(!roomId||e.tableId===roomId))
-  .sort((a,b)=>a._serial-b._serial||a.id.localeCompare(b.id));
+ return deriveSharedTable([...events.values()].map(e=>({event:e,serial:e._serial})));
 }
 function dispatch(kind,extra={}){
  const current=roomState().table;
@@ -72,11 +49,6 @@ function dispatch(kind,extra={}){
  else ingest(e,++localSerial);
 }
 function seatsArray(){return [...roomState().seats.keys()].sort();}
-const sameSeats=proposal=>JSON.stringify(proposal.seats.slice().sort())===JSON.stringify(seatsArray());
-function latest(kind,id){return ordered(kind,id).at(-1);}
-function votes(kind,target,id){
- return new Set(ordered(kind,id).filter(e=>e.target===target).map(e=>e.by));
-}
 function el(tag,text,cls){
  const node=document.createElement(tag);if(text!==undefined)node.textContent=text;
  if(cls)node.className=cls;return node;
@@ -85,7 +57,8 @@ function action(text,fn){
  const b=el("button",text,"secondary");b.type="button";b.addEventListener("click",fn);return b;
 }
 function draw(){
- const {table,seats,ready}=roomState(),member=seats.has(me);
+ const snapshot=roomState();
+ const {table,seats,ready,proposal,pauseRequest,paused,messages}=snapshot,member=seats.has(me);
  document.documentElement.lang=lang;
  document.querySelectorAll("[data-i18n]").forEach(n=>n.textContent=t(n.dataset.i18n));
  $("transport").textContent=t(live?"shared":"local");
@@ -110,41 +83,32 @@ function draw(){
  $("ready").textContent=t(ready.has(me)?"unready":"ready");
  $("close").hidden=!member||table?.host!==me;
  $("rules-form").querySelector("button").disabled=!member||seats.size<2;
- const rid=table?.id??"";
- const proposal=latest("rules",rid),area=$("proposal");area.replaceChildren();
+ const area=$("proposal");area.replaceChildren();
  if(proposal&&table){
-  const box=el("div",undefined,"status");
-  box.append(el("div",t("chips")+": "+proposal.settings.chips+
-   " | SB/BB "+proposal.settings.sb+"/"+proposal.settings.bb+
-   " | "+t("timer")+": "+proposal.settings.timer+" | Rebuy: "+(proposal.settings.rebuy?"Yes":"No")));
-  const agreed=votes("vote",proposal.id,rid),n=proposal.seats.filter(id=>agreed.has(id)).length;
-  box.append(el("strong",n+"/"+proposal.seats.length+" "+t(n===proposal.seats.length?"approved":"pending")));
-  if(!sameSeats(proposal))box.append(el("div",t("repropose")));
-  else if(member&&!agreed.has(me))
-   box.append(action(t("approve"),()=>dispatch("vote",{target:proposal.id})));
-  area.append(box);
- }
- let paused=false,pending=null;
- for(const request of ordered("pause",rid)){
-  if(!table||!sameSeats(request))continue;
-  const n=request.seats.filter(id=>votes("pause-vote",request.id,rid).has(id)).length;
-  if(n===request.seats.length){paused=request.action==="pause";pending=null;}
-  else pending=request;
+  const p=proposal.event,div=el("div",undefined,"status");
+  div.append(el("div",t("chips")+": "+p.settings.chips+
+   " | SB/BB "+p.settings.sb+"/"+p.settings.bb+
+   " | "+t("timer")+": "+p.settings.timer+" | Rebuy: "+(p.settings.rebuy?"Yes":"No")));
+  const agreed=proposal.approvals,n=agreed.size;
+  div.append(el("strong",n+"/"+p.seats.length+" "+t(n===p.seats.length?"approved":"pending")));
+  if(member&&!agreed.has(me))
+   div.append(action(t("approve"),()=>dispatch("vote",{target:p.id})));
+  area.append(div);
  }
  const pauseBox=el("div",undefined,"status");
  pauseBox.append(el("strong",t(paused?"paused":"notPaused")));
- if(pending&&table){
-  const agree=votes("pause-vote",pending.id,rid);
-  pauseBox.append(el("div",t("pending")+": "+pending.seats.filter(id=>agree.has(id)).length+"/"+pending.seats.length));
+ if(pauseRequest&&table){
+  const agree=pauseRequest.approvals;
+  pauseBox.append(el("div",t("pending")+": "+agree.size+"/"+seats.size));
   if(member&&!agree.has(me))
-   pauseBox.append(action(t("approve"),()=>dispatch("pause-vote",{target:pending.id})));
+   pauseBox.append(action(t("approve"),()=>dispatch("pause-vote",{target:pauseRequest.event.id})));
  }
  $("pause-status").replaceChildren(pauseBox);
- $("pause-request").disabled=!member||seats.size<2||Boolean(pending);
+ $("pause-request").disabled=!member||seats.size<2||Boolean(pauseRequest);
  $("pause-request").textContent=t(paused?"resumeRequest":"pauseRequest");
  $("pause-request").dataset.action=paused?"resume":"pause";
  const chat=$("messages");chat.replaceChildren();
- for(const msg of ordered("chat",rid).slice(-100)){
+ for(const msg of messages){
   const row=el("div",undefined,"message");row.append(el("small",seats.get(msg.by)||"Player"),el("div",msg.text));chat.append(row);
  }
  chat.scrollTop=chat.scrollHeight;
