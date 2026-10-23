@@ -104,7 +104,7 @@ function draw(){
   list.append(el("span",label,"seat"));
  }
  $("join").disabled=!table||member||seats.size>=table.maxPlayers;
- $("join").textContent=t(member?"joined":seats.size>=table.maxPlayers?"roomFull":"join");
+ $("join").textContent=t(member?"joined":table&&seats.size>=table.maxPlayers?"roomFull":"join");
  $("leave").hidden=!member;
  $("ready").hidden=!member;
  $("ready").textContent=t(ready.has(me)?"unready":"ready");
