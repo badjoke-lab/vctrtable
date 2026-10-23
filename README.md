@@ -161,3 +161,34 @@ to their approved filenames.
 
 **Important:** an older `poker.xdc` in Vector messages never updates itself.
 Open a newly published XDC package to see the corrected deck.
+
+## Vector Poker dealer — offline setup and portable binaries
+
+The SDK Bot for private 1:1 dealer DMs is now independently packageable for
+Intel macOS and Linux x64 via `.github/workflows/vector-bot-package.yml`.
+It uses a dedicated Bot identity and **never requires a player's nsec**.
+
+On a trusted operator machine, from an extracted matching portable package
+(or from this repository with Rust installed), with Node.js 20+:
+
+```sh
+npm run vector:init
+# Edit ~/.config/vctrtable/private.json locally:
+# enter PUBLIC Vector npub values for 2–6 players. Never share this file.
+npm run vector:check
+npm run vector:start
+```
+
+`init` generates a dedicated Nostr Bot nsec and a new journal encryption key
+locally, prints **only the Bot npub**, writes a private `0600` config and
+`0700` journal directory, and refuses to overwrite the saved identity/key.
+`check` runs offline. `start` holds the dealer exclusive-writer lock and
+runs in the foreground; Ctrl+C stops it. Keep the identity/key and the journal
+safe between restarts.
+
+The Bot can receive registered players' encrypted `poker probe` /
+`poker ack TOKEN` DMs and versioned poker text commands. A successful local
+compile **is not evidence** that a real player/device has received a DM.
+The XDC UI still cannot automatically send or receive those private DMs.
+See [DM-first poker](docs/DM-FIRST-POKER.md) and
+[same-chat invitations](docs/INVITE-TABLE.md).
