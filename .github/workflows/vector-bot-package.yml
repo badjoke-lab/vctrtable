@@ -1,0 +1,67 @@
+name: Vector Poker Bot portable packages
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'bots/vector/**'
+      - 'bots/poker/**'
+      - 'packages/poker/**'
+      - 'scripts/vector-bot-*.mjs'
+      - 'tests/vector-bot-operator.test.mjs'
+      - '.github/workflows/vector-bot-package.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Build ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x64
+          - runner: macos-15-intel
+            target: macos-intel
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: bots/vector
+      - name: Run credential-free runtime tests
+        run: node --test tests/vector-bot-operator.test.mjs
+      - name: Build Vector SDK Bot binary
+        env:
+          MACOSX_DEPLOYMENT_TARGET: ${{ matrix.target == 'macos-intel' && '12.0' || '' }}
+        run: cargo build --release --manifest-path bots/vector/Cargo.toml
+      - name: Assemble allowlisted runtime only
+        run: node scripts/vector-bot-package.mjs "${{ matrix.target }}" "bots/vector/target/release/vctrtable-vector-bot"
+      - name: Verify package has no private config
+        shell: bash
+        run: |
+          set -euo pipefail
+          pkg="dist/vector-bot-${{ matrix.target }}"
+          test -x "$pkg/bin/vctrtable-vector-bot"
+          test -f "$pkg/bots/poker/dealer-worker.mjs"
+          test -f "$pkg/packages/poker/dealer-room.js"
+          test -f "$pkg/scripts/vector-bot-operator.mjs"
+          test ! -e "$pkg/.git"
+          test ! -e "$pkg/.env"
+          test ! -e "$pkg/private.json"
+          cd dist
+          tar -czf "vector-bot-${{ matrix.target }}.tar.gz" "vector-bot-${{ matrix.target }}"
+      - name: Upload unsigned development package
+        uses: actions/upload-artifact@v4
+        with:
+          name: vector-bot-${{ matrix.target }}
+          path: dist/vector-bot-${{ matrix.target }}.tar.gz
+          retention-days: 14
+          if-no-files-found: error
