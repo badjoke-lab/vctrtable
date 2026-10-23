@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {webcrypto} from "node:crypto";
 import {seatKeys,publicKeys,signPacket,verifyPacket,sealForRecipient,
- unsealForRecipient} from "../apps/poker/pvp-crypto.js";
+ unsealForRecipient} from "../packages/poker/pvp-crypto.js";
 import {makeHostSession,makeStateEvent,readMyHand,makeSignedAction,
  acceptSignedAction,nextHostHand} from "../packages/poker/pvp-game.js";
 import {legalActions,totalChips} from "../packages/poker/engine.js";
