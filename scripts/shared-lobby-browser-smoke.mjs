@@ -52,11 +52,13 @@ try{
   clients.push({context,page});
  }
  let serial=0;
+ const history=[];
  async function transmit(){
   for(const {page} of clients){
    const messages=await page.evaluate(()=>window.__xdcTest.outgoing.splice(0));
    for(const payload of messages){
     const update={...payload,serial:++serial,max_serial:serial};
+    history.push(update);
     for(const p of clients)await p.page.evaluate(x=>window.__xdcTest.receive(x),update);
    }
   }
@@ -101,12 +103,9 @@ try{
  });
  const refreshed=await replay.newPage();
  await refreshed.goto(base+"/lobby.html",{waitUntil:"networkidle"});
- const history=await host.evaluate(()=>window.__xdcTest.received);
- // Shared test bus replays all updates as if the host served serial history.
- const full=await host.evaluate(()=>window.__xdcTest.outgoing.length);
- assert.equal(full,0);
- // Recreate an event history from the first host's DOM would not validate
- // replay. Instead intercepting new events is done through the bus below.
+ for(const update of history)await refreshed.evaluate(x=>window.__listener(x),update);
+ assert.equal(await refreshed.locator("#seats .seat").count(),2);
+ assert.match(await refreshed.locator("#proposal").textContent(),/2\/2 Approved/);
  await replay.close();
  await guest.locator("#leave").click();await transmit();
  assert.equal(await host.locator("#seats .seat").count(),1);
