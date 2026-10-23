@@ -4,7 +4,7 @@ import {webcrypto} from "node:crypto";
 import {seatKeys,publicKeys,signPacket,verifyPacket,sealForRecipient,
  unsealForRecipient} from "../apps/poker/pvp-crypto.js";
 import {makeHostSession,makeStateEvent,readMyHand,makeSignedAction,
- acceptSignedAction,nextHostHand} from "../apps/poker/pvp-game.js";
+ acceptSignedAction,nextHostHand} from "../packages/poker/pvp-game.js";
 import {legalActions,totalChips} from "../packages/poker/engine.js";
 globalThis.crypto??=webcrypto;
 const roster=()=>({table:{id:"room-test",host:"alice",maxPlayers:2},
