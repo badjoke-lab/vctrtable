@@ -5,6 +5,7 @@ on:
       - 'apps/poker/**'
       - 'packages/poker/**'
       - 'scripts/browser-smoke.mjs'
+      - 'scripts/shared-lobby-browser-smoke.mjs'
       - 'scripts/build.mjs'
       - '.github/workflows/browser-smoke.yml'
   push:
@@ -35,11 +36,14 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Test phone-width Poker UI in Chromium
         run: node scripts/browser-smoke.mjs
+      - name: Simulate two Vector chat participants joining the same packaged lobby
+        run: node scripts/shared-lobby-browser-smoke.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: poker-mobile-browser-screenshots
           path: |
             dist/poker-mobile-*.png
+            dist/poker-shared-lobby-*.png
             dist/poker-river-*.png
           if-no-files-found: ignore
