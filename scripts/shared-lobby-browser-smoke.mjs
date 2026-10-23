@@ -107,12 +107,23 @@ try{
  assert.equal(await refreshed.locator("#seats .seat").count(),2);
  assert.match(await refreshed.locator("#proposal").textContent(),/2\/2 Approved/);
  await replay.close();
+ // Host requests pause, guest must approve; no real game timer is running.
+ await host.locator("#pause-request").click();await transmit();
+ assert.match(await guest.locator("#pause-status").textContent(),/Pending approvals: 1\/2/);
+ await guest.locator("#pause-status button").click();await transmit();
+ assert.match(await host.locator("#pause-status").textContent(),/Pause approved/);
+ // Resume is a distinct new unanimous request.
+ await host.locator("#pause-request").click();await transmit();
+ await guest.locator("#pause-status button").click();await transmit();
+ assert.match(await guest.locator("#pause-status").textContent(),/Not paused/);
  await guest.locator("#leave").click();await transmit();
  assert.equal(await host.locator("#seats .seat").count(),1);
- assert.match(await host.locator("#table-status").textContent(),/Ready 1\/1/);
+ assert.match(await host.locator("#table-status").textContent(),/Ready 0\/1/);
  await guest.locator("#join").click();await transmit();
  assert.equal(await host.locator("#seats .seat").count(),2);
- assert.match(await host.locator("#table-status").textContent(),/Ready 1\/2/);
+ assert.match(await host.locator("#table-status").textContent(),/Ready 0\/2/);
+ assert.equal(await host.locator("#proposal").textContent(),"",
+  "Leaving and rejoining must revoke previously unanimous rules approval");
  await host.screenshot({path:path.resolve("dist/poker-shared-lobby-360.png"),fullPage:true});
  // Host closes the whole table; both clients return to Create Table.
  host.on("dialog",dialog=>dialog.accept());
