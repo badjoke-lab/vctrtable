@@ -37,7 +37,9 @@ function ingest(e,serial){
  draw();
 }
 function roomState(){
- return deriveSharedTable([...events.values()].map(e=>({event:e,serial:e._serial})));
+ // _serial is local messenger metadata, not a public protocol field.
+ // Keep it OUT of the strict allowlisted event envelope.
+ return deriveSharedTable([...events.values()].map(({_serial,...event})=>({event,serial:_serial})));
 }
 function dispatch(kind,extra={}){
  const current=roomState().table;
