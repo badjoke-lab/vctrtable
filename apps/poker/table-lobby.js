@@ -12,7 +12,10 @@ const nameOk=x=>typeof x==="string"&&x.trim().length>0&&x.length<=60&&!/[\x00-\x
 const num=(x,min,max)=>Number.isSafeInteger(x)&&x>=min&&x<=max;
 const seatList=x=>Array.isArray(x)&&x.length>=2&&x.length<=6&&
   x.every(actorOk)&&new Set(x).size===x.length;
-const noSecretKeys=x=>!["deck","hole","ownHole","nsec","seed","privateKey","verifiedActorId"].some(k=>Object.hasOwn(x,k));
+// Fail closed on unknown fields. Shared updates must never carry dealer state.
+const exact=(object,keys)=>Object.keys(object).sort().join(",")===keys.slice().sort().join(",");
+const tableBase=["v","app","kind","id","by","at","tableId"];
+const publicBase=["v","app","kind","id","by","at","tableId"];
 export const TABLE_EVENT_KINDS=Object.freeze([
  "table-create","seat-join","seat-leave","seat-ready","table-close"
 ]);
@@ -20,26 +23,28 @@ const PUBLIC_KINDS=new Set(["rules","vote","pause","pause-vote","chat"]);
 export function validTableEvent(e){
  if(!e||typeof e!=="object"||Array.isArray(e)||e.v!==2||e.app!=="poker"||
     !TABLE_EVENT_KINDS.includes(e.kind)||!idOk(e.id)||!actorOk(e.by)||
-    !num(e.at,0,Number.MAX_SAFE_INTEGER)||!idOk(e.tableId)||!noSecretKeys(e))return false;
- if(e.kind==="table-create")return nameOk(e.name)&&num(e.maxPlayers,2,6);
- if(e.kind==="seat-join")return nameOk(e.name);
- if(e.kind==="seat-ready")return typeof e.ready==="boolean";
- return true;
+    !num(e.at,0,Number.MAX_SAFE_INTEGER)||!idOk(e.tableId))return false;
+ if(e.kind==="table-create")return exact(e,[...tableBase,"name","maxPlayers"])&&
+   nameOk(e.name)&&num(e.maxPlayers,2,6);
+ if(e.kind==="seat-join")return exact(e,[...tableBase,"name"])&&nameOk(e.name);
+ if(e.kind==="seat-ready")return exact(e,[...tableBase,"ready"])&&typeof e.ready==="boolean";
+ return exact(e,tableBase);
 }
 export function validPublicEvent(e){
  if(!e||typeof e!=="object"||Array.isArray(e)||e.v!==1||e.app!=="poker"||
     !PUBLIC_KINDS.has(e.kind)||!idOk(e.id)||!actorOk(e.by)||!idOk(e.tableId)||
-    !num(e.at,0,Number.MAX_SAFE_INTEGER)||!noSecretKeys(e))return false;
- if(e.kind==="chat")return typeof e.text==="string"&&e.text.trim().length>0&&e.text.length<=500;
+    !num(e.at,0,Number.MAX_SAFE_INTEGER))return false;
+ if(e.kind==="chat")return exact(e,[...publicBase,"text"])&&typeof e.text==="string"&&e.text.trim().length>0&&e.text.length<=500;
  if(e.kind==="rules"){
   const s=e.settings;
-  return Boolean(s&&typeof s==="object"&&!Array.isArray(s)&&
+  return Boolean(exact(e,[...publicBase,"settings","seats"])&&s&&typeof s==="object"&&!Array.isArray(s)&&
+    exact(s,["chips","sb","bb","timer","rebuy"])&&
     num(s.chips,1,100000000)&&num(s.sb,1,100000000)&&
     num(s.bb,2,100000000)&&s.sb<s.bb&&s.bb<s.chips&&
     num(s.timer,0,3600)&&typeof s.rebuy==="boolean"&&seatList(e.seats));
  }
- if(e.kind==="pause")return ["pause","resume"].includes(e.action)&&seatList(e.seats);
- return idOk(e.target);
+ if(e.kind==="pause")return exact(e,[...publicBase,"action","seats"])&&["pause","resume"].includes(e.action)&&seatList(e.seats);
+ return exact(e,[...publicBase,"target"])&&idOk(e.target);
 }
 export function normalizeTableOrder(entries){
  // Serial 0 is not valid. WebXDC uses positive serials with possible gaps.
