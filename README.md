@@ -21,6 +21,27 @@ The output is dist/poker.xdc. Open it in Vector or a WebXDC development simulato
 
 See docs/ROADMAP.md for the staged security and game plan.
 
+## Shared Vector group invitation lobby (PR #35)
+
+The **Create / Join Table** link at the top of the local QA screen now opens
+the group-shared lobby. A host presses **Create Table**, chooses a 2–6-seat
+capacity, and invites contacts into the **same Vector group chat** using
+Vector's own group invitation controls. The guest accepts the group invite,
+opens the **same Poker Mini App message in that group**, and presses **Join
+Table**. Nobody needs to post their own Note or enter a room ID.
+
+Create, Join, Ready, Leave, Close, rule proposals and public chat use nonsecret
+WebXDC updates scoped to that exact Mini App instance. A **Prepare invitation
+message** button uses `sendToChat` only to draft explanatory text; it does not
+add anyone to a group, send automatically, or connect another DM/Note to the
+same table. See [Invite and join details](docs/INVITE-TABLE.md).
+
+**This is still lobby-only.** WebXDC-supplied sender claims are not verified
+for actual dealing/betting, no private cards are broadcast, and there is no
+automatic Mini App↔SDK dealer transport. Two-browser simulated WebXDC tests
+do not prove two real Vector devices. The current QA poker game still uses
+scripted opponents and remains available for local rules testing.
+
 ## One-person QA poker table
 
 Use **Open local poker test** from the packaged WebXDC Mini App to play complete hands against 1–5 scripted seats (not a commercial PvE mode). This QA mode supports chip settings, blinds, action timer, local simulated pause, rebuy, fold/check/call/raise/all-in, board streets and multiway side pots. It does not send its private cards or deck over WebXDC. Testing one device does NOT validate player identity, trusted dealer, multiplayer delivery or real unanimous pause votes.
