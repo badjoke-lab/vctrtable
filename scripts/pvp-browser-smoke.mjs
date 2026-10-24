@@ -105,6 +105,16 @@ try{
  assert.equal(new Set([...hCards,...gCards]).size,4,"Opponents saw repeated or wrong cards");
  assert.ok(hCards.every(x=>x!=="BACK"));
  assert.ok(gCards.every(x=>x!=="BACK"));
+ // The trusted host's full deck and journal must be recovered from locally
+ // AES-GCM-encrypted IndexedDB, NEVER from WebXDC broadcast history.
+ await host.reload({waitUntil:"networkidle"});
+ await host.waitForFunction(()=>typeof window.__sim?.receive==="function");
+ for(const update of history)await host.evaluate(x=>window.__sim.receive(x),update);
+ await cycles();
+ assert.match(await host.locator("#pvp-key-status").textContent(),/private hand restored/i,
+  "Host did not recover local encrypted journal after WebView reload");
+ const afterReload=await host.locator("#pvp-hole img").evaluateAll(xs=>xs.map(x=>x.dataset.card));
+ assert.deepEqual(afterReload,hCards,"Host changed their own hand during reload");
  // The active player's signed Fold must settle the hand on both devices.
  const actor=await host.locator("#pvp-fold").isEnabled()?host:guest;
  await actor.locator("#pvp-fold").click();await cycles();
@@ -115,7 +125,7 @@ try{
  await host.screenshot({path:path.resolve("dist/poker-pvp-two-clients-360.png"),fullPage:true});
  assert.deepEqual(errors,[],"Browser JavaScript error");
  for(const c of clients)await c.ctx.close();
- console.log("Encrypted PvP 2-client Chromium smoke OK: two unique private hands, signed fold, synced payout");
+ console.log("Encrypted PvP 2-client Chromium smoke OK: private hands, host reload and encrypted recovery, signed fold and payout");
 }finally{
  await browser?.close();await new Promise(resolve=>server.close(resolve));
  fs.rmSync(temp,{recursive:true,force:true});
