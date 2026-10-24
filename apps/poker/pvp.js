@@ -15,7 +15,7 @@ const live=Boolean(api?.selfAddr&&typeof api.sendUpdate==="function"&&
  typeof api.setUpdateListener==="function"&&globalThis.crypto?.subtle);
 const me=live?api.selfAddr:"",updates=new Map(),peers=new Map(),seen=new Set();
 let keys=null,hostSession=null,game=null,hole=null,seq=0,queue=Promise.resolve();
-let keySent=false,pending=false,errorMessage="";
+let keySent=false,pending=false,errorMessage="",hostRecovered=false;
 function room(){
  return deriveSharedTable([...updates.values()].map(x=>({event:x.payload,serial:x.serial}))
  .filter(x=>validPublicEvent(x.event)||validTableEvent(x.event)));
@@ -39,7 +39,7 @@ function draw(){
   roster.append(element);
  }
  $("pvp-key-status").textContent=!keys?"Generating local private keys…":
- keys.persistent?"Nonextractable private keys retained on this device.":
+ keys.persistent?(hostRecovered?"Host private hand restored from encrypted local journal.":"Nonextractable private keys retained on this device.") :
  "WARNING: private keys could not be saved; do not reload during a game.";
  const allKeys=r.table&&[...r.seats.keys()].every(id=>peers.has(id));
  const completed=game?.status==="complete";
@@ -119,6 +119,7 @@ async function updateState(packet,r){
    if(JSON.stringify(publicGameState(restored,cp.seq))!==JSON.stringify(state))
     throw Error("Host checkpoint does not match the shared signed state");
    hostSession=restored;
+   hostRecovered=true;
   }
  }
  seq=state.seq;game={...state,_room:r.table.id};hole=own;
