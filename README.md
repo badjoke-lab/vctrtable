@@ -192,3 +192,21 @@ compile **is not evidence** that a real player/device has received a DM.
 The XDC UI still cannot automatically send or receive those private DMs.
 See [DM-first poker](docs/DM-FIRST-POKER.md) and
 [same-chat invitations](docs/INVITE-TABLE.md).
+
+## Experimental encrypted multiplayer inside the same Vector XDC
+
+From the shared **Create / Join Table** lobby, participants who have all
+approved the same rules and marked Ready can open **Experimental PvP**.
+It uses the existing poker engine, a participant's **host-trusted browser**
+as dealer, recipient-encrypted private cards, and signed seat-key actions.
+The separate-source two-client Chromium integration tests exercise live
+gameplay through a simulated WebXDC event stream (not real Vector accounts).
+
+**Not the secure SDK dealer**: the host controls and sees the shuffled deck,
+seat-key signatures are NOT Vector account authentication, restarting the
+host loses in-progress secret game state, and no actual Vector relay test has
+been completed. Use only for free, nontransferable play chips with a trusted
+host, never for cash, prizes, wallet assets or betting. The independent
+Vector SDK Bot remains the intended production privacy boundary.
+
+See [the experimental PvP walkthrough and limits](docs/EXPERIMENTAL-PVP.md).

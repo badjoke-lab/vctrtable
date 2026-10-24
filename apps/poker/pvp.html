@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark"><title>vctrtable — Experimental Private Poker</title>
+<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="pvp.css"><script src="webxdc.js"></script>
+<script type="module" src="pvp.js"></script>
+</head><body><main class="pvp">
+<header><div><small>VCTRTABLE / LIVE EXPERIMENT</small><h1>Private Poker</h1></div>
+<a class="back-link" href="lobby.html">← Lobby</a></header>
+<div class="warning" id="security-warning">HOST-TRUSTED EXPERIMENT · The host can see the full deck. No verified Vector identity, no money, no anonymous fairness. Keep the host app open during hands.</div>
+<p id="pvp-status" role="status">Connecting to shared table…</p>
+<section class="pvp-roster">
+<div class="between"><h2>Same-chat participants</h2><span id="pvp-ready">—</span></div>
+<div id="pvp-players" class="seats"></div><p id="pvp-key-status">Secure hand-key exchange not started.</p>
+<button type="button" id="pvp-start" disabled>Host: Deal next hand</button></section>
+<section id="pvp-game" hidden>
+<div class="between"><strong id="pvp-street"></strong><strong id="pvp-pot"></strong></div>
+<div id="pvp-table-seats" class="pvp-seats"></div>
+<div class="pvp-board" id="pvp-board"></div>
+<div class="pvp-own"><small>YOUR PRIVATE CARDS</small><div class="pvp-own-cards" id="pvp-hole"></div></div>
+<p id="pvp-turn" role="status"></p>
+<div class="pvp-actions">
+<button id="pvp-fold" type="button" disabled>Fold</button>
+<button id="pvp-check" type="button" disabled>Check</button>
+<button id="pvp-call" type="button" disabled>Call</button>
+<label>Raise to <input id="pvp-raise-amount" type="number" min="1" step="1"></label>
+<button id="pvp-raise" type="button" disabled>Raise</button>
+</div>
+<p id="pvp-result"></p>
+</section>
+<footer>Beta gameplay: the host must remain online. Poker chips have no cash or transfer value. Do not use this for wagering. Session keys are locally generated and cannot prove the Vector account holder.</footer>
+</main></body></html>

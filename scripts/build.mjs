@@ -6,8 +6,8 @@ import {downloadCardAssets} from "./poker-png-assets.mjs";
 const root=path.resolve(import.meta.dirname,".."),src=path.join(root,"apps","poker"),out=path.join(root,"dist");
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),"vctrtable-"));
 try{
- for(const file of ["lobby.html","style.css","main.js","table-lobby.js","manifest.toml","qa.html","qa.css","qa.js","cards.js","chat-view.js","public-chat.js","dm.html","dm.css","dm.js"])fs.copyFileSync(path.join(src,file),path.join(temp,file));
- for(const file of ["hand.js","engine.js","session.js","betting-controls.js","showdown-summary.js","dm-seat.js","dm-sync-state.js"])fs.copyFileSync(path.join(root,"packages","poker",file),path.join(temp,file));
+ for(const file of ["lobby.html","style.css","main.js","table-lobby.js","pvp.html","pvp.css","pvp.js","manifest.toml","qa.html","qa.css","qa.js","cards.js","chat-view.js","public-chat.js","dm.html","dm.css","dm.js"])fs.copyFileSync(path.join(src,file),path.join(temp,file));
+ for(const file of ["hand.js","engine.js","session.js","pvp-game.js","pvp-crypto.js","betting-controls.js","showdown-summary.js","dm-seat.js","dm-sync-state.js"])fs.copyFileSync(path.join(root,"packages","poker",file),path.join(temp,file));
  await downloadCardAssets(temp);
  // Packaged root is ALWAYS the exact same QA screen, not a stale copy.
  fs.copyFileSync(path.join(src,"qa.html"),path.join(temp,"index.html"));

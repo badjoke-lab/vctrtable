@@ -6,6 +6,7 @@ on:
       - 'packages/poker/**'
       - 'scripts/browser-smoke.mjs'
       - 'scripts/shared-lobby-browser-smoke.mjs'
+      - 'scripts/pvp-browser-smoke.mjs'
       - 'scripts/build.mjs'
       - '.github/workflows/browser-smoke.yml'
   push:
@@ -38,6 +39,8 @@ jobs:
         run: node scripts/browser-smoke.mjs
       - name: Simulate two Vector chat participants joining the same packaged lobby
         run: node scripts/shared-lobby-browser-smoke.mjs
+      - name: Exercise two-client encrypted hands and signed gameplay in Chromium
+        run: node scripts/pvp-browser-smoke.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -45,5 +48,6 @@ jobs:
           path: |
             dist/poker-mobile-*.png
             dist/poker-shared-lobby-*.png
+            dist/poker-pvp-two-clients-*.png
             dist/poker-river-*.png
           if-no-files-found: ignore
