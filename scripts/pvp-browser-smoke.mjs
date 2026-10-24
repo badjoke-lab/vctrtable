@@ -105,6 +105,16 @@ try{
  assert.equal(new Set([...hCards,...gCards]).size,4,"Opponents saw repeated or wrong cards");
  assert.ok(hCards.every(x=>x!=="BACK"));
  assert.ok(gCards.every(x=>x!=="BACK"));
+ // The trusted host's full deck and journal must be recovered from locally
+ // AES-GCM-encrypted IndexedDB, NEVER from WebXDC broadcast history.
+ await host.reload({waitUntil:"networkidle"});
+ await host.waitForFunction(()=>typeof window.__sim?.receive==="function");
+ for(const update of history)await host.evaluate(x=>window.__sim.receive(x),update);
+ await cycles();
+ assert.match(await host.locator("#pvp-key-status").textContent(),/private hand restored/i,
+  "Host did not recover local encrypted journal after WebView reload");
+ const afterReload=await host.locator("#pvp-hole img").evaluateAll(xs=>xs.map(x=>x.dataset.card));
+ assert.deepEqual(afterReload,hCards,"Host changed their own hand during reload");
  // The active player's signed Fold must settle the hand on both devices.
  const actor=await host.locator("#pvp-fold").isEnabled()?host:guest;
  await actor.locator("#pvp-fold").click();await cycles();
@@ -112,10 +122,30 @@ try{
  assert.equal(await guest.locator("#pvp-turn").textContent(),"Hand complete");
  assert.ok((await host.locator("#pvp-result").textContent()).includes("awarded"));
  assert.equal(await host.locator("#pvp-start").isEnabled(),true);
+ // A second hand must play through all betting streets and a SHOWDOWN,
+ // not merely prove that a fold settles and releases the table.
+ await host.locator("#pvp-start").click();await cycles();
+ let actionCount=0;
+ while((await host.locator("#pvp-turn").textContent())!=="Hand complete" && actionCount<25){
+  let selected=null;
+  for(const page of [host,guest]){
+   if(await page.locator("#pvp-check").isEnabled()){selected={page,action:"check"};break;}
+   if(await page.locator("#pvp-call").isEnabled()){selected={page,action:"call"};break;}
+  }
+  assert.ok(selected,"No legal Check or Call for an active two-player hand");
+  await selected.page.locator("#pvp-"+selected.action).click();
+  await cycles(6);actionCount++;
+ }
+ assert.ok(actionCount>5&&actionCount<25,"Expected a full multi-street hand");
+ assert.equal(await guest.locator("#pvp-turn").textContent(),"Hand complete");
+ assert.equal(await host.locator("#pvp-board img").count(),5);
+ assert.equal(await guest.locator("#pvp-board img").count(),5);
+ assert.equal(await host.locator("#pvp-result").textContent(),
+              await guest.locator("#pvp-result").textContent());
  await host.screenshot({path:path.resolve("dist/poker-pvp-two-clients-360.png"),fullPage:true});
  assert.deepEqual(errors,[],"Browser JavaScript error");
  for(const c of clients)await c.ctx.close();
- console.log("Encrypted PvP 2-client Chromium smoke OK: two unique private hands, signed fold, synced payout");
+ console.log("Encrypted PvP 2-client Chromium smoke OK: private hands, host reload and encrypted recovery, signed fold, payout and full showdown");
 }finally{
  await browser?.close();await new Promise(resolve=>server.close(resolve));
  fs.rmSync(temp,{recursive:true,force:true});

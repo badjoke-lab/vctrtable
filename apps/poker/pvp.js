@@ -6,14 +6,16 @@
 import {deriveSharedTable,validPublicEvent,validTableEvent} from "./table-lobby.js";
 import {seatKeys,publicKeys,signPacket,verifyPacket,newNonce} from "./pvp-crypto.js";
 import {makeHostSession,makeStateEvent,readMyHand,makeSignedAction,
- acceptSignedAction,nextHostHand} from "./pvp-game.js";
+ acceptSignedAction,nextHostHand,publicGameState} from "./pvp-game.js";
+import {serializeSession,restoreSession} from "./session.js";
+import {saveHostCheckpoint,loadHostCheckpoint} from "./pvp-host-checkpoint.js";
 import {makeCard} from "./cards.js";
 const $=id=>document.getElementById(id),api=window.webxdc;
 const live=Boolean(api?.selfAddr&&typeof api.sendUpdate==="function"&&
  typeof api.setUpdateListener==="function"&&globalThis.crypto?.subtle);
 const me=live?api.selfAddr:"",updates=new Map(),peers=new Map(),seen=new Set();
 let keys=null,hostSession=null,game=null,hole=null,seq=0,queue=Promise.resolve();
-let keySent=false,pending=false,errorMessage="";
+let keySent=false,pending=false,errorMessage="",hostRecovered=false,hostProposalId=null;
 function room(){
  return deriveSharedTable([...updates.values()].map(x=>({event:x.payload,serial:x.serial}))
  .filter(x=>validPublicEvent(x.event)||validTableEvent(x.event)));
@@ -37,12 +39,13 @@ function draw(){
   roster.append(element);
  }
  $("pvp-key-status").textContent=!keys?"Generating local private keys…":
- keys.persistent?"Nonextractable private keys retained on this device.":
+ keys.persistent?(hostRecovered?"Host private hand restored from encrypted local journal.":"Nonextractable private keys retained on this device.") :
  "WARNING: private keys could not be saved; do not reload during a game.";
  const allKeys=r.table&&[...r.seats.keys()].every(id=>peers.has(id));
  const completed=game?.status==="complete";
  $("pvp-start").disabled=!live||!keys||!unanimous(r)||!allKeys||!host||
- pending||hostSession?.table.hand?.status==="betting";
+ pending||hostSession?.table.hand?.status==="betting"||
+ (Boolean(game)&&!hostSession);
  $("pvp-start").textContent=completed?"Host: Next hand":"Host: Deal hand";
  $("pvp-game").hidden=!game;
  if(!game)return;
@@ -63,7 +66,7 @@ function draw(){
  const L=game.legal,turn=game.status==="betting"&&L?.playerId===me;
  $("pvp-turn").textContent=game.status==="complete"?"Hand complete":
  turn?"YOUR TURN":"Waiting for "+(game.players[game.turn]?.name||"other player");
- const blocked=!turn||pending||r.paused;
+ const blocked=!turn||pending||r.paused||!unanimous(r)||(host&&game.status==="betting"&&!hostSession);
  for(const name of ["fold","check","call","raise"])
   $("pvp-"+name).disabled=blocked||(name==="check"&&!L?.canCheck)||
    (name==="call"&&!L?.canCall)||(name==="raise"&&!L?.canRaise);
@@ -102,6 +105,24 @@ async function updateState(packet,r){
  if(!Array.isArray(state.players)||state.players.length!==r.seats.size||
     !state.players.every(p=>r.seats.has(p.id)))throw Error("Game roster does not match lobby");
  const own=await readMyHand({packet,keys,hostPublic:peers.get(r.table.host),me});
+ // Only the host can restore the full-deck journal, and only when the
+ // encrypted device checkpoint EXACTLY matches the signed shared snapshot,
+ // the current roster and the unanimously agreed proposal.
+ if(r.table.host===me&&!hostSession){
+  const cp=await loadHostCheckpoint(r.table.id);
+  if(cp&&cp.seq===state.seq){
+   const roster=[...r.seats.keys()].sort();
+   if(cp.proposalId!==r.proposal?.event.id||
+      JSON.stringify(cp.roster)!==JSON.stringify(roster))
+    throw Error("Host checkpoint roster or rules changed; hand cannot resume");
+   const restored=restoreSession(cp.journal);
+   if(JSON.stringify(publicGameState(restored,cp.seq))!==JSON.stringify(state))
+    throw Error("Host checkpoint does not match the shared signed state");
+   hostSession=restored;
+   hostProposalId=cp.proposalId;
+   hostRecovered=true;
+  }
+ }
  seq=state.seq;game={...state,_room:r.table.id};hole=own;
  errorMessage="";pending=false;draw();
 }
@@ -115,8 +136,9 @@ async function accept(update){
   if(game&&r.table?.id!==game._room){game=null;hole=null;hostSession=null;seq=0;}
   if(hostSession?.table.hand?.status==="betting"){
    const before=hostSession.table.players.map(p=>p.id).sort().join("|");
-   if(before!==[...r.seats.keys()].sort().join("|")){
-    hostSession=null;errorMessage="Seat membership changed; host hand aborted.";
+   if(before!==[...r.seats.keys()].sort().join("|")||
+      hostProposalId!==r.proposal?.event.id){
+    hostSession=null;errorMessage="Seats or agreed rules changed; host hand stopped.";
    }
   }
   await enroll();draw();return;
@@ -130,7 +152,7 @@ async function accept(update){
   peers.set(e.by,e.keys);await enroll();draw();return;
  }
  if(e.kind==="state"){await updateState(e,r);return;}
- if(e.kind==="action"&&r.table.host===me&&hostSession&&!r.paused){
+ if(e.kind==="action"&&r.table.host===me&&hostSession&&!r.paused&&unanimous(r)&&hostProposalId===r.proposal?.event.id){
   try{
    await acceptSignedAction({packet:e,session:hostSession,peers,
     tableId:r.table.id,revision:seq});
@@ -143,6 +165,11 @@ async function publish(){
  if(!hostSession||r.table?.host!==me)throw Error("Only host may deal");
  const packet=await makeStateEvent({session:hostSession,keys,host:me,
   tableId:r.table.id,peers,seq:seq+1});
+ // Commit full deck LOCALLY, under AES-GCM, before publishing anything.
+ // If the browser cannot persist the checkpoint, do not deal a new hand.
+ await saveHostCheckpoint({tableId:r.table.id,seq:packet.state.seq,
+  roster:[...r.seats.keys()],proposalId:r.proposal.event.id,
+  journal:serializeSession(hostSession)});
  // Host also renders its own state immediately; shared echo may arrive later.
  send(packet);
  await updateState(packet,r);
@@ -152,7 +179,13 @@ $("pvp-start").addEventListener("click",async()=>{
   const r=room();
   if(!unanimous(r)||r.table.host!==me||![...r.seats.keys()].every(id=>peers.has(id)))
    throw Error("Not all players have agreed or enrolled keys");
-  if(!hostSession)hostSession=makeHostSession(r);
+  if(!hostSession){
+   if(game)throw Error("Old host session is unavailable; refusing to reset chips or re-deal");
+   hostSession=makeHostSession(r);
+   hostProposalId=r.proposal.event.id;
+  }
+  if(hostProposalId!==r.proposal.event.id)
+   throw Error("Approved rules changed. Close this table and create a new session.");
   if(hostSession.table.hand?.status==="betting")throw Error("Hand is already running");
   pending=true;draw();nextHostHand(hostSession);await publish();
  }catch(err){fail(err);}
