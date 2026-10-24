@@ -15,7 +15,7 @@ const live=Boolean(api?.selfAddr&&typeof api.sendUpdate==="function"&&
  typeof api.setUpdateListener==="function"&&globalThis.crypto?.subtle);
 const me=live?api.selfAddr:"",updates=new Map(),peers=new Map(),seen=new Set();
 let keys=null,hostSession=null,game=null,hole=null,seq=0,queue=Promise.resolve();
-let keySent=false,pending=false,errorMessage="",hostRecovered=false;
+let keySent=false,pending=false,errorMessage="",hostRecovered=false,hostProposalId=null;
 function room(){
  return deriveSharedTable([...updates.values()].map(x=>({event:x.payload,serial:x.serial}))
  .filter(x=>validPublicEvent(x.event)||validTableEvent(x.event)));
@@ -66,7 +66,7 @@ function draw(){
  const L=game.legal,turn=game.status==="betting"&&L?.playerId===me;
  $("pvp-turn").textContent=game.status==="complete"?"Hand complete":
  turn?"YOUR TURN":"Waiting for "+(game.players[game.turn]?.name||"other player");
- const blocked=!turn||pending||r.paused||(host&&game.status==="betting"&&!hostSession);
+ const blocked=!turn||pending||r.paused||!unanimous(r)||(host&&game.status==="betting"&&!hostSession);
  for(const name of ["fold","check","call","raise"])
   $("pvp-"+name).disabled=blocked||(name==="check"&&!L?.canCheck)||
    (name==="call"&&!L?.canCall)||(name==="raise"&&!L?.canRaise);
@@ -119,6 +119,7 @@ async function updateState(packet,r){
    if(JSON.stringify(publicGameState(restored,cp.seq))!==JSON.stringify(state))
     throw Error("Host checkpoint does not match the shared signed state");
    hostSession=restored;
+   hostProposalId=cp.proposalId;
    hostRecovered=true;
   }
  }
@@ -135,8 +136,9 @@ async function accept(update){
   if(game&&r.table?.id!==game._room){game=null;hole=null;hostSession=null;seq=0;}
   if(hostSession?.table.hand?.status==="betting"){
    const before=hostSession.table.players.map(p=>p.id).sort().join("|");
-   if(before!==[...r.seats.keys()].sort().join("|")){
-    hostSession=null;errorMessage="Seat membership changed; host hand aborted.";
+   if(before!==[...r.seats.keys()].sort().join("|")||
+      hostProposalId!==r.proposal?.event.id){
+    hostSession=null;errorMessage="Seats or agreed rules changed; host hand stopped.";
    }
   }
   await enroll();draw();return;
@@ -150,7 +152,7 @@ async function accept(update){
   peers.set(e.by,e.keys);await enroll();draw();return;
  }
  if(e.kind==="state"){await updateState(e,r);return;}
- if(e.kind==="action"&&r.table.host===me&&hostSession&&!r.paused){
+ if(e.kind==="action"&&r.table.host===me&&hostSession&&!r.paused&&unanimous(r)&&hostProposalId===r.proposal?.event.id){
   try{
    await acceptSignedAction({packet:e,session:hostSession,peers,
     tableId:r.table.id,revision:seq});
@@ -180,7 +182,10 @@ $("pvp-start").addEventListener("click",async()=>{
   if(!hostSession){
    if(game)throw Error("Old host session is unavailable; refusing to reset chips or re-deal");
    hostSession=makeHostSession(r);
+   hostProposalId=r.proposal.event.id;
   }
+  if(hostProposalId!==r.proposal.event.id)
+   throw Error("Approved rules changed. Close this table and create a new session.");
   if(hostSession.table.hand?.status==="betting")throw Error("Hand is already running");
   pending=true;draw();nextHostHand(hostSession);await publish();
  }catch(err){fail(err);}
