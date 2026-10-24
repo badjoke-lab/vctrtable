@@ -19,10 +19,20 @@ plaintext in any shared update.
   Vector/Nostr user**. The first key announced for an unverified seat ID
   may be from an impersonator. Never treat the lobby ID or these keys as
   authentication for the existing trusted SDK dealer.
-- The host must keep the Mini App open while a hand is running.
-  The secret shuffled deck and session journal are **in host memory only**
-  and cannot yet recover after a host app restart. Participants with locally
-  saved nonextractable keys can reopen, but the host's game is not resumable.
+- The host is now given a **local encrypted recovery checkpoint** before
+  each hand-state broadcast. A non-extractable AES-256-GCM key and ciphertext
+  remain only in the host's IndexedDB, not the WebXDC shared stream. After
+  reopening the SAME XDC on that device, the host decrypts and replays the
+  local full-deck journal and compares the entire reconstructed public
+  snapshot with the signed shared state, including the same room, players,
+  and unanimously approved rules. Mismatches are rejected.
+- **The host should still keep the Mini App open for uninterrupted play.**
+  Storage can be cleared, become inaccessible, or be unavailable in some
+  Vector WebViews. Recovery works only with the same host device/browser
+  storage and original signed seat keys. No cross-device host migration,
+  arbitrator takeover, automatic turn timeout, or identity proof exists.
+  Crash exactly between checkpoint and shared-update delivery is not
+  automatically healed; a mismatch intentionally stops the hand.
 - The action time setting is agreed in the lobby but the **real betting
   timeout is not yet enforced**; pause approval blocks controls only.
   The experiment starts manually after all current players are Ready and
