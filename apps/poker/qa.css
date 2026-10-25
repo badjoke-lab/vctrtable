@@ -456,3 +456,6 @@ img.vcard{height:auto!important;border:0!important;border-radius:0!important;box
 @media(min-width:521px){
  .qa-main .felt{height:780px!important}
 }
+
+/* Whole-PNG corners apply also to standalone card audits outside .qa-main. */
+img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
