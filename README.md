@@ -210,3 +210,26 @@ host, never for cash, prizes, wallet assets or betting. The independent
 Vector SDK Bot remains the intended production privacy boundary.
 
 See [the experimental PvP walkthrough and limits](docs/EXPERIMENTAL-PVP.md).
+
+## Mobile Poker cards and seats (October 2026)
+
+The approved 53 original 240×336 PNG files have not changed. Card
+elements now clip their own corners to a realistic rounded rectangle, with
+no extra CSS frame, rank/suit overlay or stretched artwork.
+
+On the solo QA table, **all five opponent seats have identical dimensions**
+at the 320–430px phone widths; each has fixed-height slots for name, stack,
+blind/dealer tag, two visible/hidden cards, rank+suit text and bet/payout.
+Community cards are larger and do not collide with the seats or hero.
+At showdown, only **unfolded, revealed** opponent seats can be tapped
+or activated via keyboard Enter/Space to magnify both approved PNGs. Folded
+opponents' cards remain hidden.
+
+The end-of-hand summary prioritizes winners and a single hero net amount,
+and winning seats are visibly outlined. Betting/poker rules and secret
+card transport are unchanged; this is a UI-only change, **not a Vector
+networking improvement**.
+
+Chromium regression covers 320/360/390/430px, complete hands through
+river/showdown, seat width/height equality, rounded complete PNGs,
+card zoom, no hidden-card leaks, and prior chat/storage behavior.
