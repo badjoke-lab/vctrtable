@@ -311,3 +311,151 @@ img.vcard{height:auto!important;border:0!important;border-radius:0!important;box
  .qa-main #qa-end .qa-end-actions button{font-size:11px}
  .qa-main #qa-end .qa-settlement-ranks{column-gap:5px;font-size:10px}
 }
+
+
+/* 2026-10-25 card legibility and UNIFORM 2-6 player seats.
+   A direct img remains the complete approved PNG; natural 5:7 ratio
+   and source pixels stay intact. Rounded corners clip the white PNG,
+   rather than painting a second frame on top of the artwork. */
+.qa-main img.vcard{
+ height:auto!important;aspect-ratio:5 / 7!important;object-fit:contain!important;
+ border:0!important;border-radius:6% / 4.3%!important;
+ overflow:hidden;box-shadow:none!important;background:transparent!important;
+}
+.qa-main .poker-arena{padding:12px 5px 14px!important;overflow:visible}
+.qa-main .felt{
+ height:clamp(740px,195vw,780px)!important;
+ border-width:8px!important;box-sizing:border-box
+}
+.qa-main .poker-seat{
+ box-sizing:border-box!important;width:clamp(88px,25vw,108px)!important;
+ min-width:0!important;max-width:none!important;height:158px!important;
+ padding:5px 3px!important;
+ display:grid!important;
+ grid-template-rows:17px 19px 17px 65px 18px 17px!important;
+ align-content:center;align-items:center;justify-items:center;
+ gap:0!important;overflow:hidden;
+ border-radius:12px!important;
+}
+.qa-main .poker-seat.pos-top-left{left:17%!important;top:16%!important}
+.qa-main .poker-seat.pos-top{left:50%!important;top:16%!important}
+.qa-main .poker-seat.pos-top-right{left:83%!important;top:16%!important}
+.qa-main .poker-seat.pos-mid-left{left:15%!important;top:68%!important}
+.qa-main .poker-seat.pos-mid-right{left:85%!important;top:68%!important}
+.qa-main .poker-seat .poker-seat-name{
+ width:100%;max-width:100%;font-size:12px!important;line-height:17px;
+ min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+.qa-main .poker-seat .poker-seat-stack{
+ display:block;font-size:12px!important;line-height:18px;margin:0!important
+}
+.qa-main .poker-seat .poker-seat-tags{
+ display:flex;justify-content:center;align-items:center;
+ width:100%;height:17px;min-height:17px;
+}
+.qa-main .poker-seat .poker-seat-badge{
+ font-size:10px;line-height:13px;min-width:22px;padding:0 3px;margin:0
+}
+.qa-main .poker-seat .poker-seat-cards{
+ display:flex;justify-content:center;align-items:center;gap:2px!important;
+ width:100%;height:65px;min-height:65px;margin:0!important;overflow:visible
+}
+.qa-main .poker-seat .poker-seat-cards img.vcard-small{
+ display:block;width:clamp(37px,11.2vw,44px)!important;
+ flex:0 0 clamp(37px,11.2vw,44px)!important;
+ height:auto!important;max-width:none!important;
+}
+.qa-main .poker-seat .poker-seat-card-index{
+ display:block;min-height:18px;line-height:18px;width:100%;
+ font-variant-numeric:tabular-nums;font-size:12px;font-weight:700;
+ white-space:nowrap;overflow:hidden;text-overflow:clip;
+ color:#ecfff4
+}
+.qa-main .poker-seat .poker-seat-bet{
+ display:block;min-height:17px;line-height:17px;
+ font-size:10px!important;font-weight:650;white-space:nowrap;
+ max-width:100%;overflow:hidden;text-overflow:ellipsis
+}
+.qa-main .poker-seat.winner{
+ border-color:#a3f1a0!important;
+ box-shadow:0 0 0 2px #88e5a499,0 3px 18px #0009!important
+}
+.qa-main .poker-seat.winner .poker-seat-bet::before{content:"★ ";color:#a7ffd0}
+.qa-main.qa-showdown .poker-seat.folded{opacity:1!important}
+.qa-main .poker-seat.inspectable{cursor:zoom-in;touch-action:manipulation}
+.qa-main .poker-seat.inspectable:focus-visible{
+ outline:3px solid #c9fff1;outline-offset:2px
+}
+.qa-main .poker-center{
+ top:35%!important;width:100%!important;
+ gap:7px!important;z-index:1;
+}
+.qa-main .community-cards{
+ gap:clamp(3px,1.2vw,6px)!important;
+ width:100%!important;align-items:center;justify-content:center
+}
+.qa-main .community-cards .vcard,
+.qa-main .community-cards .vcard-empty{
+ width:clamp(47px,14.7vw,62px)!important;
+ flex:0 0 clamp(47px,14.7vw,62px)!important;
+ height:auto!important;aspect-ratio:5 / 7!important;
+ box-sizing:border-box
+}
+.qa-main .pot-pill{font-size:17px;padding:5px 15px}
+.qa-main .street-label{font-size:12px;letter-spacing:.09em}
+.qa-main .hero-spot{
+ width:42%!important;bottom:1%!important;gap:5px!important
+}
+.qa-main .hero-hand{gap:5px!important}
+.qa-main .hero-hand img.vcard{
+ width:clamp(73px,22vw,94px)!important;
+ flex:0 0 clamp(73px,22vw,94px)!important;
+ height:auto!important;
+}
+.qa-main .hero-info{
+ min-height:37px;min-width:clamp(160px,48vw,230px);font-size:13px;
+ padding:7px 10px
+}
+.qa-main .chat-bubble{
+ right:6px!important;bottom:8px!important;min-width:42px;
+ height:43px;border-radius:11px;
+}
+.qa-main .qa-turn-status{margin-top:10px}
+.qa-main #qa-end #qa-result{
+ font-size:13px;line-height:1.5;color:#c1e7d7;padding:0 2px
+}
+.qa-main .qa-settlement-ranks{
+ grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
+}
+.qa-card-detail{
+ box-sizing:border-box;border:1px solid #6bcb9c;
+ border-radius:18px;background:#082425;color:#edfff9;
+ max-width:min(calc(100vw - 28px),390px);width:100%;padding:20px;
+ margin:auto;box-shadow:0 12px 50px #000b;text-align:center
+}
+.qa-card-detail::backdrop{background:#000c;backdrop-filter:blur(3px)}
+.qa-card-detail h2{margin:0 0 6px;font-size:21px}
+.qa-card-detail .qa-card-identities{font-weight:750;font-size:21px;margin:0 0 12px}
+.qa-card-detail .qa-detail-cards{display:flex;justify-content:center;gap:13px}
+.qa-card-detail .qa-detail-cards img.vcard{
+ width:clamp(94px,28vw,124px)!important;flex:0 0 auto!important;
+ aspect-ratio:5 / 7!important;height:auto!important;
+ border-radius:6% / 4.3%!important;border:0!important;box-shadow:none!important
+}
+.qa-card-detail p{font-size:14px}
+.qa-card-detail button{margin-top:4px;min-width:130px;min-height:43px}
+@media(max-width:340px){
+ .qa-main .poker-seat{width:88px!important}
+ .qa-main .poker-seat.pos-top-left{left:16%!important}
+ .qa-main .poker-seat.pos-top-right{left:84%!important}
+ .qa-main .community-cards{gap:3px!important}
+ .qa-main .community-cards .vcard,.qa-main .community-cards .vcard-empty{
+  width:47px!important;flex-basis:47px!important
+ }
+}
+@media(min-width:521px){
+ .qa-main .felt{height:780px!important}
+}
+
+/* Whole-PNG corners apply also to standalone card audits outside .qa-main. */
+img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}

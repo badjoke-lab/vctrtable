@@ -2,7 +2,7 @@
 // Secret deck and hole cards stay local; never sent through WebXDC group updates.
 import {legalActions,assertConservation} from "./engine.js";
 import {createSession,startSessionHand,sessionAction,sessionRebuy,serializeSession,restoreSession} from "./session.js";
-import {makeCard} from "./cards.js";
+import {makeCard,SUIT_SYMBOLS} from "./cards.js";
 import {ChatViewModel,QUICK_REPLIES,cannedTranslation} from "./chat-view.js";
 import {createPublicChatTransport} from "./public-chat.js";
 import {bettingControls} from "./betting-controls.js";
@@ -144,6 +144,28 @@ function setChatSource(useVector){
  $("qa-chat-toast").hidden=true;
  renderChat();
 }
+function inspectSeat(id){
+ const h=table?.hand,p=h?.players[id];
+ if(!h||h.status!=="complete"||!p?.inHand||p.folded||h.board.length!==5)return;
+ let dialog=document.getElementById("qa-card-detail");
+ if(!dialog){
+  dialog=elem("dialog",undefined,"qa-card-detail");dialog.id="qa-card-detail";
+  dialog.addEventListener("click",e=>{if(e.target===dialog)dialog.close();});
+  document.body.append(dialog);
+ }
+ const heading=elem("h2",p.name);
+ const ids=elem("p",p.hole.map(c=>c[0].replace("T","10")+SUIT_SYMBOLS[c[1]]).join(" · "),"qa-card-identities");
+ const cards=elem("div",undefined,"qa-detail-cards");
+ for(const c of p.hole)cards.append(makeCard(c));
+ const summary=settlementSummary(table,{locale,heroId:h.players[0].id});
+ const info=summary.seats.find(x=>x.id===p.id||x.name===p.name);
+ const result=elem("p",(info?.handName||"")+" · "+t("win")+" "+fmt(h.awards[id]||0));
+ const close=elem("button",locale==="ja"?"閉じる":"Close","secondary");
+ close.type="button";close.addEventListener("click",()=>dialog.close());
+ dialog.replaceChildren(heading,ids,cards,result,close);
+ if(typeof dialog.showModal==="function")dialog.showModal();
+ else dialog.setAttribute("open","");
+}
 function render(){
  document.documentElement.lang=locale;
  document.querySelectorAll("[data-l10n]").forEach(x=>x.textContent=t(x.dataset.l10n));
@@ -180,22 +202,33 @@ function render(){
  const seats=$("qa-players");seats.replaceChildren();
  h.players.slice(1).forEach((p,i)=>{
   const id=i+1;
-  const seat=elem("div",undefined,"poker-seat "+slots[i]+(h.turn===id?" active":"")+(p.folded?" folded":"")+(p.stack===0&&p.inHand?" all-in":""));
+  const revealed=end&&!p.folded&&h.board.length===5;
+  const awarded=end&&h.awards[id]>0;
+  const seat=elem("div",undefined,"poker-seat "+slots[i]+(h.turn===id?" active":"")+
+   (p.folded?" folded":"")+(p.stack===0&&p.inHand?" all-in":"")+(awarded?" winner":""));
+  if(revealed){
+   seat.classList.add("inspectable");seat.tabIndex=0;seat.setAttribute("role","button");
+   seat.setAttribute("aria-label",p.name+" — "+p.hole.map(c=>c[0]+SUIT_SYMBOLS[c[1]]).join(", ")+
+    (locale==="ja"?"。タップで拡大":"; tap to inspect"));
+   seat.addEventListener("click",()=>inspectSeat(id));
+   seat.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();inspectSeat(id);}});
+  }
   seat.append(elem("b",p.name,"poker-seat-name"),elem("span",fmt(p.stack),"poker-seat-stack"));
   const tags=elem("div",undefined,"poker-seat-tags");
   for(const [index,label,cls] of [[h.button,"D","d"],[h.sbSeat,"SB",""],[h.bbSeat,"BB","bb"]])
    if(index===id)tags.append(elem("span",label,"poker-seat-badge "+cls));
   seat.append(tags);
   const cards=elem("div",undefined,"poker-seat-cards");
-  if(p.inHand){
-   const revealed=end&&!p.folded&&h.board.length===5;
-   for(const c of p.hole)cards.append(makeCard(c,{hidden:!revealed,small:true}));
-  }
+  if(p.inHand)for(const c of p.hole)cards.append(makeCard(c,{hidden:!revealed,small:true}));
   seat.append(cards);
-  if(p.total>0||end&&h.awards[id]>0){
-   const payment=end&&h.awards[id]>0?t("received")+" +"+fmt(h.awards[id]):end?t("betBy")+" "+fmt(p.total):fmt(p.total)+(p.folded?" · "+t("folded"):h.turn===id?" · "+t("turn"):"");
-   seat.append(elem("span",payment,"poker-seat-bet"+(end&&h.awards[id]>0?" payout":"")));
+  seat.append(elem("span",revealed?p.hole.map(c=>c[0].replace("T","10")+SUIT_SYMBOLS[c[1]]).join(" · "):"","poker-seat-card-index"));
+  const paymentLine=elem("span",undefined,"poker-seat-bet"+(awarded?" payout":""));
+  if(p.total>0||awarded){
+   paymentLine.textContent=awarded?t("received")+" +"+fmt(h.awards[id]):
+    end?t("betBy")+" "+fmt(p.total):
+    fmt(p.total)+(p.folded?" · "+t("folded"):h.turn===id?" · "+t("turn"):"");
   }
+  seat.append(paymentLine);
   seats.append(seat);
  });
  $("qa-board-cards").replaceChildren(...Array.from({length:5},(_,i)=>makeCard(h.board[i],{empty:!h.board[i]})));
@@ -209,7 +242,11 @@ function render(){
  $("qa-end").hidden=!end;
  $("qa-controls").hidden=end;
  document.querySelector(".qa-main").classList.toggle("qa-playing",!end);
- $("qa-info").textContent=end?t("done")+" — "+t("win")+" "+fmt(h.awards[0])+" · "+t("net")+" "+(h.awards[0]-h.players[0].total>=0?"+":"")+fmt(h.awards[0]-h.players[0].total):paused?t("paused"):h.turn===0?t("turn")+" · "+t("toCall")+" "+fmt(L?.toCall??0):t("wait");
+  document.querySelector(".qa-main").classList.toggle("qa-showdown",end);
+ const winners=h.players.filter((p,i)=>h.awards[i]>0).map(p=>p.name);
+ $("qa-info").textContent=end?t("showdown")+" · "+winners.join(", ")+
+  " · "+t("paidOut")+" "+fmt(h.awards.reduce((a,b)=>a+b,0)):
+  paused?t("paused"):h.turn===0?t("turn")+" · "+t("toCall")+" "+fmt(L?.toCall??0):t("wait");
  const canAct=Boolean(L&&L.seat===0&&!paused);
  $("qa-fold").disabled=!canAct;
  $("qa-check").disabled=!canAct||!L?.canCheck;
@@ -232,7 +269,7 @@ function render(){
  $("qa-buy").disabled=!table.settings.rebuy||!table.players.some(p=>p.stack===0);
  if(end){
   const summary=settlementSummary(table,{locale,heroId:h.players[0].id});
-  $("qa-result").textContent=t("win")+" "+fmt(summary.hero.awarded)+" · "+t("net")+" "+(summary.hero.net>=0?"+":"")+fmt(summary.hero.net);
+  $("qa-result").textContent=t("you")+" · "+t("net")+" "+(summary.hero.net>=0?"+":"")+fmt(summary.hero.net);
   const entries=[];
   for(const p of summary.pots){
    const line=elem("div",undefined,"qa-settlement-pot");

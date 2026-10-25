@@ -185,7 +185,7 @@ test('a visible poker card is exactly ONE PNG image, with NO CSS double-frame',(
  assert.ok(css.includes('img.vcard{display:block'),'Cards must be direct image elements');
  assert.ok(css.includes('height:auto!important'),'Keep exact PNG aspect ratio');
  assert.ok(css.includes('border:0!important'),'No second outside border');
- assert.ok(css.includes('border-radius:0!important'),'No second rounded corner frame');
+ assert.ok(css.includes('border-radius:6% / 4.3%!important'),'The direct PNG image must clip real rounded corners');
  assert.ok(!css.includes('.vcard-illustrated>img'),'No nested PNG inside another card');
  assert.ok(!css.includes('.vcard{border-color:'),'Remove legacy second frame CSS');
  assert.ok(browser.includes('singleImage:true,styleClean:true'),
