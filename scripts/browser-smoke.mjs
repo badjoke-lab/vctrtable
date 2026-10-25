@@ -73,6 +73,8 @@ try{
   assert.equal(await page.locator("#qa-players .poker-seat").count(),view.seats-1);
   assert.equal(await page.locator("#qa-hero-cards .vcard").count(),2);
   assert.equal(await page.locator("#qa-board-cards .vcard").count(),5);
+  assert.equal(await page.locator("#qa-players .poker-seat.inspectable").count(),0,
+   "Opponent hole cards must not be inspectable before showdown");
   assert.equal(await page.locator("#qa-hero-cards > img.vcard").count(),2,
     "Each hero card must be one PNG image directly in the hand");
   assert.equal(await page.locator("#qa-hero-cards .vcard span").count(),0,
@@ -309,6 +311,8 @@ try{
     "Bet controls must be hidden at showdown");
   // Showdown opponent cards are readable individually using the ORIGINAL
   // approved card art; no folded hand may be opened.
+  assert.equal(await page.locator("#qa-players .poker-seat.folded.inspectable").count(),0,
+   "Folded opponents must never become inspectable");
   const inspectable=page.locator("#qa-players .poker-seat.inspectable");
   if(await inspectable.count()){
    const labels=await inspectable.first().getAttribute("aria-label");
