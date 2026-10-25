@@ -499,3 +499,10 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
  .qa-main .poker-seat.pos-mid-left{left:10%!important}
  .qa-main .poker-seat.pos-mid-right{left:90%!important}
 }
+
+/* 320–350px: give the two hero cards a genuine gap from lower seats.
+   Side seats still do not touch any of the five community cards. */
+@media(max-width:350px){
+ .qa-main .poker-seat.pos-mid-left,
+ .qa-main .poker-seat.pos-mid-right{top:66%!important}
+}
