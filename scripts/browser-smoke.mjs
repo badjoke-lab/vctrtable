@@ -47,7 +47,7 @@ try{
  browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
  const errors=[];
  for(const view of [
-  {width:390,height:844,seats:6},{width:360,height:740,seats:6},
+  {width:430,height:932,seats:6},{width:390,height:844,seats:6},{width:360,height:740,seats:6},
   {width:320,height:640,seats:6},{width:320,height:640,seats:2}
  ]){
   const ctx=await browser.newContext({viewport:{width:view.width,height:view.height},isMobile:true,hasTouch:true,deviceScaleFactor:1});
@@ -102,7 +102,7 @@ try{
         const r=img.getBoundingClientRect();
         return css.borderTopWidth==="0px"&&css.borderLeftWidth==="0px"&&
           css.borderBottomWidth==="0px"&&css.borderRightWidth==="0px"&&
-          css.borderRadius==="0px"&&css.boxShadow==="none"&&
+          parseFloat(css.borderTopLeftRadius)>0&&css.boxShadow==="none"&&
           css.backgroundColor==="rgba(0, 0, 0, 0)"&&
           Math.abs(r.width/r.height-img.naturalWidth/img.naturalHeight)<0.01;
       });
@@ -143,6 +143,15 @@ try{
   });
   const hit=(a,b)=>Math.min(a.right,b.right)-Math.max(a.x,b.x)>3&&
                       Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y)>3;
+  // Five opponent seats always use the same card, badge and payout slots.
+  // Side seats must no longer be compressed compared with the top row.
+  if(view.seats===6){
+   const widths=placement.seats.map(x=>x.width),heights=placement.seats.map(x=>x.height);
+   assert.ok(Math.max(...widths)-Math.min(...widths)<1,
+    "All five opponent seats must have identical widths: "+JSON.stringify(placement));
+   assert.ok(Math.max(...heights)-Math.min(...heights)<1,
+    "All five opponent seats must have identical heights: "+JSON.stringify(placement));
+  }
   for(const [i,seat] of placement.seats.entries()){
     assert.ok(seat.x>=0&&seat.right<=view.width,
       "Opponent seat "+i+" horizontal viewport clipping: "+JSON.stringify({view,placement}));
@@ -298,6 +307,29 @@ try{
     "Finished hand must itemize pot recipients");
   assert.equal(await page.locator("#qa-controls").isVisible(),false,
     "Bet controls must be hidden at showdown");
+  // Showdown opponent cards are readable individually using the ORIGINAL
+  // approved card art; no folded hand may be opened.
+  const inspectable=page.locator("#qa-players .poker-seat.inspectable");
+  if(await inspectable.count()){
+   const labels=await inspectable.first().getAttribute("aria-label");
+   assert.match(labels,/tap to inspect|タップで拡大/);
+   await inspectable.first().click();
+   const modal=page.locator("#qa-card-detail");
+   assert.equal(await modal.isVisible(),true);
+   assert.equal(await modal.locator("img.vcard").count(),2);
+   const detail=await modal.locator("img.vcard").evaluateAll(imgs=>imgs.map(img=>({
+     w:img.getBoundingClientRect().width,ratio:img.getBoundingClientRect().width/img.getBoundingClientRect().height,
+     radius:getComputedStyle(img).borderTopLeftRadius,src:img.currentSrc
+   })));
+   for(const c of detail){
+    assert.ok(c.w>=90,"Inspect cards must be legible: "+JSON.stringify(c));
+    assert.ok(Math.abs(c.ratio-5/7)<.02,"Inspect cards must not be distorted");
+    assert.ok(parseFloat(c.radius)>0,"All card corners must be rounded");
+    assert.ok(c.src.includes("/card-png/"),"Magnifier must use approved PNG");
+   }
+   await modal.locator("button").click();
+   assert.equal(await modal.isVisible(),false);
+  }
   // Regression: Next hand must be a compact button BELOW settlement cards,
   // never a huge flex-stretched block next to the pot (Android screenshot).
   const resultBoxes=await page.evaluate(()=>{
@@ -380,7 +412,7 @@ try{
   await context.close();
  }
  assert.deepEqual(errors,[],"Browser runtime errors");
- console.log("Chromium QA smoke OK: 2-6 seats, 320/360/390px overlap checks, live browser complete hands, storage+chat");
+ console.log("Chromium QA smoke OK: 2-6 seats, 320/360/390/430px geometry, uniform seat sizes, rounded cards, card zoom, full hands and chat");
 }finally{
  await browser?.close();
  await new Promise(resolve=>server.close(resolve));
