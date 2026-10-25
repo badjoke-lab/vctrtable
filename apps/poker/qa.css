@@ -459,3 +459,50 @@ img.vcard{height:auto!important;border:0!important;border-radius:0!important;box
 
 /* Whole-PNG corners apply also to standalone card audits outside .qa-main. */
 img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
+
+
+/* Real-device screenshot follow-up (2026-10-26):
+   Reclaim unused felt height and align all six seats with a readable board.
+   Keep approved 5:7 cards and identical 158px opponent panel dimensions. */
+@media(max-width:520px){
+ .qa-main .felt{
+  height:670px!important;
+  border-radius:43% / 40%!important;
+ }
+ .qa-main .poker-center{
+  top:35%!important;
+ }
+ .qa-main .poker-seat.pos-top-left,
+ .qa-main .poker-seat.pos-top,
+ .qa-main .poker-seat.pos-top-right{top:16%!important}
+ .qa-main .poker-seat.pos-mid-left{
+  left:10%!important;top:67%!important
+ }
+ .qa-main .poker-seat.pos-mid-right{
+  left:90%!important;top:67%!important
+ }
+ .qa-main .hero-spot{
+  bottom:0!important;left:50%!important;
+  width:50%!important;
+ }
+ .qa-main .hero-hand img.vcard{
+  width:clamp(70px,21vw,86px)!important;
+  flex:0 0 clamp(70px,21vw,86px)!important
+ }
+ .qa-main .chat-bubble{
+  bottom:7px!important;right:7px!important;
+ }
+}
+/* The 320px profile previously overrode the equal-seat positions at the
+   end of the earlier CSS. Keep this rule last to avoid asymmetry. */
+@media(max-width:340px){
+ .qa-main .poker-seat.pos-mid-left{left:10%!important}
+ .qa-main .poker-seat.pos-mid-right{left:90%!important}
+}
+
+/* 320–350px: give the two hero cards a genuine gap from lower seats.
+   Side seats still do not touch any of the five community cards. */
+@media(max-width:350px){
+ .qa-main .poker-seat.pos-mid-left,
+ .qa-main .poker-seat.pos-mid-right{top:66%!important}
+}
