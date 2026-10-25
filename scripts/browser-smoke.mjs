@@ -164,6 +164,37 @@ try{
     for(let j=0;j<i;j++)assert.ok(!hit(seat,placement.seats[j]),
       "Opponents "+i+"/"+j+" overlap: "+JSON.stringify({view,placement}));
   }
+  if(view.seats===6){
+   // Regressions from actual Vector Android screenshots: bottom seats were
+   // visually touching/covering the hero cards in the 740px elongated felt.
+   // Check actual PNG rectangles, not only the whole hero container.
+   const mobile=await page.evaluate(()=>{
+    const rect=x=>{const r=x.getBoundingClientRect();return {
+      x:r.left,y:r.top,right:r.right,bottom:r.bottom,w:r.width,h:r.height
+    };};
+    return {
+      felt:rect(document.querySelector(".felt")),
+      hero:[...document.querySelectorAll("#qa-hero-cards img.vcard")].map(rect),
+      board:[...document.querySelectorAll("#qa-board-cards .vcard")].map(rect),
+      seats:[...document.querySelectorAll(".poker-seat")].map(rect),
+      chat:rect(document.querySelector("#qa-chat-bubble"))
+    };
+   });
+   assert.ok(mobile.felt.h<=700&&mobile.felt.h>=630,
+     "Phone felt must be neither excessively tall nor too cramped: "+JSON.stringify(mobile));
+   const overlapArea=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.x,b.x))*
+     Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y));
+   for(let i=0;i<mobile.seats.length;i++){
+    for(const [k,card] of [...mobile.hero,...mobile.board].entries())
+     assert.ok(overlapArea(mobile.seats[i],card)<=1,
+       "Seat "+(i+2)+" overlaps a real card "+k+": "+JSON.stringify(mobile));
+    assert.ok(overlapArea(mobile.seats[i],mobile.chat)<=1,
+       "Chat button covers opponent seat "+(i+2));
+   }
+   for(const card of [...mobile.hero,...mobile.board])
+    assert.ok(overlapArea(card,mobile.chat)<=1,
+     "Chat button covers playing cards");
+  }
   const assertChatStage=async(where)=>{
     const m=await page.evaluate(()=>{
       const box=id=>{const x=document.querySelector(id),r=x.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height};};
