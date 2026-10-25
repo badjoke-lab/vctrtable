@@ -242,6 +242,7 @@ function render(){
  $("qa-end").hidden=!end;
  $("qa-controls").hidden=end;
  document.querySelector(".qa-main").classList.toggle("qa-playing",!end);
+  document.querySelector(".qa-main").classList.toggle("qa-showdown",end);
  const winners=h.players.filter((p,i)=>h.awards[i]>0).map(p=>p.name);
  $("qa-info").textContent=end?t("showdown")+" · "+winners.join(", ")+
   " · "+t("paidOut")+" "+fmt(h.awards.reduce((a,b)=>a+b,0)):
