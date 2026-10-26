@@ -1,5 +1,21 @@
 # Roadmap — vctrtable
 
+## WebXDC community technology adoption (2026-10-26)
+
+Decision log and gating tests: [WEBXDC-ADOPTION-20261026.md](WEBXDC-ADOPTION-20261026.md).
+
+**Now:** Harden existing host-trusted encrypted WebXDC 2-client match tests for
+serial gaps, duplicate history replay, dropped updates, and disconnected guest
+recovery. Preserve the separate SDK Bot/DM trusted-dealer path. No false claim
+that a WebXDC sender identity is authenticated or that realtime traffic is durable.
+
+**Next:** Use official webxdc-dev as an optional multi-instance emulator, audit
+actual Vector Android/desktop message timing and room confinement, and only then
+decide whether realtime presence helps. Vite migration, Hanafuda transport reuse,
+vctrmemo offline sync diagnosis and vctrplay original WebGL POC are separate gates.
+
+
+
 ## Decisions preserved
 
 First game: **PvP Texas Hold'em**, private tables before public discovery; later add independently packaged table games in this same repository.
