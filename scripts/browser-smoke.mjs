@@ -64,6 +64,8 @@ try{
     "Solo QA settings must start collapsed, not look like the main app");
   assert.equal(await page.locator("#qa-mode-banner").isVisible(),false,
     "LOCAL QA label should only appear after selecting local practice");
+  fs.mkdirSync(dist,{recursive:true});
+  await page.screenshot({path:path.join(dist,"poker-landing-"+view.width+".png"),fullPage:true});
   const practiceSummary=page.locator("#qa-practice-details summary");
   await practiceSummary.click();
   await page.locator("#qa-form").waitFor({state:"visible"});
@@ -511,6 +513,9 @@ try{
   const page=await ctx.newPage();
   page.on("pageerror",error=>errors.push("desktop-"+view.width+": "+error.message));
   await page.goto(base+"/",{waitUntil:"networkidle"});
+  assert.equal(await page.locator(".qa-primary-mode").isVisible(),true,
+    "The desktop first screen must also show mode choice instead of developer fields");
+  await page.screenshot({path:path.join(dist,"poker-landing-"+view.width+".png"),fullPage:true});
   await page.locator("#qa-practice-details summary").click();
   await page.locator("#qa-seats").fill("6");
   await page.locator("#qa-seconds").fill("0");
