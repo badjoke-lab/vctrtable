@@ -122,6 +122,7 @@ function render() {
   $("oppYaku").textContent=yakuText(1);
   $("yourYaku").textContent=yakuText(0);
   $("decision").hidden=!(game.phase==="decision"&&game.active===0);
+  $("koi").disabled=game.hands.every(h=>h.length===0);
   $("result").hidden=game.phase!=="ended";
   let status="";
   if(game.phase==="ended")status=tx("roundOver");
