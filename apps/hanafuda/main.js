@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const M={
  en:{
   title:"Hanafuda · Koi-Koi",languageLabel:"Language",
-  qaWarning:"LOCAL QA · scripted opponent · NOT Vector PvP · prototype card labels, not final artwork",
+  qaWarning:"LOCAL QA · scripted opponent · NOT Vector PvP · traditional SVG card artwork",
   setupTitle:"New match",setupDescription:"Play 2-player Koi-Koi against a simple local test opponent. Nobody else can join this QA game.",
   roundsLabel:"Rounds",start:"Start",oppLabel:"Opponent",youLabel:"You",
   oppHandLabel:"Opponent's hand",oppTakenLabel:"Opponent's captured cards",
@@ -21,11 +21,11 @@ const M={
   youWin:"You win",theyWin:"Opponent wins",draw:"No score",points:"points",
   bright:"Bright",animal:"Seed",ribbon:"Ribbon",plain:"Plain",
   match:"Matching month",score:"Score",empty:"None",koiUsed:"Koi-Koi declared",
-  artistNote:"Temporary identification card: exact card art will replace these labels."
+  artistNote:"Hanafuda SVG card artwork: Louie Mantia / すけじょ, CC BY-SA 4.0."
  },
  ja:{
   title:"花札・こいこい",languageLabel:"言語",
-  qaWarning:"ローカルQA版・相手はテスト用自動操作・Vector対人戦ではありません・札の絵は仮表示",
+  qaWarning:"ローカルQA版・相手はテスト用自動操作・Vector対人戦ではありません・花札48枚の絵柄",
   setupTitle:"新しい対局",setupDescription:"1端末で2人用「こいこい」を試す画面です。相手は簡単なテスト用プログラムで、他のVector利用者とは接続しません。",
   roundsLabel:"対局数",start:"対局開始",oppLabel:"相手",youLabel:"あなた",
   oppHandLabel:"相手の手札",oppTakenLabel:"相手の取り札",
@@ -41,7 +41,7 @@ const M={
   youWin:"あなたの勝ち",theyWin:"相手の勝ち",draw:"流局",points:"点",
   bright:"光",animal:"タネ",ribbon:"短冊",plain:"カス",
   match:"同じ月の札",score:"得点",empty:"なし",koiUsed:"こいこい宣言中",
-  artistNote:"札の種類を識別する仮デザインです。最終的に正確な48枚の絵へ差し替えます。"
+  artistNote:"花札画像：Louie Mantia / すけじょ、CC BY-SA 4.0。"
  }
 };
 const Y={
@@ -63,15 +63,19 @@ function makeCard(id,{faceDown=false,compact=false,click=null,match=false,target
   const c=faceDown ? null:cardById(id);
   const e=document.createElement("button");
   e.type="button";e.className="card "+(c?c.type:"back")+(match?" match":"")+(target?" target":"")+(click?" selectable":"");
+  const img=document.createElement("img");
+  img.className="card-art";
+  img.src=faceDown?"cards/back.svg":`cards/${c.id}.svg`;
+  img.alt="";
+  img.draggable=false;
+  img.loading="eager";
+  e.append(img);
   if(faceDown) {
-    e.textContent="花";e.setAttribute("aria-label",lang==="ja"?"伏せ札":"Face-down card");
-  } else {
-    const month=document.createElement("span");month.className="month";month.textContent=lang==="ja"?`${c.month}月 ${c.monthJa}`:`${c.month}. ${c.monthEn}`;
-    const motif=document.createElement("span");motif.className="motif";motif.textContent=c.symbol;
-    const kind=document.createElement("span");kind.className="kind";kind.textContent=tx(TR[c.type])+(c.type==="t"?(c.name==="red"?" ●":c.name==="blue"?" ◆":""):"");
-    e.append(month,motif,kind);
+    e.setAttribute("aria-label",lang==="ja"?"伏せ札":"Face-down card");
+  }else{
     const label=`${c.monthJa} / ${c.monthEn} / ${c.name} / ${tx(TR[c.type])}`;
-    e.title=label+" — "+tx("artistNote");e.setAttribute("aria-label",label);
+    e.title=label;
+    e.setAttribute("aria-label",label);
   }
   if(click)e.addEventListener("click",click);
   else e.disabled=true;
@@ -106,7 +110,6 @@ function render() {
   $("yourCount").textContent=`${game.hands[0].length} ${tx("hand")}`;
   $("deckCount").textContent=game.deck.length;
   const pending=game.phase==="choose" && game.active===0 ? game.pending:null;
-  const legalMonth=game.phase==="turn" && game.active===0 ? null:undefined;
   fill("opponentHand",game.hands[1],()=>({faceDown:true}));
   fill("field",game.field,id=>({
     target:!!pending?.choices.includes(id),
