@@ -47,3 +47,32 @@ h1{margin:2px 0 0;font-size:clamp(23px,4vw,35px);letter-spacing:.02em}h2{margin:
 .your-hand{justify-content:flex-start;gap:3px}.your-hand .card{min-width:42px;width:42px;height:75px;padding:3px 1px;border-width:3px}.your-hand .card .motif{font-size:22px}
 .opponent-hand .card{width:27px;height:44px}.panel{padding:12px}#lang{max-width:90px}
 } 
+
+/* Original 512×839 Commons cards are not text badges. Maintain exact aspect and
+   a legible SVG face at each breakpoint; color/class stays semantic only. */
+.card,.card.h,.card.a,.card.t,.card.k,.card.back {
+ padding:0;
+ border:0;
+ color:inherit;
+ background:transparent;
+ aspect-ratio:512/839;
+ border-radius:3px;
+}
+.card .card-art{display:block;width:100%;height:100%;object-fit:fill;pointer-events:none}
+.card:not(.selectable){opacity:1}
+.card:focus-visible{outline:3px solid #f2ca62;outline-offset:2px}
+.card.match{box-shadow:0 0 0 3px #f2d17e,0 4px 12px #0a191a}
+.card.target{box-shadow:0 0 0 4px #ffe466,0 0 20px #ffdf71bb}
+.card.selectable:hover{transform:translateY(-5px)}
+.opponent-hand .card{width:32px;height:52px}
+.field .card{width:min(100%,76px);height:auto}
+.captured .card{width:27px;height:auto;flex:none}
+.your-hand .card{width:70px;min-width:54px;height:auto}
+.deck-side .card{width:61px;height:auto}
+@media(max-width:600px) {
+ .field .card{width:min(100%,62px);height:auto}
+ .opponent-hand .card{width:27px;height:auto}
+ .deck-side .card{width:47px;height:auto}
+ .your-hand .card{min-width:43px;width:43px;height:auto}
+ .captured .card{width:25px;height:auto}
+}
