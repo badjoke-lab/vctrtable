@@ -362,9 +362,12 @@ try{
    else throw new Error("No playable action before hand completion");
   }
   assert.equal(await page.locator("#qa-result").isVisible(),true);
-  assert.equal(await page.locator("#qa-timer").textContent()||"", 
-    await page.locator("#qa-timer").isVisible() ? await page.locator("#qa-timer").textContent() : "",
-    "Completed hand may replace the countdown with the actual hand rank");
+  if(await page.locator("#qa-timer").isVisible()){
+   assert.equal(await page.locator("#qa-timer").evaluate(el=>el.classList.contains("qa-hero-hand-rank")),true,
+    "The old countdown may only be replaced by the hero's actual hand rank");
+   assert.doesNotMatch(await page.locator("#qa-timer").textContent(),/^\d+s$/,
+    "No stale countdown may survive at showdown");
+  }
   assert.equal(await page.locator("#qa-players .poker-seat .hand-rank").count(),
     await page.locator("#qa-players .poker-seat.inspectable").count(),
     "Every revealed opponent must show a completed hand rank in their own seat");
