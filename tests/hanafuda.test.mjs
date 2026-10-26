@@ -112,3 +112,12 @@ test("scripted local rounds always finish with valid points",()=>{
    assert.ok(s.points>=0);
  }
 });
+
+test("koi-koi cannot forfeit points after all remaining turns are gone",()=>{
+ const s=startRound({rng:random(33)});
+ s.phase="decision";s.active=0;s.hands=[[],[]];
+ s.captured[0]=["1-1","3-1","8-1"];
+ assert.throws(()=>decide(s,"koi"),/No remaining turns/);
+ decide(s,"stop");
+ assert.equal(s.winner,0);assert.equal(s.points,5);
+});
