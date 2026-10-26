@@ -127,6 +127,17 @@ const SETS=[
  ["tan",["1-2","2-2","3-2","4-2","5-2"]],
  ["kasu",["1-3","1-4","2-3","2-4","3-3","3-4","4-3","4-4","5-3","5-4"]]
 ];
+const Y_DESC={
+ inoshikacho:["Collect the boar (July), deer (October) and butterfly (June).","7月の猪・10月の鹿・6月の蝶を揃えます。"],
+ akatan:["Collect red poetry ribbons from January, February and March.","1月・2月・3月の赤い文字入り短冊を揃えます。"],
+ aotan:["Collect blue ribbons from June, September and October.","6月・9月・10月の青い短冊を揃えます。"],
+ hanami:["Capture the cherry-blossom curtain and sake cup.","桜の幕と菊の盃を揃えます。"],
+ tsukimi:["Capture the August moon and sake cup.","8月の月と菊の盃を揃えます。"],
+ goko:["Collect all 5 Bright cards; smaller sets also score.","光札5枚を揃えます。3光・4光にも別の役があります。"],
+ tane:["Capture 5 or more Seed cards.","タネ札を5枚以上集めます。"],
+ tan:["Capture 5 or more Ribbon cards.","短冊を5枚以上集めます。"],
+ kasu:["Capture 10 or more Plain cards. The sake cup counts too.","カス札を10枚以上集めます。盃もカスに数えます。"]
+};
 const yName=key=>Y[key]?.[lang==="ja"?1:0]||key;
 const cardName=id=>{
  const card=cardById(id);
@@ -164,7 +175,9 @@ function showGuide(){
    const img=document.createElement("img");img.src="cards/"+id+".svg";
    img.alt=cardName(id);img.loading="lazy";pictures.append(img);
   }
-  item.append(title,pictures);ex.append(item);
+  const description=document.createElement("p");
+  description.textContent=Y_DESC[key][lang==="ja"?1:0];
+  item.append(title,description,pictures);ex.append(item);
  }
 }
 function selectedPreview(){
