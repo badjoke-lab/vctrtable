@@ -1,137 +1,95 @@
-:root{font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;color:#f6f0dc;background:#0c1715;font-synthesis:none}
-*{box-sizing:border-box}body{margin:0}.app{max-width:1000px;margin:auto;padding:16px 14px 32px}
-button,select{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.55}
-button:focus-visible,select:focus-visible{outline:3px solid #f4cf74;outline-offset:2px}
-h1{margin:2px 0 0;font-size:clamp(23px,4vw,35px);letter-spacing:.02em}h2{margin:0 0 12px;font-size:21px}
-.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}.eyebrow{letter-spacing:.15em;color:#a6c1b2;font-size:11px;font-weight:800}
-.language{display:flex;gap:6px;align-items:center;font-size:12px;white-space:nowrap}.language select,#rounds{color:#fff;background:#203b32;border:1px solid #567365;border-radius:8px;padding:8px}
+:root{
+ --card-ratio:976 / 1600;
+ --surface:#182b25;
+ --felt:#23513d;
+ --text:#f6f0dc;
+ --gold:#ffe09b;
+ font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;
+ color:var(--text);background:#0c1715;font-synthesis:none
+}
+*{box-sizing:border-box}
+body{margin:0}
+.app{max-width:1000px;margin:auto;padding:16px 14px 32px}
+button,select{font:inherit}
+button{cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.55}
+button:focus-visible,select:focus-visible{outline:3px solid #f4cf74;outline-offset:3px}
+h1{margin:2px 0 0;font-size:clamp(23px,4vw,35px);letter-spacing:.02em}
+h2{margin:0 0 12px;font-size:21px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.eyebrow{letter-spacing:.15em;color:#a6c1b2;font-size:11px;font-weight:800}
+.language{display:flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap}
+.language select,#rounds{color:#fff;background:#203b32;border:1px solid #567365;border-radius:8px;padding:8px}
 .banner{margin:0 0 12px;border-left:3px solid #ddbc70;background:#26352d;padding:10px;font-size:12px;line-height:1.5}
-.panel{background:#182b25;border:1px solid #3f5e4c;border-radius:14px;padding:16px;margin-bottom:12px}
-#setup p{line-height:1.6;color:#cad4cb}#setup label{display:flex;align-items:center;gap:12px;margin:16px 0}
-.primary,.secondary{border-radius:10px;padding:10px 16px;font-weight:700;min-height:42px;border:1px solid #d6b77b}
-.primary{background:#e4c079;color:#17251b}.secondary{background:#254237;color:#f8e9cb}
+.panel{background:var(--surface);border:1px solid #3f5e4c;border-radius:14px;padding:16px;margin-bottom:12px}
+#setup p{line-height:1.6;color:#cad4cb}
+#setup label{display:flex;align-items:center;gap:12px;margin:16px 0}
+.primary,.secondary{border-radius:10px;padding:10px 16px;font-weight:700;min-height:44px;border:1px solid #d6b77b}
+.primary{background:#e4c079;color:#17251b}
+.secondary{background:#254237;color:#f8e9cb}
 .scoreboard{display:grid;grid-template-columns:1fr 1.5fr 1fr;align-items:center;text-align:center;margin-bottom:8px;gap:12px}
 .scoreboard strong{display:block;font-size:27px;font-variant-numeric:tabular-nums}
-.scoreboard small{display:block;color:#acccba}.center-score span,.center-score b{display:block;font-size:13px}.center-score b{color:#f0c37c;margin-top:5px}
-.board{border:2px solid #54876c;background:radial-gradient(ellipse at center,#275d43,#153d2d 65%,#0d2c23);border-radius:18px;padding:14px 16px 18px;box-shadow:inset 0 0 35px #07191080}
+.scoreboard small{display:block;color:#acccba}
+.center-score span,.center-score b{display:block;font-size:13px}
+.center-score b{color:#f0c37c;margin-top:5px}
+.board{
+ border:2px solid #54876c;
+ background:radial-gradient(ellipse at center,#275d43,#153d2d 65%,#0d2c23);
+ border-radius:18px;padding:14px 16px 18px;
+ box-shadow:inset 0 0 35px #07191080;
+}
 .zone-head{min-height:22px;display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:10px 0 7px;font-size:12px;color:#d4e8d8}
-.zone-head span{font-size:11px;color:#f4d48d}.opponent-hand{display:flex;justify-content:center;gap:5px;min-height:60px}
-.card{display:flex;position:relative;flex-direction:column;align-items:center;justify-content:space-between;overflow:hidden;
- width:66px;height:102px;flex:none;background:#f9f3df;border:4px solid #291d1b;border-radius:5px;
- box-shadow:0 3px 7px #081b16aa;color:#1b2620;padding:5px 3px;transition:transform .1s,border-color .1s;text-align:center}
-.card .month{align-self:stretch;font-size:10px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.card .motif{font-size:31px;line-height:1}.card .kind{font-size:10px;font-weight:800;background:#fff9;border-radius:4px;padding:1px 3px}
-.card.h{border-color:#d4a04c}.card.a{border-color:#bb6766}.card.t{border-color:#5376a8}.card.k{border-color:#27211c}
-.card.back{background:repeating-linear-gradient(45deg,#511b24,#511b24 5px,#71323e 5px,#71323e 8px);border-color:#efe2bb;
- color:#f7dbab;justify-content:center;font-size:25px;font-weight:800}.opponent-hand .card{width:34px;height:53px;border-width:2px;font-size:17px}
-.middle{display:flex;gap:16px;align-items:center;justify-content:center;margin:13px 0;min-height:240px}
-.field-side{min-width:0;flex:1;max-width:490px}.field{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;justify-items:center;min-height:218px;align-content:center}
-.field .card{width:min(100%,76px)}.field .card:disabled{opacity:1;cursor:default}
-.card.selectable{cursor:pointer}.card.selectable:hover{transform:translateY(-5px)}
-.card.match{box-shadow:0 0 0 2px #eed173,0 4px 12px #0a191a}
-.card.target{border-color:#ffe466;box-shadow:0 0 0 3px #ffdf71,0 0 20px #ffdf71bb;cursor:pointer}
-.deck-side{min-width:70px;display:flex;align-items:center;flex-direction:column;gap:6px;text-align:center;font-size:13px}.deck-side strong{font-size:24px}
-.captured{display:flex;gap:3px;min-height:30px;overflow-x:auto;padding:3px}.captured .card{width:26px;height:36px;border-width:2px;padding:2px}
-.captured .card .motif{font-size:13px}.captured .card .month,.captured .card .kind{display:none}
-.your-hand{display:flex;gap:5px;justify-content:space-between;overflow-x:auto;padding:7px 1px 12px}
-.your-hand .card{min-width:57px;width:clamp(57px,9%,77px)}.your-hand .card:not(:disabled):hover{transform:translateY(-6px)}
-.status{font-size:14px;line-height:1.4;background:#213e33;border-radius:9px;padding:12px 14px;font-weight:600;min-height:42px}
-.decision,.result{border:2px solid #c99e63}.decision p,.result p{line-height:1.6}.decision-actions{display:flex;gap:10px;flex-wrap:wrap}
-.result button+button{margin-left:9px}footer{font-size:11px;color:#9eb5a8;line-height:1.5;margin-top:20px}
-@media(max-width:600px){.app{padding:10px 8px}.top{gap:5px}.banner{font-size:11px}.board{padding:9px 8px 13px}
-.scoreboard{padding:10px 7px;gap:5px}.scoreboard strong{font-size:21px}.center-score span,.center-score b{font-size:11px}
-.middle{gap:4px;margin:8px 0;min-height:202px}.field{gap:4px;min-height:202px}
-.field .card{width:min(100%,62px);height:82px;padding:3px 2px;border-width:3px}
-.card .month{font-size:9px}.card .motif{font-size:24px}.card .kind{font-size:8px}
-.deck-side{min-width:48px;width:51px;gap:4px;font-size:10px}.deck-side .card{width:47px;height:72px}.deck-side strong{font-size:18px}
-.your-hand{justify-content:flex-start;gap:3px}.your-hand .card{min-width:42px;width:42px;height:75px;padding:3px 1px;border-width:3px}.your-hand .card .motif{font-size:22px}
-.opponent-hand .card{width:27px;height:44px}.panel{padding:12px}#lang{max-width:90px}
-} 
-
-/* Original 512×839 Commons cards are not text badges. Maintain exact aspect and
-   a legible SVG face at each breakpoint; color/class stays semantic only. */
-.card,.card.h,.card.a,.card.t,.card.k,.card.back {
- padding:0;
- border:0;
- color:inherit;
- background:transparent;
- aspect-ratio:512/839;
- border-radius:3px;
-}
-.card .card-art{display:block;width:100%;height:100%;object-fit:fill;pointer-events:none}
-.card:not(.selectable){opacity:1}
-.card:focus-visible{outline:3px solid #f2ca62;outline-offset:2px}
-.card.match{box-shadow:0 0 0 3px #f2d17e,0 4px 12px #0a191a}
-.card.target{box-shadow:0 0 0 4px #ffe466,0 0 20px #ffdf71bb}
-.card.selectable:hover{transform:translateY(-5px)}
-.opponent-hand .card{width:32px;height:52px}
-.field .card{width:min(100%,76px);height:auto}
-.captured .card{width:27px;height:auto;flex:none}
-.your-hand .card{width:70px;min-width:54px;height:auto}
-.deck-side .card{width:61px;height:auto}
-@media(max-width:600px) {
- .field .card{width:min(100%,62px);height:auto}
- .opponent-hand .card{width:27px;height:auto}
- .deck-side .card{width:47px;height:auto}
- .your-hand .card{min-width:43px;width:43px;height:auto}
- .captured .card{width:25px;height:auto}
-}
-
-
-/* Hanafuda QA usability update: source SVG viewBox is 976 x 1600.
-   Never stretch card images: readable width can change, aspect cannot. */
-:root { --hanafuda-aspect: 976 / 1600; --hanafuda-gold:#ffe09b; }
-.card,.card.h,.card.a,.card.t,.card.k,.card.back {
- display:block;position:relative;box-sizing:border-box;flex:none;
- aspect-ratio:var(--hanafuda-aspect);height:auto!important;
- padding:0!important;border:0!important;border-radius:4px;
- background:transparent!important;overflow:visible;
- transition:transform .14s ease,box-shadow .14s ease;
+.zone-head span{font-size:11px;color:#f4d48d}
+.opponent-hand{display:flex;justify-content:center;gap:5px;min-height:60px}
+.middle{display:flex;align-items:center;justify-content:center;gap:16px;margin:13px 0;min-height:240px}
+.field-side{min-width:0;flex:1;max-width:510px}
+.field{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;justify-items:center;min-height:225px;align-content:center}
+.deck-side{min-width:70px;display:flex;align-items:center;flex-direction:column;gap:6px;text-align:center;font-size:13px}
+.deck-side strong{font-size:24px}
+.captured{display:flex;gap:4px;min-height:55px;overflow-x:auto;padding:4px;scrollbar-width:thin}
+.your-hand{display:flex;justify-content:flex-start;gap:7px;overflow-x:auto;overscroll-behavior-x:contain;
+ padding:14px 7px 16px;scroll-snap-type:x proximity;scrollbar-width:thin;min-height:120px}
+/* The source art's natural viewBox is 976×1600. All zones use this same ratio. */
+.card{
+ display:block;position:relative;flex:none;width:70px;height:auto;
+ aspect-ratio:var(--card-ratio);padding:0;border:0;background:transparent;
+ border-radius:4px;overflow:visible;touch-action:manipulation;
  box-shadow:0 3px 7px #081b16aa;
+ transition:transform .14s ease,box-shadow .14s ease
 }
-.card .card-art {
- display:block;width:100%;height:auto;
- aspect-ratio:var(--hanafuda-aspect);object-fit:contain;
- border-radius:4px;pointer-events:none;
+.card .card-art{
+ display:block;width:100%;height:auto;aspect-ratio:var(--card-ratio);
+ object-fit:contain;border-radius:4px;pointer-events:none
 }
-.card.selected-card {
- transform:translateY(-9px);
- outline:3px solid #f3c977;outline-offset:2px;
- box-shadow:0 0 0 4px #34200c,0 8px 20px #0009;
+.card:disabled{opacity:1;cursor:default}
+.card.selectable{cursor:pointer}
+.card.selectable:hover{transform:translateY(-5px)}
+.card.selected-card{
+ transform:translateY(-9px);outline:3px solid #f3c977;outline-offset:2px;
+ box-shadow:0 0 0 4px #34200c,0 8px 20px #0009
 }
-.card.match {box-shadow:0 0 0 3px #f8ca7f,0 0 13px #ffe68e70;}
-.card.target {
+.card.selected-card:hover{transform:translateY(-9px)}
+.card.match{box-shadow:0 0 0 3px #f8ca7f,0 0 13px #ffe68e70}
+.card.target{
  outline:3px solid #ffe46a;outline-offset:2px;
  box-shadow:0 0 0 5px #564118,0 0 17px #ffe56baa;
- animation:hanafuda-target-pulse 1.4s ease-in-out infinite alternate;
+ animation:hanafuda-target-pulse 1.4s ease-in-out infinite alternate
 }
-.card.chosen {
+.card.chosen{
  outline:4px solid #a9ffa4;outline-offset:2px;
  box-shadow:0 0 0 5px #17331c,0 0 24px #a9ffa499;
- animation:none;
+ animation:none
 }
-@keyframes hanafuda-target-pulse {
- from{filter:brightness(1)}to{filter:brightness(1.18)}
-}
-.card.selectable{touch-action:manipulation;cursor:pointer}
-.card.selectable:hover{transform:translateY(-5px)}
-.card.selected-card:hover{transform:translateY(-9px)}
-.opponent-hand .card{width:30px;height:auto}
-.captured .card{width:36px;height:auto}
-.field .card{width:min(100%,86px);height:auto}
-.deck-side .card{width:60px;height:auto}
-.your-hand {
- gap:7px;justify-content:flex-start;overflow-x:auto;overscroll-behavior-x:contain;
- padding:14px 7px 16px;scroll-snap-type:x proximity;
- scrollbar-width:thin;
-}
-.your-hand .card{width:70px;min-width:70px;height:auto;scroll-snap-align:start}
-.field{gap:9px;min-height:225px}
-.field-side{max-width:510px}
-.selection {
+@keyframes hanafuda-target-pulse{from{filter:brightness(1)}to{filter:brightness(1.18)}}
+.opponent-hand .card{width:30px}
+.captured .card{width:36px}
+.field .card{width:min(100%,86px)}
+.deck-side .card{width:60px}
+.your-hand .card{width:70px;min-width:70px;scroll-snap-align:start}
+.status{font-size:14px;line-height:1.45;background:#213e33;border-radius:9px;padding:12px 14px;font-weight:600;min-height:44px}
+.selection{
  position:sticky;bottom:max(0px,env(safe-area-inset-bottom));z-index:5;
- border:2px solid #d0a96b;background:#162d24;
- box-shadow:0 -8px 28px #051a16c9;
+ border:2px solid #d0a96b;background:#162d24;box-shadow:0 -8px 28px #051a16c9
 }
 .selection-top{display:flex;align-items:center;justify-content:space-between;gap:14px}
 .selection-top h2{font-size:17px;margin:0 0 5px}
@@ -156,28 +114,44 @@ h1{margin:2px 0 0;font-size:clamp(23px,4vw,35px);letter-spacing:.02em}h2{margin:
 .guide-examples{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .yaku-example{border:1px solid #48634e;border-radius:9px;padding:9px;min-width:0}
 .yaku-example strong{font-size:13px}
+.yaku-example p{font-size:12px;line-height:1.45;margin:4px 0;color:#d4dfd3}
 .yaku-example-cards{display:flex;gap:3px;margin-top:8px;overflow-x:auto;padding:3px}
-.yaku-example-cards img{width:33px;aspect-ratio:var(--hanafuda-aspect);height:auto;flex:none}
-.flying-card{position:fixed;pointer-events:none;z-index:9999;object-fit:contain;
- border-radius:4px;box-shadow:0 6px 18px #0009;will-change:transform}
+.yaku-example-cards img{width:33px;aspect-ratio:var(--card-ratio);height:auto;flex:none}
+.decision,.result{border:2px solid #c99e63}
+.decision p,.result p{line-height:1.6}
+.decision-actions{display:flex;gap:10px;flex-wrap:wrap}
+.result button+button{margin-left:9px}
+footer,.art-credit{font-size:11px;color:#9eb5a8;line-height:1.5;margin-top:20px}
+.art-credit a{color:#f4d48d}
+.flying-card{
+ position:fixed;pointer-events:none;z-index:9999;object-fit:contain;border-radius:4px;
+ box-shadow:0 6px 18px #0009;will-change:transform
+}
 @media(max-width:600px){
- .app{max-width:100%;overflow-x:clip}
+ .app{padding:10px 8px 32px;overflow-x:clip}
+ .top{gap:5px}.banner{font-size:11px}
  .board{padding:10px 8px 14px}
+ .panel{padding:12px}
+ .scoreboard{padding:10px 7px;gap:5px}
+ .scoreboard strong{font-size:21px}
+ .center-score span,.center-score b{font-size:11px}
  .opponent-hand .card{width:27px}
  .captured .card{width:31px}
- .field .card{width:min(100%,72px);height:auto}
+ .field .card{width:min(100%,72px)}
  .field{gap:7px;min-height:210px}
- .middle{gap:8px;min-height:210px}
- .deck-side{min-width:43px;width:43px}
- .deck-side .card{width:43px;height:auto}
- .your-hand{gap:6px;justify-content:flex-start;padding:13px 5px 16px}
- .your-hand .card{width:60px;min-width:60px;height:auto}
+ .middle{gap:8px;min-height:210px;margin:8px 0}
+ .deck-side{min-width:43px;width:43px;font-size:10px;gap:4px}
+ .deck-side .card{width:43px}
+ .deck-side strong{font-size:18px}
+ .your-hand{gap:6px;padding:13px 5px 16px;min-height:110px}
+ .your-hand .card{width:60px;min-width:60px}
  .selection{padding:12px}
+ .selection-actions button{min-width:110px}
  .guide-heading{align-items:start}
  .guide-heading h2{font-size:16px}
  .guide-progress{gap:8px}
  .guide-examples{grid-template-columns:1fr}
- .selection-actions button{min-width:110px}
+ .language select{max-width:90px}
 }
 @media(prefers-reduced-motion:reduce){
  .card,.card.target{transition:none;animation:none}
