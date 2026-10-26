@@ -50,10 +50,17 @@ try{
  }
  const host=clients[0].page,guest=clients[1].page;
  const history=[];let serial=0,sequence=0,privateStatePackets=0;
+ let guestDisconnected=false;
  async function deliver(e){
-  const update={payload:e,serial:++serial,max_serial:serial};
+  // Official WebXDC serials increase but need not be consecutive.
+  // Non-unit serial gaps are valid and must not stall state reconstruction.
+  serial+=serial%5===0?3:1;
+  const update={payload:e,serial,max_serial:serial};
   history.push(update);
-  for(const {page} of clients)await page.evaluate(x=>window.__sim.receive(x),update);
+  for(const {who,page} of clients){
+   if(who==="guest"&&guestDisconnected)continue; // lost WebView delivery
+   await page.evaluate(x=>window.__sim.receive(x),update);
+  }
  }
  async function flush(){
   for(const {page} of clients){
@@ -115,11 +122,28 @@ try{
   "Host did not recover local encrypted journal after WebView reload");
  const afterReload=await host.locator("#pvp-hole img").evaluateAll(xs=>xs.map(x=>x.dataset.card));
  assert.deepEqual(afterReload,hCards,"Host changed their own hand during reload");
+ // Duplicated history delivery must be idempotent.
+ for(const old of history.slice(0,4))
+  await host.evaluate(update=>window.__sim.receive(update),old);
+ await cycles(2);
+ assert.deepEqual(await host.locator("#pvp-hole img").evaluateAll(xs=>xs.map(x=>x.dataset.card)),
+  hCards,"Duplicate WebXDC replay changed a committed private hand");
  // The active player's signed Fold must settle the hand on both devices.
  const actor=await host.locator("#pvp-fold").isEnabled()?host:guest;
+ guestDisconnected=true;
  await actor.locator("#pvp-fold").click();await cycles();
  assert.equal(await host.locator("#pvp-turn").textContent(),"Hand complete");
- assert.equal(await guest.locator("#pvp-turn").textContent(),"Hand complete");
+ assert.notEqual(await guest.locator("#pvp-turn").textContent(),"Hand complete",
+  "Disconnected player received supposedly dropped settlement updates");
+ // Restore the guest as a fresh WebView and replay all updates from serial 0,
+ // exactly as standard WebXDC allows; the private hand is device-bound.
+ guestDisconnected=false;
+ await guest.reload({waitUntil:"networkidle"});
+ await guest.waitForFunction(()=>typeof window.__sim?.receive==="function");
+ for(const update of history)await guest.evaluate(x=>window.__sim.receive(x),update);
+ await cycles(3);
+ assert.equal(await guest.locator("#pvp-turn").textContent(),"Hand complete",
+  "Guest did not recover from missed WebXDC messages after reload/replay");
  assert.ok((await host.locator("#pvp-result").textContent()).includes("awarded"));
  assert.equal(await host.locator("#pvp-start").isEnabled(),true);
  // A second hand must play through all betting streets and a SHOWDOWN,
@@ -145,7 +169,7 @@ try{
  await host.screenshot({path:path.resolve("dist/poker-pvp-two-clients-360.png"),fullPage:true});
  assert.deepEqual(errors,[],"Browser JavaScript error");
  for(const c of clients)await c.ctx.close();
- console.log("Encrypted PvP 2-client Chromium smoke OK: private hands, host reload and encrypted recovery, signed fold, payout and full showdown");
+ console.log("Encrypted PvP 2-client Chromium smoke OK: serial gaps, duplicate replay, lost guest delivery/reconnect, private cards, host recovery, signed fold, payout and full showdown");
 }finally{
  await browser?.close();await new Promise(resolve=>server.close(resolve));
  fs.rmSync(temp,{recursive:true,force:true});
