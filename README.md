@@ -13,7 +13,7 @@ No money wagering, chip purchases, transfers or cash-outs.
 
 ## Hanafuda — local QA prototype (separate Mini App)
 
-A second table game, **Hanafuda Koi-Koi**, now has its own 48-card rules engine, EN/JA single-device UI, scripted local opponent, scoring and tests. Its 48 illustrated cards and back are licensed CC BY-SA 4.0 from Wikimedia Commons and bundled inside the offline Mini App. This is **not Vector multiplayer**; none of its hidden game state is broadcast over WebXDC. Poker remains unchanged.
+A second table game, **Hanafuda Koi-Koi**, now has its own 48-card rules engine, EN/JA single-device UI, scripted local opponent, scoring and tests. Its 48 illustrated cards and back are licensed CC BY-SA 4.0 from the pinned CC BY-SA GitHub art mirror and bundled inside the offline Mini App. This is **not Vector multiplayer**; none of its hidden game state is broadcast over WebXDC. Poker remains unchanged.
 
 Run `npm run build:hanafuda` for `dist/hanafuda.xdc` (independent of `dist/poker.xdc`). See [Hanafuda scope and blockers](docs/HANAFUDA.md).
 
