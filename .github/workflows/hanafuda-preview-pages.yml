@@ -1,0 +1,69 @@
+name: Hanafuda browser QA preview (GitHub Pages)
+on:
+  push:
+    branches:
+      - feat/hanafuda-koikoi-foundation-20261026
+    paths:
+      - "apps/hanafuda/**"
+      - "packages/hanafuda/**"
+      - "scripts/build-hanafuda.mjs"
+      - "scripts/build-hanafuda-preview.mjs"
+      - "scripts/hanafuda-card-assets.mjs"
+      - "tests/hanafuda*.test.mjs"
+      - "package.json"
+      - ".github/workflows/hanafuda-preview-pages.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pages-hanafuda-local-qa
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout vctrtable
+        uses: actions/checkout@v4
+      - name: Checkout pinned CC BY-SA Hanafuda card-art source
+        uses: actions/checkout@v4
+        with:
+          repository: dotty-dev/Hanafuda-Louie-Recolor
+          ref: a4ac60e4bd60f95ab8c4e5176b50bfd2e3772992
+          path: external/hanafuda-art
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Unit/regression tests
+        run: npm test
+      - name: Build independent Hanafuda WebXDC
+        run: npm run build:hanafuda
+      - name: Validate XDC
+        run: unzip -t dist/hanafuda.xdc
+      - name: Generate browser site from exact same XDC
+        run: npm run build:preview:hanafuda
+      - name: Assert all 48 face assets and static module imports
+        run: |
+          test "$(find dist/pages/hanafuda/cards -maxdepth 1 -type f -name '*.svg' | wc -l)" -eq 49
+          grep -q 'src="cards/back.svg"' dist/pages/hanafuda/index.html
+          grep -q './koikoi.js' dist/pages/hanafuda/main.js
+          test -f dist/pages/hanafuda/cards/1-1.svg
+          test -f dist/pages/hanafuda/cards/12-4.svg
+      - name: Upload browser static site
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist/pages
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}hanafuda/
+    steps:
+      - name: Deploy QA preview to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
