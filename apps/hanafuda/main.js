@@ -442,7 +442,7 @@ async function moveCapture(played,source,seat,taken){
  if(!taken.length){
   setBeat(source==="drawReveal"?"draw":"hand",seat,"place",played);
   await fly(played,source,"field"); // destination is the next empty field slot
-  await beatPause(290);
+  // No pause here: commit and render the new field card immediately after landing.
   return;
  }
  setBeat(source==="drawReveal"?"draw":"hand",seat,"compare",played,taken.length);
@@ -450,16 +450,40 @@ async function moveCapture(played,source,seat,taken){
  await beatPause(330);
  // Move the just-played card TO its matching field card first.
  await fly(played,source,"field",taken[0]);
- await beatPause(230); // visually paired at the selected matching card
- setBeat(source==="drawReveal"?"draw":"hand",seat,"capture",played,taken.length+1);
- // Now the visibly paired cards travel together to the correct capture pile.
- await Promise.all([
-  ...taken.map((id,index)=>fly(id,"field",dest,null,{offset:index})),
-  fly(played,"field",dest,null,{offset:taken.length,sourceAnchor:taken[0]})
- ]);
- $(dest).className="captured capture-flash";
- await beatPause(340);
- $(dest).className="captured";
+ // Keep the played card visibly paired ON the actual target until both fly
+ // to captured, instead of teleporting back to its previous staging slot.
+ let impact=null;
+ const original=cardElement(source,played),oldVisibility=original?.style.visibility;
+ if(!reduced()){
+  const target=rect("field",taken[0]);
+  impact=document.createElement("img");
+  impact.className="impact-card";impact.alt="";
+  impact.setAttribute("aria-hidden","true");
+  impact.src="cards/"+played+".svg";
+  Object.assign(impact.style,{left:target.left+"px",top:target.top+"px",
+   width:target.width+"px",height:target.height+"px"});
+  document.body.append(impact);
+  if(original)original.style.visibility="hidden";
+ }
+ try {
+  await beatPause(260);
+  if(impact){impact.remove();impact=null;}
+  setBeat(source==="drawReveal"?"draw":"hand",seat,"capture",played,taken.length+1);
+  await Promise.all([
+   ...taken.map((id,index)=>fly(id,"field",dest,null,{offset:index})),
+   fly(played,"field",dest,null,{offset:taken.length,sourceAnchor:taken[0]})
+  ]);
+ }finally {
+  if(impact)impact.remove();
+  if(original)original.style.visibility=oldVisibility||"";
+ }
+}
+async function showCapturedResult(seat,takenCount){
+ if(!takenCount)return;
+ const dest=$(seat===0?"yourCaptured":"opponentCaptured");
+ dest.className="captured capture-flash";
+ await beatPause(350);
+ dest.className="captured";
 }
 async function animateHandCard(seat,id,taken){
  setBeat("hand",seat,"hand",id);
@@ -499,6 +523,8 @@ async function resolveDrawChoice(seat,target){
   throw Error("Not a legal field target");
  await moveCapture(drawn,"drawReveal",seat,[target]);
  chooseTarget(game,target);
+ render();
+ await showCapturedResult(seat,1);
  setBeat("draw",seat,"result",drawn,1);
  await beatPause(520);
  clearDraw();render();
@@ -534,6 +560,8 @@ async function compulsoryDraw(seat){
  await moveCapture(drawn,"drawReveal",seat,taken);
  // The engine commits the mandatory draw once, after the visible result.
  drawNextCard(game);
+ render();
+ await showCapturedResult(seat,taken.length);
  setBeat("draw",seat,"result",drawn,taken.length);
  await beatPause(520);
  clearDraw();render();
@@ -549,8 +577,10 @@ async function actionSequence(seat,id,target=null){
  playCard(game,id,{deferDraw:true});
  if(game.phase==="choose"&&game.pending.step==="hand")
   chooseTarget(game,target,{deferDraw:true});
+ if(seat===0){selected=null;selectedTarget=null;}
  render();
- await beatPause(290); // clear visual boundary before the compulsory deck draw
+ await showCapturedResult(seat,taken.length);
+ await beatPause(240); // clear visual boundary before the compulsory deck draw
  await compulsoryDraw(seat);
 }
 async function runBot(){
