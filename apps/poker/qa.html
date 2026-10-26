@@ -40,6 +40,9 @@
     <label class="qa-chat-mode"><span data-l10n="chatMode">Chat</span>
       <select id="qa-chat-mode"><option value="drawer" data-l10n="drawer">Drawer</option><option value="inline" data-l10n="inline">Always on</option></select>
     </label>
+    <button type="button" id="qa-chat-open" class="qa-chat-open" aria-label="Open table chat" aria-expanded="false">
+      <span data-l10n="chat">Chat</span><strong id="qa-unread-top" hidden>0</strong>
+    </button>
   </div>
   <aside id="qa-chat-hud" class="qa-chat-hud" aria-label="Your visible poker hand and timer">
     <div class="qa-chat-hud-player">
@@ -101,7 +104,9 @@
       <button id="qa-fold" type="button" data-l10n="fold">Fold</button>
       <button id="qa-check" type="button" data-l10n="check">Check</button>
       <button id="qa-call" type="button" data-l10n="call">Call</button>
+      <button id="qa-raise-toggle" class="qa-raise-toggle" type="button" aria-expanded="false" aria-controls="qa-raise-details" data-l10n="raiseOptions">Raise…</button>
     </div>
+    <div id="qa-raise-details" class="qa-raise-details" hidden>
     <div class="action-raise">
       <label><span data-l10n="raiseTo">Raise to</span><input id="qa-raise-amount" type="number" min="1" step="1"></label>
       <button type="button" id="qa-raise" data-l10n="raise">Raise</button>
@@ -112,6 +117,7 @@
       <button type="button" class="secondary" id="qa-half" data-l10n="half">½ Pot</button>
       <button type="button" class="secondary" id="qa-pot-preset" data-l10n="potPreset">Pot</button>
       <button type="button" class="secondary" id="qa-max" data-l10n="max">Max</button>
+    </div>
     </div>
   </section>
   <div id="qa-end" class="qa-end" hidden>
