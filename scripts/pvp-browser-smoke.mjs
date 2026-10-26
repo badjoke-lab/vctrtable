@@ -191,6 +191,20 @@ try{
  assert.equal(await host.locator("#pvp-turn").textContent(),"Hand complete",
   "Host did not enforce clock after unanimous resume");
  assert.equal(await guest.locator("#pvp-turn").textContent(),"Hand complete");
+ // A unanimous pause arriving AFTER the old host deadline cannot
+ // retroactively save the expired turn.
+ await host.locator("#pvp-start").click();await cycles();
+ const latePause=mk("pause","guest",{action:"pause",seats:["host","guest"]});
+ await deliver(latePause);
+ await host.evaluate(()=>window.__sim.advanceTime(31000));
+ await deliver(mk("pause-vote","host",{target:latePause.id}));
+ await cycles();
+ assert.equal(await host.locator("#pvp-turn").textContent(),"Hand complete",
+  "Late unanimous pause incorrectly rescued an expired betting turn");
+ const lateResume=mk("pause","host",{action:"resume",seats:["host","guest"]});
+ await deliver(lateResume);
+ await deliver(mk("pause-vote","guest",{target:lateResume.id}));
+ await cycles();
  // A single pause request must not stop the active clock.
  await host.locator("#pvp-start").click();await cycles();
  await deliver(mk("pause","guest",{action:"pause",seats:["host","guest"]}));
