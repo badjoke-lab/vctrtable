@@ -91,7 +91,8 @@ try{
      roster:await c.page.locator("#pvp-table-seats").textContent(),
      check:await c.page.locator("#pvp-check").isEnabled(),
      call:await c.page.locator("#pvp-call").isEnabled(),
-     pendingOutbound:await c.page.evaluate(()=>window.__sim.out.length)});
+     pendingOutbound:await c.page.evaluate(()=>window.__sim.out.length),
+     received:await c.page.evaluate(()=>window.__sim.incoming.slice(-8))});
    }
    throw Error(label+" did not converge for "+playerCount+
     " players; states="+(await statePackets()).length+
@@ -163,10 +164,18 @@ try{
      isMobile:true,hasTouch:true});
     await ctx.addInitScript(who=>{
      const out=[];
-     window.__sim={out,receive:null};
+     window.__sim={out,receive:null,incoming:[]};
      window.webxdc={selfAddr:who,selfName:who,
       sendUpdate(packet){out.push(packet);},
-      setUpdateListener(fn){window.__sim.receive=fn;return Promise.resolve();}
+      setUpdateListener(fn){
+       window.__sim.receive=update=>{
+        const e=update?.payload;
+        window.__sim.incoming.push({kind:e?.kind,app:e?.app,
+         by:e?.by,id:e?.id,revision:e?.revision,serial:update?.serial});
+        fn(update);
+       };
+       return Promise.resolve();
+      }
      };
     },name);
     const page=await ctx.newPage();
