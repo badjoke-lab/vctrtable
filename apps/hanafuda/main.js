@@ -384,6 +384,17 @@ function rect(zone,id=null,offset=0){
  const el=cardElement(zone,id);
  if(!el)return null;
  const r=el.getBoundingClientRect();
+ if(zone==="field"&&!id){
+  // New unmatched cards must land in the NEXT free grid slot,
+  // never on an unrelated field card.
+  const parent=$("field"),grid=parent.getBoundingClientRect();
+  const cards=parent.children,n=cards.length,first=cards[0]?.getBoundingClientRect();
+  const cell=grid.width/4,w=Math.min(86,Math.max(34,cell-9));
+  const height=w*1600/976,step=height+9;
+  return {left:grid.left+(n%4)*cell+(cell-w)/2,
+   top:first?first.top+Math.floor(n/4)*step:grid.top,
+   width:w,height};
+ }
  if(zone==="yourCaptured"||zone==="opponentCaptured"){
   const pile=$(zone),box=pile.getBoundingClientRect();
   const n=pile.children.length;
@@ -393,8 +404,8 @@ function rect(zone,id=null,offset=0){
  }
  return r;
 }
-async function fly(id,fromZone,toZone,targetId=null,{faceDown=false,offset=0}={}){
- const from=rect(fromZone,id),to=rect(toZone,targetId,offset);
+async function fly(id,fromZone,toZone,targetId=null,{faceDown=false,offset=0,sourceAnchor=null}={}){
+ const from=rect(fromZone,sourceAnchor||id),to=rect(toZone,targetId,offset);
  if(reduced()||!from||!to||!from.width||!to.width)return;
  const ghost=document.createElement("img");
  ghost.className="flying-card";ghost.alt="";ghost.setAttribute("aria-hidden","true");
@@ -403,7 +414,7 @@ async function fly(id,fromZone,toZone,targetId=null,{faceDown=false,offset=0}={}
   width:from.width+"px",height:from.height+"px"});
  document.body.append(ghost);
  // Hide the source while its moving image is visible; restores after state render.
- const original=cardElement(fromZone,id),prior=original?.style.visibility;
+ const original=sourceAnchor?null:cardElement(fromZone,id),prior=original?.style.visibility;
  if(original)original.style.visibility="hidden";
  const dx=to.left+(to.width-from.width)/2-from.left;
  const dy=to.top+(to.height-from.height)/2-from.top;
@@ -430,18 +441,21 @@ async function moveCapture(played,source,seat,taken){
  const dest=seat===0?"yourCaptured":"opponentCaptured";
  if(!taken.length){
   setBeat(source==="drawReveal"?"draw":"hand",seat,"place",played);
-  await fly(played,source,"field");
+  await fly(played,source,"field"); // destination is the next empty field slot
   await beatPause(290);
   return;
  }
  setBeat(source==="drawReveal"?"draw":"hand",seat,"compare",played,taken.length);
  markMatches(taken);
- await beatPause(390);
+ await beatPause(330);
+ // Move the just-played card TO its matching field card first.
+ await fly(played,source,"field",taken[0]);
+ await beatPause(230); // visually paired at the selected matching card
  setBeat(source==="drawReveal"?"draw":"hand",seat,"capture",played,taken.length+1);
- // A single move moves all matched FIELD cards together with the played card.
+ // Now the visibly paired cards travel together to the correct capture pile.
  await Promise.all([
   ...taken.map((id,index)=>fly(id,"field",dest,null,{offset:index})),
-  fly(played,source,dest,null,{offset:taken.length})
+  fly(played,"field",dest,null,{offset:taken.length,sourceAnchor:taken[0]})
  ]);
  $(dest).className="captured capture-flash";
  await beatPause(340);
