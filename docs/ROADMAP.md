@@ -152,3 +152,19 @@ identity/path aliases, original-journal preservation and restored revision.
 The remaining major production blocker is the authenticated, automatic
 Mini App <-> Vector SDK private DM bridge. No player secrets may pass through
 shared WebXDC sendUpdate.
+
+## Experimental WebXDC host-trusted action clock (PR #52)
+
+The host-trusted browser prototype now includes an approved per-turn clock
+using the lobby's `timer` setting (0 = unlimited); expired turns check if free
+or fold if a bet is owed. A unanimous lobby pause freezes the remaining
+milliseconds and unanimous resume restores the remainder. Signed state
+includes only public deadline metadata. The host's encrypted IndexedDB
+checkpoint stores the turn clock beside its private session journal, so
+a reload cannot silently grant a fresh turn. CI tests include fake-time
+pause/resume and expiration in two simulated WebXDC clients.
+
+**Boundary:** a self-hosted JS WebView can be suspended and has a
+host-controlled wall clock. This does NOT verify Vector transport, protect
+against a malicious host or authenticate Vector accounts. The SDK private
+dealer remains a separate path until a safe host bridge is verified.
