@@ -28,12 +28,30 @@
     <div id="opponentHand" class="opponent-hand"></div>
     <div class="zone-head"><strong id="oppTakenLabel">Opponent's captured cards</strong><span id="oppYaku"></span></div>
     <div id="opponentCaptured" class="captured"></div>
+    <div class="turn-timeline" id="turnTimeline" aria-live="off">
+      <span id="handStep" class="timeline-step">1 · Hand / 手札</span>
+      <span id="drawStep" class="timeline-step">2 · Deck / 山札</span>
+    </div>
+    <div class="action-narration" id="actionNarration" role="status" aria-live="polite" hidden></div>
     <div class="middle">
+      <div class="play-stage" id="playStage" hidden aria-hidden="true">
+        <span id="playStageLabel" class="stage-label"></span>
+        <img id="playStageCard" alt="" draggable="false">
+      </div>
       <div class="field-side">
         <div class="zone-head"><strong id="fieldLabel">Field</strong><span id="matchHint"></span></div>
         <div id="field" class="field"></div>
       </div>
       <div class="deck-side"><div id="deckBack" class="card back" role="img" aria-label="Remaining draw pile"><img class="card-art" src="cards/back.svg" alt=""></div><strong id="deckCount">24</strong><small id="deckLabel">Draw pile</small></div>
+    </div>
+    <div class="draw-reveal" id="drawReveal" hidden aria-live="polite">
+      <div class="draw-reveal-face">
+        <img id="drawRevealCard" alt="" draggable="false">
+      </div>
+      <div class="draw-reveal-copy">
+        <strong id="drawRevealHeading">Draw / 山札</strong>
+        <p id="drawRevealDescription"></p>
+      </div>
     </div>
     <div class="zone-head"><strong id="yourTakenLabel">Your captured cards</strong><span id="yourYaku"></span></div>
     <div id="yourCaptured" class="captured"></div>
