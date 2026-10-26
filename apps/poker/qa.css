@@ -44,8 +44,6 @@ a{color:#7af1c0}
 .chat-compose{display:flex;gap:6px}.chat-compose input{min-width:0;flex:1;font-size:12px;padding:8px!important}.chat-compose button{padding:8px 11px}
 .chat-translation{display:flex;gap:6px;align-items:center;font-size:11px;margin-top:5px}
 .chat-translation span{margin:0}.chat-translation input{margin:0}
-.chat-bubble{position:absolute;right:7px;bottom:8px;z-index:4;background:#0a2827;border:1px solid #66dab6;color:#f2fcf5;min-width:40px;height:41px;font-size:23px;box-shadow:0 6px 14px #0006;padding:0}
-.chat-bubble strong{position:absolute;right:-6px;top:-8px;border-radius:18px;min-width:19px;padding:3px;background:#d92d48;color:white;font-size:11px;line-height:1}
 .qa-chat-toast{position:fixed;bottom:calc(var(--dock-height) + env(safe-area-inset-bottom) + 58px);right:16px;z-index:8;max-width:min(75vw,270px);padding:9px 12px;background:#102f33;color:white;border:1px solid #62cba0;border-radius:12px;font-size:12px;box-shadow:0 6px 25px #0009;pointer-events:none}
 .action-dock{position:fixed;bottom:env(safe-area-inset-bottom);left:50%;transform:translateX(-50%);width:min(calc(100vw - 12px),520px);z-index:10;background:#071719ed!important;border:1px solid #3b6459!important;border-radius:16px 16px 0 0!important;box-shadow:0 -8px 25px #0008;padding:9px!important;margin:5px 0 0!important;backdrop-filter:blur(12px)}
 .action-primary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
@@ -416,10 +414,6 @@ img.vcard{height:auto!important;border:0!important;border-radius:0!important;box
  min-height:37px;min-width:clamp(160px,48vw,230px);font-size:13px;
  padding:7px 10px
 }
-.qa-main .chat-bubble{
- right:6px!important;bottom:8px!important;min-width:42px;
- height:43px;border-radius:11px;
-}
 .qa-main .qa-turn-status{margin-top:10px}
 .qa-main #qa-end #qa-result{
  font-size:13px;line-height:1.5;color:#c1e7d7;padding:0 2px
@@ -488,9 +482,6 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
  .qa-main .hero-hand img.vcard{
   width:clamp(70px,21vw,86px)!important;
   flex:0 0 clamp(70px,21vw,86px)!important
- }
- .qa-main .chat-bubble{
-  bottom:7px!important;right:7px!important;
  }
 }
 /* The 320px profile previously overrode the equal-seat positions at the
@@ -581,7 +572,6 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
   min-height:30px;min-width:clamp(132px,44vw,200px);
   font-size:12px;padding:4px 9px
  }
- .qa-main .chat-bubble{right:6px!important;bottom:7px!important}
 }
 /* Very narrow devices have the same five-seat schema, but must fit within
    a 320px wide felt. Rank/suit captions and card magnification remain. */
@@ -618,7 +608,6 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
  }
  .qa-main .hero-spot{bottom:1%!important;width:49%!important}
  .qa-main .hero-hand img.vcard{width:81px!important;flex-basis:81px!important}
- .qa-main .chat-bubble{right:14px!important;bottom:10px!important}
 }
 /* PC failure: "Main pot" stretched behind Next hand, and the history
    widgets appeared amidst settlement rows. Fix the result block layout
@@ -738,4 +727,34 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
 .qa-main #qa-raise-details:not([hidden]){display:block}
 .qa-main .qa-chat-open:focus-visible,.qa-main .qa-raise-toggle:focus-visible{
  outline:3px solid #b8f9df;outline-offset:2px
+}
+
+/* Showdown results belong beside the cards, not in a second 6-player list.
+   Reuse the previously reserved card-caption row (no seat height change). */
+.qa-main .poker-seat .poker-seat-card-index.hand-rank{
+ display:flex;align-items:center;justify-content:center;
+ width:100%;min-width:0;padding:0 1px;
+ background:#24433c;border-radius:4px;
+ color:#f9edb7;font-size:clamp(9px,2.6vw,11px)!important;
+ line-height:15px!important;font-weight:800;letter-spacing:-.02em;
+ overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.qa-main .poker-seat.winner .poker-seat-card-index.hand-rank{
+ background:#316844;color:#eaffd9;
+}
+.qa-main .hero-info .qa-hero-hand-rank{
+ display:inline-flex!important;align-items:center;
+ font-size:clamp(10px,2.7vw,13px)!important;
+ line-height:1.15;color:#f4d78b!important;
+ text-align:center;white-space:nowrap;min-width:0;
+}
+/* A compact winner/hand label cannot stretch the center lane and cover
+   the chips/cards behind it. Showdown no longer repeats the payout pill. */
+.qa-main.qa-showdown .poker-center{gap:4px!important}
+.qa-main.qa-showdown .poker-center .pot-pill{display:none!important}
+@media(max-width:520px){
+ .qa-main .poker-seat .poker-seat-card-index.hand-rank{
+  font-size:clamp(9px,2.7vw,10px)!important;
+ }
+ .qa-main .hero-info .qa-hero-hand-rank{font-size:10px!important}
 }
