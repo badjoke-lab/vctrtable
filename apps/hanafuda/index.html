@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>vctrtable — Hanafuda · Koi-Koi (local QA)</title>
+<link rel="stylesheet" href="./style.css">
+<script type="module" src="./main.js"></script>
+</head><body>
+<main class="app">
+<header class="top"><div><div class="eyebrow">VCTRTABLE / HANAFUDA</div><h1 id="title">Hanafuda · Koi-Koi</h1></div>
+<label class="language"><span id="languageLabel">Language</span><select id="lang"><option value="en">English</option><option value="ja">日本語</option></select></label>
+</header>
+<p id="qaWarning" class="banner">LOCAL QA · scripted opponent · NOT Vector PvP · traditional CC BY-SA 4.0 SVG card artwork</p>
+<section id="setup" class="panel">
+  <h2 id="setupTitle">New match</h2>
+  <p id="setupDescription">Play 2-player Koi-Koi against a simple local test opponent. Nobody else can join this QA game.</p>
+  <label><span id="roundsLabel">Rounds</span><select id="rounds"><option value="3">3</option><option value="6">6</option><option value="12" selected>12</option></select></label>
+  <button id="start" class="primary">Start</button>
+</section>
+<section id="game" hidden>
+  <div class="scoreboard panel">
+    <div><small id="oppLabel">Opponent</small><strong id="oppScore">0</strong></div>
+    <div class="center-score"><span id="roundLabel">Round 1 / 12</span><b id="dealerLabel">Dealer: You</b></div>
+    <div><small id="youLabel">You</small><strong id="yourScore">0</strong></div>
+  </div>
+  <div class="board">
+    <div class="zone-head"><strong id="oppHandLabel">Opponent's hand</strong><span id="oppCount"></span></div>
+    <div id="opponentHand" class="opponent-hand"></div>
+    <div class="zone-head"><strong id="oppTakenLabel">Opponent's captured cards</strong><span id="oppYaku"></span></div>
+    <div id="opponentCaptured" class="captured"></div>
+    <div class="middle">
+      <div class="field-side">
+        <div class="zone-head"><strong id="fieldLabel">Field</strong><span id="matchHint"></span></div>
+        <div id="field" class="field"></div>
+      </div>
+      <div class="deck-side"><div id="deckBack" class="card back" role="img" aria-label="Remaining draw pile"><img class="card-art" src="cards/back.svg" alt=""></div><strong id="deckCount">24</strong><small id="deckLabel">Draw pile</small></div>
+    </div>
+    <div class="zone-head"><strong id="yourTakenLabel">Your captured cards</strong><span id="yourYaku"></span></div>
+    <div id="yourCaptured" class="captured"></div>
+    <div class="zone-head"><strong id="yourHandLabel">Your hand</strong><span id="yourCount"></span></div>
+    <div id="yourHand" class="your-hand"></div>
+  </div>
+  <p class="status" id="status" role="status" aria-live="polite">Your turn</p>
+  <section id="decision" class="decision panel" hidden>
+    <h2 id="decisionTitle">You made a yaku!</h2><p id="decisionSummary"></p>
+    <div class="decision-actions"><button id="stop" class="primary">Stop & score</button><button id="koi" class="secondary">Koi-Koi — continue</button></div>
+  </section>
+  <section id="result" class="result panel" hidden>
+    <h2 id="resultTitle">Round complete</h2><p id="resultSummary"></p>
+    <button id="next" class="primary">Next round</button><button id="new" class="secondary">New match</button>
+  </section>
+</section>
+<footer id="footer">All gameplay stays on this device. The WebXDC shared-update API is not used for secret cards or turns.</footer>
+<p class="art-credit">Card illustrations: Louie Mantia / dotty-dev; original back: vctrtable. <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a> · <a href="https://github.com/dotty-dev/Hanafuda-Louie-Recolor/tree/a4ac60e4bd60f95ab8c4e5176b50bfd2e3772992/svg" target="_blank" rel="noopener noreferrer">Source &amp; attribution</a> · <a href="https://github.com/badjoke-lab/vctrtable/blob/feat/hanafuda-koikoi-foundation-20261026/docs/HANAFUDA-ASSET-LICENSE.md" target="_blank" rel="noopener noreferrer">Full credits (development branch)</a></p>
+</main>
+</body></html>

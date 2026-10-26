@@ -1,0 +1,72 @@
+name: Publish Hanafuda Koi-Koi QA XDC direct URL
+on:
+  push:
+    branches:
+      - feat/hanafuda-koikoi-foundation-20261026
+    paths:
+      - "apps/hanafuda/**"
+      - "packages/hanafuda/**"
+      - "scripts/build-hanafuda.mjs"
+      - "scripts/hanafuda-card-assets.mjs"
+      - "tests/hanafuda*.test.mjs"
+      - "package.json"
+      - ".github/workflows/hanafuda-xdc-release.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/hanafuda-xdc-release.yml"
+      - "apps/hanafuda/**"
+      - "packages/hanafuda/**"
+      - "scripts/build-hanafuda.mjs"
+      - "scripts/hanafuda-card-assets.mjs"
+      - "tests/hanafuda*.test.mjs"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: hanafuda-qa-xdc-latest
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.repository == 'badjoke-lab/vctrtable' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout vctrtable
+        uses: actions/checkout@v4
+      - name: Checkout pinned licensed 48-card art
+        uses: actions/checkout@v4
+        with:
+          repository: dotty-dev/Hanafuda-Louie-Recolor
+          ref: a4ac60e4bd60f95ab8c4e5176b50bfd2e3772992
+          path: external/hanafuda-art
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run Hanafuda and poker regression tests
+        run: npm test
+      - name: Build bundled Hanafuda
+        run: npm run build:hanafuda
+      - name: Verify package contents
+        run: |
+          unzip -t dist/hanafuda.xdc
+          test "$(unzip -Z1 dist/hanafuda.xdc | grep '^cards/[0-9].*\.svg$' | wc -l)" -eq 48
+          unzip -Z1 dist/hanafuda.xdc | grep -q '^cards/back.svg$'
+          unzip -Z1 dist/hanafuda.xdc | grep -q '^index.html$'
+      - name: Publish stable direct .xdc URL on prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="hanafuda-qa-latest"
+          SHA="${{ github.event.pull_request.head.sha || github.sha }}"
+          NOTES="Development QA build of Hanafuda Koi-Koi, tested from commit ${SHA}. One-device scripted opponent only; this is NOT Vector multiplayer. Artwork CC BY-SA 4.0 (Louie Mantia / dotty-dev). The file is self-contained and should be pasted as an .xdc URL in Vector Note. Publishing a new asset at this tag does not upgrade already opened Vector app messages."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/hanafuda.xdc --clobber
+            gh release edit "$TAG" --prerelease --title "Hanafuda Koi-Koi — local QA (latest)" --notes "$NOTES"
+          else
+            gh release create "$TAG" dist/hanafuda.xdc --target "$SHA" --prerelease --title "Hanafuda Koi-Koi — local QA (latest)" --notes "$NOTES"
+          fi
+          echo "URL: https://github.com/${GH_REPO}/releases/download/${TAG}/hanafuda.xdc"

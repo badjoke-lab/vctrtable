@@ -1,4 +1,4 @@
-name: Poker foundation checks
+name: vctrtable game checks
 on:
   push:
     branches: [main, "feat/**"]
@@ -21,3 +21,15 @@ jobs:
         with:
           name: poker-xdc-prototype
           path: dist/poker.xdc
+      - uses: actions/checkout@v4
+        with:
+          repository: dotty-dev/Hanafuda-Louie-Recolor
+          ref: a4ac60e4bd60f95ab8c4e5176b50bfd2e3772992
+          path: external/hanafuda-art
+          persist-credentials: false
+      - run: npm run build:hanafuda
+      - run: unzip -t dist/hanafuda.xdc
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hanafuda-xdc-local-qa
+          path: dist/hanafuda.xdc
