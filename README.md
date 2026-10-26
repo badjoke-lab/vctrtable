@@ -10,6 +10,13 @@ A monorepo for standalone Vector/WebXDC table games. Poker (Texas Hold'em) comes
 
 No money wagering, chip purchases, transfers or cash-outs.
 
+
+## Hanafuda — local QA prototype (separate Mini App)
+
+A second table game, **Hanafuda Koi-Koi**, now has its own 48-card rules engine, EN/JA single-device UI, scripted local opponent, scoring and tests. Its visual cards are temporary identification placeholders, **not final artwork**. This is **not Vector multiplayer**; none of its hidden game state is broadcast over WebXDC. Poker remains unchanged.
+
+Run `npm run build:hanafuda` for `dist/hanafuda.xdc` (independent of `dist/poker.xdc`). See [Hanafuda scope and blockers](docs/HANAFUDA.md).
+
 ## Build
 
 Requires Node 20+ and a system zip executable.
