@@ -40,7 +40,29 @@
     <div class="zone-head"><strong id="yourHandLabel">Your hand</strong><span id="yourCount"></span></div>
     <div id="yourHand" class="your-hand"></div>
   </div>
-  <p class="status" id="status" role="status" aria-live="polite">Your turn</p>
+  <p class="status" id="status" role="status" aria-live="polite">Choose a card from your hand.</p>
+  <section id="selection" class="selection panel" hidden aria-labelledby="selectionTitle">
+    <div class="selection-top">
+      <div><h2 id="selectionTitle">Selected card</h2><p id="selectedCardDetail"></p></div>
+      <div id="selectedCardArt" class="selection-art"></div>
+    </div>
+    <p id="selectedPreview" class="preview-text"></p>
+    <div class="selection-actions">
+      <button id="confirm" class="primary" type="button">Play this card</button>
+      <button id="cancel" class="secondary" type="button">Cancel / Choose another</button>
+    </div>
+  </section>
+  <section class="guide panel" aria-labelledby="guideTitle">
+    <div class="guide-heading">
+      <div><h2 id="guideTitle">Build a scoring set (Yaku)</h2><p id="guideIntro">Match cards from the same month and collect combinations.</p></div>
+      <button id="guideToggle" class="secondary" type="button" aria-expanded="false" aria-controls="guidePanel">Show Yaku guide</button>
+    </div>
+    <div id="yakuProgress" class="guide-progress" aria-live="polite"></div>
+    <div id="guidePanel" hidden>
+      <p id="guideHelp">Cards captured from the field form scoring combinations. Nothing in the hidden deck is predicted here.</p>
+      <div id="guideExamples" class="guide-examples"></div>
+    </div>
+  </section>
   <section id="decision" class="decision panel" hidden>
     <h2 id="decisionTitle">You made a yaku!</h2><p id="decisionSummary"></p>
     <div class="decision-actions"><button id="stop" class="primary">Stop & score</button><button id="koi" class="secondary">Koi-Koi — continue</button></div>
