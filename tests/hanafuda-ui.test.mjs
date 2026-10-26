@@ -62,7 +62,7 @@ function makeUi({motion=false}={}){
  return {ui,$,story,animations};
 }
 async function flush(){
- for(let i=0;i<200;i++)await Promise.resolve();
+ for(let i=0;i<2000;i++)await Promise.resolve();
 }
 test("Hanafuda hand selection, replacement and cancellation never commit a game event",async()=>{
  const {ui,$}=makeUi();
