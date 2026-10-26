@@ -212,3 +212,9 @@ footer,.art-credit{font-size:11px;color:#9eb5a8;line-height:1.5;margin-top:20px}
 @media(prefers-reduced-motion:reduce){
  .timeline-step,.capture-flash{transition:none;animation:none}
 }
+
+/* Temporary physical pair marker: stays on the selected field card until both
+   the played card and matching field card fly to the same capture area. */
+.impact-card{position:fixed;z-index:9998;object-fit:contain;pointer-events:none;
+ border-radius:4px;box-shadow:0 3px 12px #000b;will-change:transform}
+@media(prefers-reduced-motion:reduce){.impact-card{display:none}}
