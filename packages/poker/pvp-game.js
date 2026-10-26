@@ -11,7 +11,7 @@ import {signPacket,verifyPacket,sealForRecipient,unsealForRecipient,newNonce} fr
 const ranks="23456789TJQKA",suits="CDHS";
 export const validHole=cards=>Array.isArray(cards)&&cards.length===2&&
  cards.every(c=>typeof c==="string"&&c.length===2&&ranks.includes(c[0])&&suits.includes(c[1]));
-export function publicGameState(session,seq){
+export function publicGameState(session,seq,turnClock=undefined){
  const t=session.table,h=t.hand,L=legalActions(t);
  if(!h)throw Error("No hand active");
  return {
@@ -25,7 +25,8 @@ export function publicGameState(session,seq){
    canCall:L.canCall,canFold:L.canFold,canRaise:L.canRaise,
    minRaiseTo:L.minRaiseTo,maxRaiseTo:L.maxRaiseTo,shortAllInOnly:L.shortAllInOnly}:null,
   awards:h.status==="complete"?[...h.awards]:null,
-  pots:h.status==="complete"?structuredClone(h.pots):null
+  pots:h.status==="complete"?structuredClone(h.pots):null,
+  ...(turnClock===undefined?{}:{turnClock})
  };
 }
 export function makeHostSession(snapshot){
@@ -39,11 +40,11 @@ export function makeHostSession(snapshot){
  return createSession({players,startingChips:settings.chips,
   smallBlind:settings.sb,bigBlind:settings.bb,rebuy:settings.rebuy});
 }
-export async function makeStateEvent({session,keys,host,tableId,peers,seq}){
+export async function makeStateEvent({session,keys,host,tableId,peers,seq,turnClock=undefined}){
  if(!session?.table?.hand)throw Error("Cannot share an empty hand");
  if(!Number.isSafeInteger(seq)||seq<1)throw Error("Invalid state revision");
  assertConservation(session.table);
- const state=publicGameState(session,seq);
+ const state=publicGameState(session,seq,turnClock);
  const privateHands={};
  for(const player of session.table.hand.players){
   const recipient=peers.get(player.id);
