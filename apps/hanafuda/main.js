@@ -181,6 +181,15 @@ function selectionText(p){
    tx("gain")+": +"+p.addedPoints+" "+tx("points")+
     (p.newYaku.length?" ("+p.newYaku.map(y=>yName(y.key)).join(" · ")+")":""):
    tx("noGain"));
+  if(p.taken.length){
+   const before=new Map(yakuProgress(game.captured[0]).map(v=>[v.key,v]));
+   const after=yakuProgress([...game.captured[0],selected,...p.taken]);
+   const improvements=after.filter(v=>v.have>(before.get(v.key)?.have||0))
+    .sort((a,b)=>(a.need-a.have)-(b.need-b.have)).slice(0,3);
+   if(improvements.length)explanation+=" "+improvements.map(v=>
+    yName(v.key)+" "+(before.get(v.key)?.have||0)+"/"+v.need+
+    " → "+v.have+"/"+v.need).join(" · ");
+  }
  }
  return explanation;
 }
