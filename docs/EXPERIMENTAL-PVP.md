@@ -33,8 +33,15 @@ plaintext in any shared update.
   arbitrator takeover, automatic turn timeout, or identity proof exists.
   Crash exactly between checkpoint and shared-update delivery is not
   automatically healed; a mismatch intentionally stops the hand.
-- The action time setting is agreed in the lobby but the **real betting
-  timeout is not yet enforced**; pause approval blocks controls only.
+- The agreed action limit (0 = unlimited) now drives a **host-enforced**
+  per-turn clock in this experimental path. On expiry the host checks when
+  free or folds when facing a bet. Only unanimous pause freezes the remaining
+  time; a pending pause request does not. Resume restores that remainder.
+  Every published deadline and pause transition is signed in public state
+  and persisted with the host's encrypted local checkpoint. Closing a host
+  WebView can delay expiry processing; on reopening the host catches up using
+  its persisted deadline. The host owns and can manipulate the wall clock;
+  this is NOT an independently enforced or production-fair tournament timer.
   The experiment starts manually after all current players are Ready and
   have approved the same rules.
 - All gameplay chips are local, nontransferable and cannot be redeemed.
