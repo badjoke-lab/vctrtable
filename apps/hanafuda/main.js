@@ -359,6 +359,7 @@ function stageVisible(){
 function hideStage(){$("playStage").hidden=true;}
 function openDraw(id){
  revealedDraw=id;
+ $("drawRevealCard").style.visibility="";
  $("drawReveal").hidden=false;
  $("drawReveal").className="draw-reveal";
  $("drawRevealCard").src="cards/back.svg";
@@ -368,6 +369,7 @@ function openDraw(id){
  updatePlaybackUI();
 }
 function clearDraw(){
+ $("drawRevealCard").style.visibility="";
  revealedDraw=null;$("drawReveal").hidden=true;$("drawReveal").className="draw-reveal";
 }
 function cardElement(zone,id=null){
@@ -523,6 +525,7 @@ async function resolveDrawChoice(seat,target){
   throw Error("Not a legal field target");
  await moveCapture(drawn,"drawReveal",seat,[target]);
  chooseTarget(game,target);
+ $("drawRevealCard").style.visibility="hidden";
  render();
  await showCapturedResult(seat,1);
  setBeat("draw",seat,"result",drawn,1);
@@ -560,6 +563,7 @@ async function compulsoryDraw(seat){
  await moveCapture(drawn,"drawReveal",seat,taken);
  // The engine commits the mandatory draw once, after the visible result.
  drawNextCard(game);
+ $("drawRevealCard").style.visibility="hidden";
  render();
  await showCapturedResult(seat,taken.length);
  setBeat("draw",seat,"result",drawn,taken.length);
