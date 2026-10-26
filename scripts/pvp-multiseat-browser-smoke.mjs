@@ -189,7 +189,10 @@ try{
    // silently update while disconnected, and must recover by serial-0 replay.
    const first=await chooseAction();
    assert.ok(first);
-   const observer=clients.find(c=>c.name!==first.c.name);
+   // Keep the host connected: it is the authoritative game executor.
+   // Drop an idle NON-HOST seat, never the actor or the host.
+   const observer=clients.find(c=>c.name!==first.c.name&&c.name!==ids[0]);
+   assert.ok(observer,"No non-host observer available");
    const oldTurn=await observer.page.locator("#pvp-turn").textContent();
    blocked.add(observer.name);
    await actOnce();
