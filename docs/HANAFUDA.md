@@ -4,7 +4,7 @@
 
 New standalone game under `apps/hanafuda` and `packages/hanafuda`, intentionally isolated from Poker.
 
-**Local QA prototype only:** One human on one device vs a deterministic-rule, scripted local opponent. It is neither live Vector PvP nor a trustworthy online deal. All 48 card faces and one back use licensed Wikimedia Commons traditional-color SVG artwork included in the resulting XDC. Do not call this release-ready.
+**Local QA prototype only:** One human on one device vs a deterministic-rule, scripted local opponent. It is neither live Vector PvP nor a trustworthy online deal. All 48 card faces and one back use licensed pinned GitHub mirror SVG artwork included in the resulting XDC. Do not call this release-ready.
 
 ## Rules profile
 
@@ -32,7 +32,7 @@ Result: `dist/hanafuda.xdc`. Open as a new Mini App in Vector or a WebXDC simula
 
 ## Blocking work before actual Vector PvP
 
-1. Verify all 48 Wikimedia Commons SVG illustrations visually on real phones/PCs, retain CC BY-SA 4.0 attribution and pin asset hashes for long-term reproducibility.
+1. Verify all 48 the pinned CC BY-SA GitHub art mirror SVG illustrations visually on real phones/PCs, retain CC BY-SA 4.0 attribution and pin asset hashes for long-term reproducibility.
 2. Rules QA: exact official variants, simultaneous special hands, full end-of-deck and replay edge cases. Test on real PC/phone.
 3. Trusted dealer: only dealer holds deck order and secret hands, authenticated per-seat moves with revisions, replay/timeout/reconnect, robust shuffle.
 4. Verify that the SDK can deliver private per-recipient data into the Mini App without broadcasting it through WebXDC shared update. This is already a blocking issue for Poker, not solved here.
@@ -42,4 +42,4 @@ Result: `dist/hanafuda.xdc`. Open as a new Mini App in Vector or a WebXDC simula
 
 ## Card artwork
 
-The 48 traditional SVG faces and one matching black back are sourced from Wikimedia Commons, with original illustrations by Louie Mantia, color adaptations by すけじょ, and a back by Spenĉjo, licensed CC BY-SA 4.0. The originals are downloaded at **build time** and packaged inside the XDC, not fetched while playing. See [full art license and sources](HANAFUDA-ASSET-LICENSE.md).
+The 48 recolored SVG faces and one original geometric back are sourced from a fixed GitHub commit of a Louie Mantia derivative recolored by dotty-dev, with an original geometric back by vctrtable, licensed CC BY-SA 4.0. The originals are downloaded at **build time** and packaged inside the XDC, not fetched while playing. See [full art license and sources](HANAFUDA-ASSET-LICENSE.md).
