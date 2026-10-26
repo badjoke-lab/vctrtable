@@ -47,6 +47,7 @@ jobs:
           name: poker-mobile-browser-screenshots
           path: |
             dist/poker-mobile-*.png
+            dist/poker-landing-*.png
             dist/poker-shared-lobby-*.png
             dist/poker-pvp-two-clients-*.png
             dist/poker-river-*.png
