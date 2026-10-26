@@ -7,14 +7,15 @@ import {deriveSharedTable,validPublicEvent,validTableEvent} from "./table-lobby.
 import {seatKeys,publicKeys,signPacket,verifyPacket,newNonce} from "./pvp-crypto.js";
 import {makeHostSession,makeStateEvent,readMyHand,makeSignedAction,
  acceptSignedAction,nextHostHand,publicGameState} from "./pvp-game.js";
-import {serializeSession,restoreSession} from "./session.js";
+import {serializeSession,restoreSession,sessionAction} from "./session.js";
+import {reconcileTurnClock,timeoutAction} from "./pvp-turn-clock.js";
 import {saveHostCheckpoint,loadHostCheckpoint} from "./pvp-host-checkpoint.js";
 import {makeCard} from "./cards.js";
 const $=id=>document.getElementById(id),api=window.webxdc;
 const live=Boolean(api?.selfAddr&&typeof api.sendUpdate==="function"&&
  typeof api.setUpdateListener==="function"&&globalThis.crypto?.subtle);
 const me=live?api.selfAddr:"",updates=new Map(),peers=new Map(),seen=new Set();
-let keys=null,hostSession=null,game=null,hole=null,seq=0,queue=Promise.resolve();
+let keys=null,hostSession=null,game=null,hole=null,seq=0,turnClock=null,queue=Promise.resolve();
 let keySent=false,pending=false,errorMessage="",hostRecovered=false,hostProposalId=null;
 function room(){
  return deriveSharedTable([...updates.values()].map(x=>({event:x.payload,serial:x.serial}))
@@ -64,8 +65,12 @@ function draw(){
  for(const c of (hole?.length===2?hole:["BACK","BACK"]))
   own.append(c==="BACK"?makeCard("AS",{hidden:true}):makeCard(c));
  const L=game.legal,turn=game.status==="betting"&&L?.playerId===me;
+ const clock=game.turnClock,secondsLeft=clock&&!clock.paused&&
+  Number.isSafeInteger(clock.deadlineAt)?
+  Math.max(0,Math.ceil((clock.deadlineAt-Date.now())/1000)):null;
  $("pvp-turn").textContent=game.status==="complete"?"Hand complete":
- turn?"YOUR TURN":"Waiting for "+(game.players[game.turn]?.name||"other player");
+  (turn?"YOUR TURN":"Waiting for "+(game.players[game.turn]?.name||"other player"))+
+  (clock?.paused?" · CLOCK PAUSED":secondsLeft===null?"": " · host clock ~"+secondsLeft+"s");
  const blocked=!turn||pending||r.paused||!unanimous(r)||(host&&game.status==="betting"&&!hostSession);
  for(const name of ["fold","check","call","raise"])
   $("pvp-"+name).disabled=blocked||(name==="check"&&!L?.canCheck)||
@@ -116,9 +121,10 @@ async function updateState(packet,r){
       JSON.stringify(cp.roster)!==JSON.stringify(roster))
     throw Error("Host checkpoint roster or rules changed; hand cannot resume");
    const restored=restoreSession(cp.journal);
-   if(JSON.stringify(publicGameState(restored,cp.seq))!==JSON.stringify(state))
+   if(JSON.stringify(publicGameState(restored,cp.seq,cp.turnClock))!==JSON.stringify(state))
     throw Error("Host checkpoint does not match the shared signed state");
    hostSession=restored;
+   turnClock=cp.turnClock??null;
    hostProposalId=cp.proposalId;
    hostRecovered=true;
   }
@@ -133,7 +139,7 @@ async function accept(update){
  if(validTableEvent(e)||validPublicEvent(e)){
   updates.set(e.id,{payload:e,serial});
   const r=room();
-  if(game&&r.table?.id!==game._room){game=null;hole=null;hostSession=null;seq=0;}
+  if(game&&r.table?.id!==game._room){game=null;hole=null;hostSession=null;turnClock=null;seq=0;}
   if(hostSession?.table.hand?.status==="betting"){
    const before=hostSession.table.players.map(p=>p.id).sort().join("|");
    if(before!==[...r.seats.keys()].sort().join("|")||
@@ -141,7 +147,18 @@ async function accept(update){
     hostSession=null;errorMessage="Seats or agreed rules changed; host hand stopped.";
    }
   }
-  await enroll();draw();return;
+  await enroll();
+  // A fully approved pause/resume changes the *host* deadline. A request
+  // awaiting votes does not. Publish the signed new clock and checkpoint.
+  if(hostSession&&r.table?.host===me&&unanimous(r)&&
+     hostProposalId===r.proposal.event.id){
+   const next=reconcileTurnClock(hostSession,r.proposal.event.settings.timer,
+    r.paused,turnClock,Date.now());
+   if(JSON.stringify(next)!==JSON.stringify(turnClock)){
+    turnClock=next;await publish();
+   }
+  }
+  draw();return;
  }
  if(e.app!=="vctrtable-pvp"||e.v!==1)return;
  const r=room();
@@ -154,6 +171,9 @@ async function accept(update){
  if(e.kind==="state"){await updateState(e,r);return;}
  if(e.kind==="action"&&r.table.host===me&&hostSession&&!r.paused&&unanimous(r)&&hostProposalId===r.proposal?.event.id){
   try{
+   // Delivery after a host deadline cannot beat a timeout merely because
+   // the interval callback has not executed yet.
+   await hostTick(r);
    await acceptSignedAction({packet:e,session:hostSession,peers,
     tableId:r.table.id,revision:seq});
    await publish();
@@ -162,17 +182,35 @@ async function accept(update){
 }
 async function publish(){
  const r=room();
- if(!hostSession||r.table?.host!==me)throw Error("Only host may deal");
+ if(!hostSession||r.table?.host!==me||!unanimous(r))
+  throw Error("Only an approved host may publish");
+ turnClock=reconcileTurnClock(hostSession,r.proposal.event.settings.timer,
+  r.paused,turnClock,Date.now());
  const packet=await makeStateEvent({session:hostSession,keys,host:me,
-  tableId:r.table.id,peers,seq:seq+1});
+  tableId:r.table.id,peers,seq:seq+1,turnClock});
  // Commit full deck LOCALLY, under AES-GCM, before publishing anything.
  // If the browser cannot persist the checkpoint, do not deal a new hand.
  await saveHostCheckpoint({tableId:r.table.id,seq:packet.state.seq,
   roster:[...r.seats.keys()],proposalId:r.proposal.event.id,
-  journal:serializeSession(hostSession)});
+  journal:serializeSession(hostSession),turnClock});
  // Host also renders its own state immediately; shared echo may arrive later.
  send(packet);
  await updateState(packet,r);
+}
+async function hostTick(r=room()){
+ if(!hostSession||r.table?.host!==me||!unanimous(r)||
+    hostProposalId!==r.proposal.event.id)return false;
+ const next=reconcileTurnClock(hostSession,r.proposal.event.settings.timer,
+  r.paused,turnClock,Date.now());
+ if(JSON.stringify(next)!==JSON.stringify(turnClock)){
+  turnClock=next;await publish();return false;
+ }
+ const due=timeoutAction(hostSession,turnClock,Date.now());
+ if(!due)return false;
+ // The regular session journal records the deterministic forced check/fold.
+ sessionAction(hostSession,due.playerId,due.action);
+ await publish();
+ return true;
 }
 $("pvp-start").addEventListener("click",async()=>{
  try{
@@ -209,4 +247,11 @@ if(live){
   draw();
  }).catch(fail);
 }else errorMessage="Secure Vector WebXDC was not available in this view.";
+// Serialized with incoming WebXDC events; never let interval ticks race an
+// accepted action. Background WebViews can suspend timers: upon resuming,
+// expired actions are still checked against the persisted host deadline.
+setInterval(()=>{
+ queue=queue.then(()=>hostTick()).catch(fail);
+ draw();
+},1000);
 draw();

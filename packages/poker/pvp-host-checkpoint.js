@@ -6,6 +6,7 @@
  * IndexedDB on this host device. Loss of IndexedDB means loss of the hand.
  * This is not protection against a malicious host or same-origin JavaScript.
  */
+import {validTurnClock} from "./pvp-turn-clock.js";
 const DB="vctrtable-host-journal-v1";
 const encoder=new TextEncoder(),decoder=new TextDecoder();
 const cryptoAPI=()=>{if(!globalThis.crypto?.subtle||!globalThis.crypto?.getRandomValues)
@@ -46,13 +47,15 @@ async function localKey(){
  return key;
 }
 const validId=id=>typeof id==="string"&&/^[a-zA-Z0-9_-]{6,100}$/.test(id);
-export async function saveHostCheckpoint({tableId,seq,roster,proposalId,journal}){
+export async function saveHostCheckpoint({tableId,seq,roster,proposalId,journal,turnClock=undefined}){
  if(!validId(tableId)||!validId(proposalId)||!Number.isSafeInteger(seq)||seq<1||
   !Array.isArray(roster)||roster.length<2||roster.length>6||
   new Set(roster).size!==roster.length||roster.some(x=>typeof x!=="string")||
-  typeof journal!=="string"||journal.length>2_000_000)
+  typeof journal!=="string"||journal.length>2_000_000||
+  (turnClock!==undefined&&!validTurnClock(turnClock)))
   throw Error("Invalid host checkpoint metadata");
- const payload={version:1,tableId,seq,roster:[...roster].sort(),proposalId,journal};
+ const payload={version:1,tableId,seq,roster:[...roster].sort(),proposalId,journal,
+  ...(turnClock===undefined?{}:{turnClock})};
  const key=await localKey();
  const iv=cryptoAPI().getRandomValues(new Uint8Array(12));
  const cipher=await cryptoAPI().subtle.encrypt({name:"AES-GCM",iv},key,
@@ -75,7 +78,8 @@ export async function loadHostCheckpoint(tableId){
  if(restored.version!==1||restored.tableId!==tableId||
    !Number.isSafeInteger(restored.seq)||restored.seq<1||
    !validId(restored.proposalId)||!Array.isArray(restored.roster)||
-   typeof restored.journal!=="string")
+   typeof restored.journal!=="string"||
+   (restored.turnClock!==undefined&&!validTurnClock(restored.turnClock)))
   throw Error("Host checkpoint contents corrupted");
  return restored;
 }

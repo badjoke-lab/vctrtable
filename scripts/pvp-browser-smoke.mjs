@@ -35,7 +35,10 @@ try{
   const ctx=await browser.newContext({viewport:{width:360,height:740},isMobile:true,hasTouch:true});
   await ctx.addInitScript(name=>{
    const out=[];
-   window.__sim={out,receive:null};
+   const nativeNow=Date.now.bind(Date);
+   let offset=0;
+   Date.now=()=>nativeNow()+offset;
+   window.__sim={out,receive:null,advanceTime(ms){offset+=ms;}};
    window.webxdc={selfAddr:name,selfName:name,
     sendUpdate(payload){out.push(payload);},
     setUpdateListener(fn){window.__sim.receive=fn;return Promise.resolve();},
@@ -166,10 +169,41 @@ try{
  assert.equal(await guest.locator("#pvp-board img").count(),5);
  assert.equal(await host.locator("#pvp-result").textContent(),
               await guest.locator("#pvp-result").textContent());
+ // The agreed 30-second timer must freeze ONLY on unanimous pause. Advancing
+ // the host clock does not require a 30-second wall-time sleep in CI.
+ await host.locator("#pvp-start").click();await cycles();
+ const pause=mk("pause","host",{action:"pause",seats:["host","guest"]});
+ await deliver(pause);
+ await deliver(mk("pause-vote","guest",{target:pause.id}));
+ await cycles();
+ assert.match(await host.locator("#pvp-turn").textContent(),/CLOCK PAUSED/);
+ await host.evaluate(()=>window.__sim.advanceTime(31000));
+ await cycles();
+ assert.notEqual(await host.locator("#pvp-turn").textContent(),"Hand complete",
+  "Unanimously paused hand expired");
+ const resume=mk("pause","guest",{action:"resume",seats:["host","guest"]});
+ await deliver(resume);
+ await deliver(mk("pause-vote","host",{target:resume.id}));
+ await cycles();
+ assert.doesNotMatch(await host.locator("#pvp-turn").textContent(),/CLOCK PAUSED/);
+ await host.evaluate(()=>window.__sim.advanceTime(31000));
+ await cycles();
+ assert.equal(await host.locator("#pvp-turn").textContent(),"Hand complete",
+  "Host did not enforce clock after unanimous resume");
+ assert.equal(await guest.locator("#pvp-turn").textContent(),"Hand complete");
+ // A single pause request must not stop the active clock.
+ await host.locator("#pvp-start").click();await cycles();
+ await deliver(mk("pause","guest",{action:"pause",seats:["host","guest"]}));
+ await cycles();
+ await host.evaluate(()=>window.__sim.advanceTime(31000));
+ await cycles();
+ assert.equal(await host.locator("#pvp-turn").textContent(),"Hand complete",
+  "Unapproved pause request incorrectly froze the action clock");
+ assert.equal(await guest.locator("#pvp-turn").textContent(),"Hand complete");
  await host.screenshot({path:path.resolve("dist/poker-pvp-two-clients-360.png"),fullPage:true});
  assert.deepEqual(errors,[],"Browser JavaScript error");
  for(const c of clients)await c.ctx.close();
- console.log("Encrypted PvP 2-client Chromium smoke OK: serial gaps, duplicate replay, lost guest delivery/reconnect, private cards, host recovery, signed fold, payout and full showdown");
+ console.log("Encrypted PvP 2-client Chromium smoke OK: serial gaps, replay, reconnect, private cards, signed fold, full showdown, unanimous pause/resume and enforced host timeouts");
 }finally{
  await browser?.close();await new Promise(resolve=>server.close(resolve));
  fs.rmSync(temp,{recursive:true,force:true});
