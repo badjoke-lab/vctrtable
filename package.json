@@ -13,6 +13,7 @@
     "vector:preflight": "node scripts/vector-bot-preflight.mjs",
     "vector:init": "node scripts/vector-bot-operator.mjs init",
     "vector:check": "node scripts/vector-bot-operator.mjs check",
-    "vector:start": "node scripts/vector-bot-operator.mjs start"
+    "vector:start": "node scripts/vector-bot-operator.mjs start",
+    "dev:webxdc": "npm run build && npx --yes --package=@webxdc/webxdc-dev@0.21.0 webxdc-dev run dist/poker.xdc"
   }
 }
