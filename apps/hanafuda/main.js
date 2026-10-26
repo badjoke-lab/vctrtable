@@ -115,55 +115,140 @@ function settleOnce() {
   game.accounted=true;
   if(game.winner!==null) scores[game.winner]+=game.points;
 }
+const SETS=[
+ ["inoshikacho",["7-1","10-1","6-1"]],
+ ["akatan",["1-2","2-2","3-2"]],
+ ["aotan",["6-2","9-2","10-2"]],
+ ["hanami",["3-1","9-1"]],
+ ["tsukimi",["8-1","9-1"]],
+ ["goko",["1-1","3-1","8-1","11-1","12-1"]],
+ ["tane",["2-1","4-1","5-1","6-1","7-1"]],
+ ["tan",["1-2","2-2","3-2","4-2","5-2"]],
+ ["kasu",["1-3","1-4","2-3","2-4","3-3","3-4","4-3","4-4","5-3","5-4"]]
+];
+const yName=key=>Y[key]?.[lang==="ja"?1:0]||key;
+const cardName=id=>{
+ const card=cardById(id);
+ return (lang==="ja"?card.monthJa:card.monthEn)+" / "+tx(TR[card.type]);
+};
+function showGuide(){
+ const progress=$("yakuProgress");progress.replaceChildren();
+ if(!game)return;
+ const rows=yakuProgress(game.captured[0]).filter(p=>p.have>0).slice(0,4);
+ if(!rows.length){
+  const p=document.createElement("p");
+  p.textContent=lang==="ja"?"初心者ヒント：同じ月の4枚は絵が違っても組になります。":
+   "Beginner tip: all four pictures from the same month can match.";
+  progress.append(p);
+ }
+ for(const p of rows){
+  const item=document.createElement("div");item.className="yaku-progress-item";
+  const head=document.createElement("div");head.className="yaku-progress-head";
+  const title=document.createElement("strong");title.textContent=yName(p.key);
+  const count=document.createElement("span");count.textContent=p.have+" / "+p.need;
+  const bar=document.createElement("div");bar.className="yaku-progress-track";
+  const fill=document.createElement("span");fill.style.width=Math.round(100*p.have/p.need)+"%";
+  bar.append(fill);head.append(title,count);item.append(head,bar);progress.append(item);
+ }
+ $("guidePanel").hidden=!guideOpen;
+ $("guideToggle").textContent=tx(guideOpen?"guideClose":"guideToggle");
+ $("guideToggle").setAttribute("aria-expanded",String(guideOpen));
+ if(!guideOpen)return;
+ const ex=$("guideExamples");ex.replaceChildren();
+ for(const [key,ids] of SETS){
+  const item=document.createElement("div");item.className="yaku-example";
+  const title=document.createElement("strong");title.textContent=yName(key);
+  const pictures=document.createElement("div");pictures.className="yaku-example-cards";
+  for(const id of ids){
+   const img=document.createElement("img");img.src="cards/"+id+".svg";
+   img.alt=cardName(id);img.loading="lazy";pictures.append(img);
+  }
+  item.append(title,pictures);ex.append(item);
+ }
+}
+function selectedPreview(){
+ if(!game||!selected)return null;
+ return capturePreview(game.captured[0],game.field,selected,selectedTarget);
+}
+function selectionText(p){
+ if(!p)return "";
+ const message=tx(["noMatch","oneMatch","twoMatch","threeMatch"][p.matches.length]);
+ let explanation=message;
+ if(selectedTarget)explanation+=" "+tx("chosen")+": "+cardName(selectedTarget)+".";
+ if(p.ready){
+  explanation+=" "+(p.addedPoints>0?
+   tx("gain")+": +"+p.addedPoints+" "+tx("points")+
+    (p.newYaku.length?" ("+p.newYaku.map(y=>yName(y.key)).join(" · ")+")":""):
+   tx("noGain"));
+ }
+ return explanation;
+}
 function render() {
-  renderLabels();
-  $("setup").hidden=!!game;$("game").hidden=!game;
-  if(!game) return;
-  settleOnce();
-  $("oppScore").textContent=format(scores[1]);$("yourScore").textContent=format(scores[0]);
-  $("roundLabel").textContent=lang==="ja"?`${tx("round")}${round}局 / ${matchTotal}局`:`${tx("round")} ${round} / ${matchTotal}`;
-  $("dealerLabel").textContent=`${tx("dealer")}: ${game.dealer===0?tx("youLabel"):tx("oppLabel")}`;
-  $("oppCount").textContent=`${game.hands[1].length} ${tx("hand")}`;
-  $("yourCount").textContent=`${game.hands[0].length} ${tx("hand")}`;
-  $("deckCount").textContent=game.deck.length;
-  const pending=game.phase==="choose" && game.active===0 ? game.pending:null;
-  fill("opponentHand",game.hands[1],()=>({faceDown:true}));
-  fill("field",game.field,id=>({
-    target:!!pending?.choices.includes(id),
-    click:pending?.choices.includes(id)?()=>takeField(id):null,
-    match:game.active===0 && game.phase==="turn" && game.hands[0].some(h=>cardById(h).month===cardById(id).month)
-  }));
-  fill("yourHand",game.hands[0],id=>({
-    click:game.phase==="turn" && game.active===0 ? ()=>play(id):null,
-    match:game.field.some(f=>cardById(f).month===cardById(id).month)
-  }));
-  fill("opponentCaptured",game.captured[1],()=>({compact:true}));
-  fill("yourCaptured",game.captured[0],()=>({compact:true}));
-  $("oppYaku").textContent=yakuText(1);
-  $("yourYaku").textContent=yakuText(0);
-  $("decision").hidden=!(game.phase==="decision"&&game.active===0);
-  $("koi").disabled=game.hands.every(h=>h.length===0);
-  $("result").hidden=game.phase!=="ended";
-  let status="";
-  if(game.phase==="ended")status=tx("roundOver");
-  else if(game.active===1)status=tx("opponentTurn");
-  else if(game.phase==="choose")status=tx("chooseTarget");
-  else if(game.phase==="decision")status=tx("decision");
-  else status=tx("chooseCard");
-  if(game.koiedBy!==null && game.phase!=="ended")status+=" · "+tx("koiUsed");
-  $("status").textContent=status;
-  if(game.phase==="decision") {
-    $("decisionSummary").textContent=`${yakuText(game.active)} · ${tx("score")}: ${scoreCards(game.captured[game.active]).points}`;
-  }
-  if(game.phase==="ended") {
-    const who=game.winner;
-    $("resultTitle").textContent=round===matchTotal ? tx("matchOver"):tx("resultTitle");
-    $("resultSummary").textContent=(who===null?tx("draw"):who===0?tx("youWin"):tx("theyWin"))+
-      ` · ${game.points} ${tx("points")}`+
-      (who===null?"":` · ${yakuText(who)}`)+
-      (round===matchTotal?` · ${tx("score")}: ${format(scores[0])} / ${format(scores[1])}`:"");
-    $("next").hidden=round>=matchTotal;
-  }
+ renderLabels();
+ $("setup").hidden=!!game;$("game").hidden=!game;
+ if(!game)return;
+ settleOnce();
+ $("oppScore").textContent=format(scores[1]);$("yourScore").textContent=format(scores[0]);
+ $("roundLabel").textContent=lang==="ja"?tx("round")+round+"局 / "+matchTotal+"局":
+   tx("round")+" "+round+" / "+matchTotal;
+ $("dealerLabel").textContent=tx("dealer")+": "+tx(game.dealer===0?"youLabel":"oppLabel");
+ $("oppCount").textContent=game.hands[1].length+" "+tx("hand");
+ $("yourCount").textContent=game.hands[0].length+" "+tx("hand");
+ $("deckCount").textContent=game.deck.length;
+ const pending=game.phase==="choose"&&game.active===0?game.pending:null;
+ const p=selectedPreview();
+ const legal=new Set(selected?matchingFieldCards(game.field,selected):[]);
+ fill("opponentHand",game.hands[1],()=>({faceDown:true}));
+ fill("field",game.field,id=>({
+  match:legal.has(id),
+  target:legal.has(id)||Boolean(pending?.choices.includes(id)),
+  chosen:selectedTarget===id,
+  click:!locked&&(pending?.choices.includes(id)||(selected&&legal.size===2&&legal.has(id)))?
+   ()=>selectField(id):null
+ }));
+ fill("yourHand",game.hands[0],id=>({
+  click:!locked&&game.active===0&&game.phase==="turn"?()=>selectCard(id):null,
+  selectedCard:selected===id
+ }));
+ fill("opponentCaptured",game.captured[1],()=>({compact:true}));
+ fill("yourCaptured",game.captured[0],()=>({compact:true}));
+ $("oppYaku").textContent=yakuText(1);$("yourYaku").textContent=yakuText(0);
+ $("selection").hidden=!selected||game.phase!=="turn"||game.active!==0;
+ if(selected&&game.phase==="turn"&&game.active===0){
+  $("selectedCardDetail").textContent=cardName(selected);
+  $("selectedPreview").textContent=selectionText(p);
+  $("selectedCardArt").replaceChildren(makeCard(selected));
+  $("confirm").disabled=locked||!p?.ready;
+  $("cancel").disabled=locked;
+ }
+ $("matchHint").textContent=selected?(
+  legal.size?(lang==="ja"?legal.size+"枚一致":legal.size+" matches"):tx("noMatch")):"";
+ $("decision").hidden=game.phase!=="decision"||game.active!==0||locked;
+ $("koi").disabled=locked||game.hands.every(h=>h.length===0);
+ $("stop").disabled=locked;
+ $("result").hidden=game.phase!=="ended"||locked;
+ let status;
+ if(locked||game.phase==="draw-pending")status=tx("working");
+ else if(game.phase==="ended")status=tx("roundOver");
+ else if(game.active===1)status=tx("opponentTurn");
+ else if(pending?.step==="draw")status=tx("pendingDraw");
+ else if(game.phase==="choose")status=tx("chooseTarget");
+ else if(game.phase==="decision")status=tx("decision");
+ else status=tx("chooseCard");
+ if(game.koiedBy!==null&&game.phase!=="ended")status+=" · "+tx("koiUsed");
+ $("status").textContent=status;
+ if(game.phase==="decision")
+  $("decisionSummary").textContent=yakuText(game.active)+" · "+tx("score")+": "+
+   scoreCards(game.captured[game.active]).points+" "+tx("points")+". "+tx("decision");
+ if(game.phase==="ended"){
+  const who=game.winner;
+  $("resultTitle").textContent=round===matchTotal?tx("matchOver"):tx("resultTitle");
+  $("resultSummary").textContent=(who===null?tx("draw"):who===0?tx("youWin"):tx("theyWin"))+
+   " · "+game.points+" "+tx("points")+(who===null?"":" · "+yakuText(who))+
+   (round===matchTotal?" · "+tx("score")+": "+format(scores[0])+" / "+format(scores[1]):"");
+  $("next").hidden=round>=matchTotal;
+ }
+ showGuide();
 }
 function runBot() {
   // Deliberately transparent scripted QA behavior, not an AI opponent.
