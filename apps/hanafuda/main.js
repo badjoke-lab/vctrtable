@@ -316,7 +316,11 @@ function setBeat(step,seat,kind,id=null,count=0){
   pick:()=>say("山札は "+card+"。一致する場札が2枚。取る札を選んでください。",
    "Draw revealed "+card+". Two matches: choose one highlighted field card."),
   complete:()=>say("手札と山札の処理が完了しました。",
-   "Hand card and drawn card resolved.")
+   "Hand card and drawn card resolved."),
+  result:()=>count>0?say("山札は "+card+"。場札と合わせて"+(count+1)+"枚を取り札に加えました。",
+   "Drawn card: "+card+". Captured "+(count+1)+" cards in total."):
+   say("山札は "+card+"。一致がないため場札に残しました。",
+   "Drawn card: "+card+". No match: it stays in the field.")
  };
  playbackMessage=(messages[kind]||messages.complete)();
  updatePlaybackUI();
@@ -471,28 +475,68 @@ function bestTarget(choices){
  return choices.slice().sort((a,b)=>rank(b)-rank(a))[0];
 }
 /** Draw is compulsory after a confirmed hand play; if two targets, wait. */
+/** Resolve a drawn card that required one of two field targets.
+ * The reveal remains on-screen until the user deliberately chooses one. */
+async function resolveDrawChoice(seat,target){
+ if(game.phase!=="choose"||game.pending?.step!=="draw"||!revealedDraw)
+  throw Error("The drawn card is not awaiting a field choice");
+ const drawn=game.pending.cardId;
+ if(target!==game.pending.choices[0]&&target!==game.pending.choices[1])
+  throw Error("Not a legal field target");
+ await moveCapture(drawn,"drawReveal",seat,[target]);
+ chooseTarget(game,target);
+ setBeat("draw",seat,"result",drawn,1);
+ await beatPause(520);
+ clearDraw();render();
+}
+/** Every turn's second step is mandatory and visually independent of the hand. */
 async function compulsoryDraw(seat){
  if(game.phase!=="draw-pending")return;
- const drawn=game.deck[0],matches=matchingFieldCards(game.field,drawn);
- if(matches.length===2)await fly(drawn,"deckBack","field",matches[0]);
- else await visuallyCapture(drawn,"deckBack",seat,matches);
- drawNextCard(game);render();
- if(game.phase==="choose"&&seat===1){
-  const t=bestTarget(game.pending.choices);
-  await fly(t,"field","opponentCaptured");
-  await fly(drawn,"deckBack","opponentCaptured");
-  chooseTarget(game,t);render();
+ const drawn=game.deck[0];
+ const matches=matchingFieldCards(game.field,drawn);
+ setBeat("draw",seat,"deck");
+ openDraw(drawn);
+ // Travel while FACE DOWN. Never show the next deck card before it is drawn.
+ await fly(drawn,"deckBack","drawReveal",null,{faceDown:true});
+ await beatPause(180);
+ await flipDrawCard(drawn);
+ setBeat("draw",seat,"flip",drawn);
+ $("drawRevealDescription").textContent=matches.length?
+  say(matches.length+"枚の場札と同じ月です。",matches.length+" same-month field card(s)."):
+  say("同じ月の場札はありません。","No same-month field card.");
+ await beatPause(650); // legible reveal before any match resolves
+ if(matches.length===2){
+  // Only a revealed card can enter the target-choice state. The card itself
+  // remains beside the deck, NOT on the field or in the captured pile yet.
+  drawNextCard(game);render();
+  setBeat("draw",seat,"pick",drawn);
+  if(seat===1){
+   await beatPause(450);
+   await resolveDrawChoice(seat,bestTarget(game.pending.choices));
+  }
+  return;
  }
+ const taken=matches.length===3?matches:matches.slice(0,1);
+ await moveCapture(drawn,"drawReveal",seat,taken);
+ // The engine commits the mandatory draw once, after the visible result.
+ drawNextCard(game);
+ setBeat("draw",seat,"result",drawn,taken.length);
+ await beatPause(520);
+ clearDraw();render();
 }
-/** The rules engine commits only once, after the visual hand movement. */
 async function actionSequence(seat,id,target=null){
  const matches=matchingFieldCards(game.field,id);
- if(matches.length===2&&!matches.includes(target))throw Error("Select one matching target");
- await visuallyCapture(id,seat===0?"yourHand":"opponentHand",seat,matches,target);
+ if(matches.length===2&&!matches.includes(target))
+  throw Error("Choose a matching field card first");
+ const taken=matches.length===2?[target]:matches.length===3?matches:matches.slice(0,1);
+ // The public HAND card lands, matches highlight, then move together to
+ // captured (or it remains on the field). Only then is the deck touched.
+ await animateHandCard(seat,id,taken);
  playCard(game,id,{deferDraw:true});
  if(game.phase==="choose"&&game.pending.step==="hand")
   chooseTarget(game,target,{deferDraw:true});
  render();
+ await beatPause(290); // clear visual boundary before the compulsory deck draw
  await compulsoryDraw(seat);
 }
 async function runBot(){
@@ -508,11 +552,8 @@ async function runBot(){
    decide(game,points<5&&game.koiedBy===null&&game.hands[1].length>=4?"koi":"stop");
   }else if(game.phase==="choose"){
    const id=bestTarget(game.pending.choices);
-   const step=game.pending.step,drawn=game.pending.cardId;
-   await fly(id,"field","opponentCaptured");
-   await fly(drawn,step==="draw"?"deckBack":"opponentHand","opponentCaptured");
-   chooseTarget(game,id,{deferDraw:step==="hand"});
-   await compulsoryDraw(1);
+   if(game.pending.step==="draw")await resolveDrawChoice(1,id);
+   else {chooseTarget(game,id,{deferDraw:true});await compulsoryDraw(1);}
   }else if(game.phase==="draw-pending"){
    await compulsoryDraw(1);
   }else break;
@@ -540,13 +581,9 @@ $("cancel").addEventListener("click",()=>{
  selected=null;selectedTarget=null;render();
 });
 async function chooseDrawTarget(id){
- if(locked||!game||game.phase!=="choose"||game.active!==0||game.pending?.step!=="draw")return;
- await withAction(async()=>{
-  const drawn=game.pending.cardId;
-  await fly(id,"field","yourCaptured");
-  await fly(drawn,"deckBack","yourCaptured");
-  chooseTarget(game,id);
- });
+ if(locked||!game||game.phase!=="choose"||game.active!==0||
+  game.pending?.step!=="draw")return;
+ await withAction(async()=>{await resolveDrawChoice(0,id);});
 }
 $("guideToggle").addEventListener("click",()=>{
  guideOpen=!guideOpen;render();
