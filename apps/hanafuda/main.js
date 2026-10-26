@@ -361,7 +361,7 @@ function openDraw(id){
  revealedDraw=id;
  $("drawRevealCard").style.visibility="";
  $("drawReveal").hidden=false;
- $("drawReveal").className="draw-reveal";
+ $("drawReveal").className="draw-reveal awaiting";
  $("drawRevealCard").src="cards/back.svg";
  $("drawRevealDescription").textContent=say(
   "山札を裏向きで取りました。これから表に返します。",
@@ -541,9 +541,12 @@ async function compulsoryDraw(seat){
  openDraw(drawn);
  // Travel while FACE DOWN. Never show the next deck card before it is drawn.
  await fly(drawn,"deckBack","drawReveal",null,{faceDown:true});
+ $("drawReveal").className="draw-reveal";
  await beatPause(180);
  await flipDrawCard(drawn);
+ $("drawReveal").className="draw-reveal "+(matches.length?"matched":"unmatched");
  setBeat("draw",seat,"flip",drawn);
+ markMatches(matches);
  $("drawRevealDescription").textContent=matches.length?
   say(matches.length+"枚の場札と同じ月です。",matches.length+" same-month field card(s)."):
   say("同じ月の場札はありません。","No same-month field card.");
