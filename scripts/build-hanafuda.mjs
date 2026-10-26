@@ -12,8 +12,12 @@ try{
   const main=fs.readFileSync(path.join(app,"main.js"),"utf8");
   const from='"../../packages/hanafuda/koikoi.js"';
   if(!main.includes(from)) throw new Error("Unexpected Hanafuda engine import");
-  fs.writeFileSync(path.join(temp,"main.js"),main.replace(from,'"./koikoi.js"'));
+  const guideFrom='"../../packages/hanafuda/guide.js"';
+  if(!main.includes(guideFrom))throw new Error("Unexpected Hanafuda guide import");
+  fs.writeFileSync(path.join(temp,"main.js"),main.replace(from,'"./koikoi.js"')
+    .replace(guideFrom,'"./guide.js"'));
   fs.copyFileSync(path.join(root,"packages","hanafuda","koikoi.js"),path.join(temp,"koikoi.js"));
+  fs.copyFileSync(path.join(root,"packages","hanafuda","guide.js"),path.join(temp,"guide.js"));
   await downloadHanafudaAssets(temp);
   const dist=path.join(root,"dist");fs.mkdirSync(dist,{recursive:true});
   const output=path.join(dist,"hanafuda.xdc");fs.rmSync(output,{force:true});
