@@ -26,11 +26,21 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Keep metadata honest as capabilities change, including on
+          # repeat preview uploads: this is host-trusted alpha, not secure PvP.
+          PREVIEW_TITLE="Poker preview — Solo practice and experimental PvP"
+          PREVIEW_NOTES="Experimental host-trusted WebXDC poker: signed seat-key actions, encrypted hands and host-enforced turn clock. Host can access the full deck; Vector identity is NOT authenticated and real-device delivery is unverified. No money, cash-out, prizes or wagering. Not production-secure multiplayer."
           if ! gh release view poker-preview >/dev/null 2>&1; then
             gh release create poker-preview \
               --target "${GITHUB_SHA}" \
-              --title "Poker lobby preview — NOT a playable poker match" \
-              --notes "Development-only Vector/WebXDC lobby. No dealing, betting or authenticated private hands. Do not use for any real-money play." \
+              --title "${PREVIEW_TITLE}" \
+              --notes "${PREVIEW_NOTES}" \
+              --prerelease
+          else
+            gh release edit poker-preview \
+              --target "${GITHUB_SHA}" \
+              --title "${PREVIEW_TITLE}" \
+              --notes "${PREVIEW_NOTES}" \
               --prerelease
           fi
           gh release upload poker-preview dist/poker.xdc --clobber
