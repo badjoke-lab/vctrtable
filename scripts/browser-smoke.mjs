@@ -145,6 +145,12 @@ try{
    "Chat action is not visible on first screen: "+JSON.stringify({view,firstView}));
   assert.ok(firstView.dock.height<88,
    "Collapsed betting dock still covers the game: "+JSON.stringify({view,firstView}));
+  const dockOverlap=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.x,b.x))*
+   Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y));
+  for(const card of firstView.hero){
+   assert.ok(card.y>=0&&card.bottom<=view.height&&dockOverlap(card,firstView.dock)<=1,
+    "Fixed betting controls obscure actual hero card in initial viewport: "+JSON.stringify({view,firstView}));
+  }
   assert.equal(await page.locator("#qa-raise-details").isVisible(),false,
    "Raise amount and presets must start collapsed");
   if(await page.locator("#qa-raise-toggle").isEnabled()){
