@@ -1,4 +1,4 @@
-name: Poker foundation checks
+name: vctrtable game checks
 on:
   push:
     branches: [main, "feat/**"]
@@ -21,3 +21,9 @@ jobs:
         with:
           name: poker-xdc-prototype
           path: dist/poker.xdc
+      - run: npm run build:hanafuda
+      - run: unzip -t dist/hanafuda.xdc
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hanafuda-xdc-local-qa
+          path: dist/hanafuda.xdc
