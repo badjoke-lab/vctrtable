@@ -506,3 +506,180 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
  .qa-main .poker-seat.pos-mid-left,
  .qa-main .poker-seat.pos-mid-right{top:66%!important}
 }
+
+
+/* 2026-10-26: restore a complete one-viewport table overview. The earlier
+   670px/780px felt enlarged cards by making the game impossible to survey.
+   Fit the entire felt below the header; retain original 5:7 PNGs and
+   full-size tap-to-inspect at showdown. Never stretch card artwork. */
+@media (max-width:520px){
+ .qa-main .qa-meta{margin-bottom:10px}
+ .qa-main .poker-arena{padding:8px 5px 9px!important}
+ .qa-main .felt{
+  height:clamp(400px,calc(100svh - 245px),520px)!important;
+  border-radius:44% / 40%!important;
+ }
+ .qa-main .poker-seat{
+  width:clamp(80px,25vw,104px)!important;
+  height:clamp(120px,36vw,142px)!important;
+  padding:3px 2px!important;
+  grid-template-rows:15px 16px 14px minmax(0,1fr) 15px 15px!important;
+  align-content:stretch!important;
+ }
+ .qa-main .poker-seat.pos-top-left{left:17%!important;top:15%!important}
+ .qa-main .poker-seat.pos-top{left:50%!important;top:15%!important}
+ .qa-main .poker-seat.pos-top-right{left:83%!important;top:15%!important}
+ .qa-main .poker-seat.pos-mid-left{left:11%!important;top:72%!important}
+ .qa-main .poker-seat.pos-mid-right{left:89%!important;top:72%!important}
+ .qa-main .poker-seat .poker-seat-name{
+  font-size:clamp(10px,3vw,12px)!important;line-height:15px
+ }
+ .qa-main .poker-seat .poker-seat-stack{
+  font-size:11px!important;line-height:16px
+ }
+ .qa-main .poker-seat .poker-seat-tags{
+  height:14px;min-height:14px
+ }
+ .qa-main .poker-seat .poker-seat-badge{font-size:9px;line-height:12px}
+ .qa-main .poker-seat .poker-seat-cards{
+  height:auto;min-height:0;overflow:hidden!important;gap:2px!important;
+  align-self:stretch!important;
+ }
+ .qa-main .poker-seat .poker-seat-cards img.vcard-small{
+  width:clamp(29px,9vw,40px)!important;
+  flex:0 0 clamp(29px,9vw,40px)!important;
+  max-height:100%!important;
+  object-fit:contain!important
+ }
+ .qa-main .poker-seat .poker-seat-card-index{
+  font-size:clamp(10px,2.8vw,12px);line-height:15px;min-height:15px
+ }
+ .qa-main .poker-seat .poker-seat-bet{
+  line-height:15px;min-height:15px;font-size:10px!important
+ }
+ .qa-main .poker-center{
+  top:31%!important;gap:4px!important;transform:translate(-50%,-5%)!important
+ }
+ .qa-main .pot-pill{font-size:clamp(13px,3.6vw,16px);padding:4px 11px}
+ .qa-main .street-label{font-size:11px}
+ .qa-main .community-cards{gap:3px!important}
+ .qa-main .community-cards .vcard,
+ .qa-main .community-cards .vcard-empty{
+  width:clamp(40px,12.6vw,53px)!important;
+  flex:0 0 clamp(40px,12.6vw,53px)!important;
+  height:auto!important
+ }
+ .qa-main .hero-spot{
+  width:44%!important;bottom:0!important;gap:3px!important
+ }
+ .qa-main .hero-hand{gap:4px!important}
+ .qa-main .hero-hand img.vcard{
+  width:clamp(55px,18vw,72px)!important;
+  flex:0 0 clamp(55px,18vw,72px)!important
+ }
+ .qa-main .hero-info{
+  min-height:30px;min-width:clamp(132px,44vw,200px);
+  font-size:12px;padding:4px 9px
+ }
+ .qa-main .chat-bubble{right:6px!important;bottom:7px!important}
+}
+/* Very narrow devices have the same five-seat schema, but must fit within
+   a 320px wide felt. Rank/suit captions and card magnification remain. */
+@media (max-width:350px){
+ .qa-main .felt{height:clamp(400px,calc(100svh - 225px),440px)!important}
+ .qa-main .poker-seat.pos-top-left{left:16%!important}
+ .qa-main .poker-seat.pos-top-right{left:84%!important}
+ .qa-main .poker-seat.pos-mid-left{left:11%!important;top:72%!important}
+ .qa-main .poker-seat.pos-mid-right{left:89%!important;top:72%!important}
+ .qa-main .poker-center{top:31%!important}
+ .qa-main .community-cards .vcard,
+ .qa-main .community-cards .vcard-empty{width:40px!important;flex-basis:40px!important}
+}
+/* Desktop is NOT a stretched mobile scene. Cap the table width and keep
+   the result widgets in ordinary document flow even on tall wide WebViews. */
+@media (min-width:521px){
+ .qa-main{width:min(100%,680px);max-width:680px;padding-top:18px}
+ .qa-main .poker-arena{padding:12px 12px 16px!important}
+ .qa-main .felt{height:570px!important;border-radius:43% / 41%!important}
+ .qa-main .poker-seat{width:112px!important;height:146px!important;
+  grid-template-rows:17px 18px 15px minmax(0,1fr) 17px 17px!important}
+ .qa-main .poker-seat.pos-top-left{left:22%!important;top:15%!important}
+ .qa-main .poker-seat.pos-top{left:50%!important;top:15%!important}
+ .qa-main .poker-seat.pos-top-right{left:78%!important;top:15%!important}
+ .qa-main .poker-seat.pos-mid-left{left:12%!important;top:69%!important}
+ .qa-main .poker-seat.pos-mid-right{left:88%!important;top:69%!important}
+ .qa-main .poker-seat .poker-seat-cards{height:auto;min-height:0;overflow:hidden!important}
+ .qa-main .poker-seat .poker-seat-cards img.vcard-small{
+  width:43px!important;flex-basis:43px!important;max-height:100%!important
+ }
+ .qa-main .poker-center{top:32%!important}
+ .qa-main .community-cards .vcard,.qa-main .community-cards .vcard-empty{
+  width:clamp(54px,9vw,69px)!important;flex-basis:clamp(54px,9vw,69px)!important
+ }
+ .qa-main .hero-spot{bottom:1%!important;width:49%!important}
+ .qa-main .hero-hand img.vcard{width:81px!important;flex-basis:81px!important}
+ .qa-main .chat-bubble{right:14px!important;bottom:10px!important}
+}
+/* PC failure: "Main pot" stretched behind Next hand, and the history
+   widgets appeared amidst settlement rows. Fix the result block layout
+   explicitly, rather than relying on inherited section/flex/grid sizing. */
+.qa-main #qa-end:not([hidden]){
+ display:block!important;
+ position:relative!important;
+ width:100%!important;
+ height:auto!important;min-height:0!important;max-height:none!important;
+ overflow:visible!important;
+ margin:10px 0 12px!important;
+}
+.qa-main #qa-end #qa-result{
+ display:block!important;
+ position:static!important;
+ width:100%!important;height:auto!important;
+ margin:0 0 8px!important;
+}
+.qa-main #qa-end #qa-settlement{
+ display:flex!important;flex-direction:column!important;
+ position:static!important;align-items:stretch!important;
+ width:100%!important;height:auto!important;min-height:0!important;
+ gap:8px!important;margin:0 0 10px!important;
+}
+.qa-main #qa-end .qa-settlement-pot{
+ display:flex!important;flex-direction:column!important;
+ justify-content:flex-start!important;align-items:stretch!important;
+ width:100%!important;height:auto!important;min-height:0!important;
+ padding:10px 12px!important;gap:4px!important;
+}
+.qa-main #qa-end .qa-settlement-pot b,
+.qa-main #qa-end .qa-settlement-pot span{
+ display:block!important;position:static!important;
+ width:auto!important;height:auto!important;flex:none!important;
+}
+.qa-main #qa-end .qa-settlement-ranks{
+ display:grid!important;
+ grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ position:static!important;
+ width:100%!important;height:auto!important;min-height:0!important;
+ gap:7px!important;
+}
+.qa-main #qa-end .qa-end-actions{
+ display:grid!important;
+ grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ grid-auto-rows:min-content!important;
+ position:static!important;
+ width:100%!important;height:auto!important;min-height:0!important;
+ margin:0!important;padding:0!important;gap:8px!important;
+}
+.qa-main #qa-end .qa-end-actions button{
+ position:static!important;
+ width:100%!important;height:44px!important;
+ min-height:44px!important;max-height:44px!important;
+ align-self:stretch!important;margin:0!important;
+}
+.qa-main #qa-end .qa-end-actions #qa-next{
+ grid-column:1 / -1!important;
+}
+.qa-main #qa-history-panel,.qa-main #qa-storage-panel,
+.qa-main .qa-toolrow,.qa-main footer{
+ position:relative!important;
+ clear:both!important;
+}

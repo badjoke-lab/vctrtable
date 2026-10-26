@@ -180,8 +180,10 @@ try{
       chat:rect(document.querySelector("#qa-chat-bubble"))
     };
    });
-   assert.ok(mobile.felt.h<=700&&mobile.felt.h>=630,
-     "Phone felt must be neither excessively tall nor too cramped: "+JSON.stringify(mobile));
+   assert.ok(mobile.felt.h<=545&&mobile.felt.h>=390,
+     "Phone table must be compact and surveyable without a long scroll: "+JSON.stringify(mobile));
+   assert.ok(mobile.felt.bottom<=view.height+15,
+     "Entire felt must fit the initial phone viewport: "+JSON.stringify({view,mobile}));
    const overlapArea=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.x,b.x))*
      Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y));
    for(let i=0;i<mobile.seats.length;i++){
@@ -416,6 +418,61 @@ try{
   assert.deepEqual(errors.filter(x=>x.startsWith(view.width+":")),[],
     "Browser runtime exceptions during "+view.width+"px hand");
   assert.deepEqual(dialogs,[],"Unexpected dialogs during full hand");
+  await ctx.close();
+ }
+
+ // Desktop regression from 2026-10-26 Vector screenshot: the result
+ // containers and buttons must stay in normal top-to-bottom document flow.
+ for(const view of [{width:960,height:800},{width:1440,height:900}]){
+  const ctx=await browser.newContext({viewport:view,deviceScaleFactor:1});
+  const page=await ctx.newPage();
+  page.on("pageerror",error=>errors.push("desktop-"+view.width+": "+error.message));
+  await page.goto(base+"/",{waitUntil:"networkidle"});
+  await page.locator("#qa-seats").fill("6");
+  await page.locator("#qa-seconds").fill("0");
+  await page.locator("#qa-form button[type=submit]").click();
+  await page.locator("#qa-table").waitFor({state:"visible"});
+  let turns=0;
+  while(!await page.locator("#qa-end").isVisible()){
+   if(++turns>65)throw Error("Desktop showdown did not finish at "+view.width);
+   if(await page.locator("#qa-check").isEnabled())await page.locator("#qa-check").click();
+   else if(await page.locator("#qa-call").isEnabled())await page.locator("#qa-call").click();
+   else if(await page.locator("#qa-fold").isEnabled())await page.locator("#qa-fold").click();
+   else throw Error("No legal desktop action");
+  }
+  const layout=await page.evaluate(()=>{
+   const rect=selector=>{
+    const node=document.querySelector(selector),r=node.getBoundingClientRect();
+    return {x:r.x,top:r.top,bottom:r.bottom,right:r.right,w:r.width,h:r.height};
+   };
+   return {
+    main:rect(".qa-main"),felt:rect(".felt"),
+    end:rect("#qa-end"),result:rect("#qa-result"),
+    pot:rect("#qa-end .qa-settlement-pot"),
+    ranks:rect("#qa-end .qa-settlement-ranks"),
+    next:rect("#qa-next"),buy:rect("#qa-buy"),
+    reset:rect("#qa-reset"),history:rect("#qa-history-panel"),
+    storage:rect("#qa-storage-panel"),pause:rect(".qa-toolrow"),
+    overflow:document.documentElement.scrollWidth-innerWidth
+   };
+  });
+  const order=["result","pot","ranks","next","buy","history","storage","pause"];
+  for(let i=1;i<order.length;i++){
+   const a=layout[order[i-1]],b=layout[order[i]];
+   assert.ok(b.top>=a.bottom-2,
+    "Desktop blocks overlap/misorder "+order[i-1]+"->"+order[i]+": "+JSON.stringify(layout));
+  }
+  assert.ok(layout.reset.top>=layout.next.bottom-2&&layout.reset.bottom<=layout.history.top+2,
+   "Desktop new-session button is displaced: "+JSON.stringify(layout));
+  assert.ok(layout.pot.h>26&&layout.pot.h<105,
+   "Desktop pot box must fit text, never stretch over action buttons: "+JSON.stringify(layout));
+  assert.ok(layout.next.h>=40&&layout.next.h<=48&&layout.buy.h<=48,
+   "Desktop action buttons must stay compact: "+JSON.stringify(layout));
+  assert.ok(layout.end.bottom<=layout.history.top+2,
+   "History or another section overlaps the result panel: "+JSON.stringify(layout));
+  assert.ok(layout.main.w<=682&&layout.overflow<=2,
+   "Desktop table must not overflow or stretch across entire browser: "+JSON.stringify(layout));
+  await page.screenshot({path:path.join(dist,"poker-desktop-showdown-"+view.width+".png"),fullPage:true});
   await ctx.close();
  }
  // Exercise the bundled manual DM seat UI: this is NOT a simulated live DM
