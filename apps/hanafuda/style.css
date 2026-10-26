@@ -157,3 +157,58 @@ footer,.art-credit{font-size:11px;color:#9eb5a8;line-height:1.5;margin-top:20px}
  .card,.card.target{transition:none;animation:none}
  .flying-card{display:none}
 }
+
+
+/* Clear turn choreography: played hand card and flipped deck card have
+   different, stable destinations; never stretch original 976:1600 artwork. */
+[hidden]{display:none!important}
+.turn-timeline{display:flex;gap:7px;margin:5px 0 8px;align-items:center}
+.timeline-step{border:1px solid #657b65;color:#c2cfca;border-radius:20px;
+ font-size:12px;font-weight:700;padding:6px 12px;opacity:.66;transition:background .12s}
+.timeline-step.active{opacity:1;color:#18241c;background:#ffe09b;border-color:#fbe7b0}
+.timeline-step.done{opacity:1;color:#e6f0e5;border-color:#8bac88;background:#294939}
+.action-narration{font-size:14px;line-height:1.45;padding:8px 12px;margin:4px 0;
+ border-left:4px solid #f3d287;border-radius:5px;background:#1a3026;
+ color:#fff2cc;font-weight:750;min-height:40px}
+.middle{position:relative}
+.play-stage{position:absolute;z-index:9;left:50%;top:50%;transform:translate(-50%,-50%);
+ display:flex;flex-direction:column;align-items:center;justify-content:center;
+ pointer-events:none;padding:7px;border:2px solid #ebc580;border-radius:9px;
+ background:#132b22f2;box-shadow:0 7px 24px #000c}
+.play-stage img{display:block;width:70px;aspect-ratio:var(--card-ratio);
+ height:auto;object-fit:contain;border-radius:4px}
+.play-stage .stage-label{font-size:12px;line-height:1.4;color:#ffe09b;
+ font-weight:800;margin-bottom:6px;white-space:nowrap}
+.play-stage.awaiting img{visibility:hidden}
+.draw-reveal{display:flex;align-items:center;gap:12px;margin:8px 0 10px;
+ min-height:122px;border:2px solid #e0c07b;border-radius:12px;
+ background:linear-gradient(100deg,#263e2e,#172e26);padding:9px 13px}
+.draw-reveal-face{width:66px;flex:none;perspective:500px}
+.draw-reveal-face img{display:block;width:100%;aspect-ratio:var(--card-ratio);
+ height:auto;object-fit:contain;backface-visibility:hidden;transform-style:preserve-3d}
+.draw-reveal strong{font-size:15px;color:#f4d794}
+.draw-reveal p{font-size:13px;color:#e2eddf;margin:5px 0 0;line-height:1.45}
+.draw-reveal.matched{box-shadow:inset 0 0 0 2px #8cd9a6}
+.draw-reveal.unmatched{border-color:#9ab6a3}
+.field .card.captured-now{filter:brightness(1.35);outline:3px solid #a3fbb9;outline-offset:2px}
+.field .card.captured-now .card-art{filter:brightness(1.15)}
+.capture-flash{animation:hanafuda-capture-flash .38s ease-out}
+@keyframes hanafuda-capture-flash{
+ from{box-shadow:0 0 0 5px #affe9b,0 0 20px #a9ff91}
+ to{box-shadow:0 0 0 0 transparent}
+}
+@media(max-width:600px){
+ .turn-timeline{gap:5px}
+ .timeline-step{font-size:11px;padding:5px 9px}
+ .action-narration{font-size:13px;padding:7px 9px}
+ .play-stage{padding:5px}
+ .play-stage img{width:58px}
+ .play-stage .stage-label{font-size:11px}
+ .draw-reveal{min-height:106px;padding:7px 10px;gap:9px}
+ .draw-reveal-face{width:54px}
+ .draw-reveal strong{font-size:13px}
+ .draw-reveal p{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .timeline-step,.capture-flash{transition:none;animation:none}
+}
