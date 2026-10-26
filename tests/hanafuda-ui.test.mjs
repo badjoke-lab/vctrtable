@@ -28,6 +28,13 @@ function makeUi(){
  const ids=[...html.matchAll(/id="([^"]+)"/g)].map(match=>match[1]);
  const elements=new Map(ids.map(id=>[id,new FakeElement()]));
  const $=id=>elements.get(id);
+ const story=[];
+ const narration=$("actionNarration");
+ let narrationValue="";
+ Object.defineProperty(narration,"textContent",{
+  get:()=>narrationValue,
+  set:value=>{narrationValue=String(value);if(value)story.push(String(value));}
+ });
  const document={
   documentElement:new FakeElement(),body:new FakeElement(),
   getElementById:$,createElement:()=>new FakeElement()
@@ -44,7 +51,7 @@ function makeUi(){
  const ui=create(document,{matchMedia:()=>({matches:true})},callback=>queueMicrotask(callback),
   cardById,localStart,playCard,chooseTarget,drawNextCard,decide,scoreCards,
   capturePreview,matchingFieldCards,yakuProgress);
- return {ui,$};
+ return {ui,$,story};
 }
 async function flush(){
  for(let i=0;i<200;i++)await Promise.resolve();
@@ -102,4 +109,55 @@ test("Bilingual guide and selection descriptions are translated",async()=>{
  assert.equal($("cancel").textContent,"キャンセル・選び直す");
  assert.equal($("guideTitle").textContent,"役の集め方");
  assert.equal($("guidePanel").hidden,false);
+});
+
+test("Hand capture finishes BEFORE the drawn card flips, with a clear outcome",async()=>{
+ const {ui,$,story}=makeUi();
+ $("start").listeners.click();await flush();
+ const s=ui.state().game;
+ s.active=0;s.phase="turn";
+ // No matching hand card; draw has exactly one matching September field card.
+ s.hands[0]=["3-3"];s.field=["9-2","5-1"];
+ s.deck=["9-1",...s.deck.filter(id=>id!=="9-1")];
+ ui.render();
+ $("yourHand").children[0].listeners.click();
+ $("confirm").listeners.click();await flush();
+ const firstPlayed=story.findIndex(line=>line.includes("plays")&&line.includes("from hand"));
+ const place=story.findIndex(line=>line.includes("No matching month"));
+ const deck=story.findIndex(line=>line.includes("flip one card"));
+ const reveal=story.findIndex(line=>line.includes("Draw revealed"));
+ const capture=story.findIndex(line=>line.includes("Captured 2 cards"));
+ assert.ok(firstPlayed>=0&&place>firstPlayed&&deck>place&&reveal>deck,
+  "hand → field → deck → reveal must be visually distinct: "+story.join(" | "));
+ assert.ok(capture>reveal,"the flipped card capture must be stated after the reveal");
+ assert.ok(s.captured[0].includes("9-1"));
+ assert.ok(s.captured[0].includes("9-2"));
+ assert.equal($("drawReveal").hidden,true);
+});
+test("A drawn card with two matches stays face-up until a legal field card is chosen",async()=>{
+ const {ui,$,story}=makeUi();
+ $("start").listeners.click();await flush();
+ const s=ui.state().game;
+ s.active=0;s.phase="turn";
+ s.hands[0]=["3-3"];
+ s.field=["7-1","7-2","8-1"];
+ s.deck=["7-3",...s.deck.filter(id=>id!=="7-3")];
+ ui.render();
+ $("yourHand").children[0].listeners.click();
+ $("confirm").listeners.click();await flush();
+ assert.equal(s.phase,"choose");
+ assert.equal(s.pending.step,"draw");
+ assert.equal($("drawReveal").hidden,false);
+ assert.equal($("drawRevealCard").src,"cards/7-3.svg");
+ assert.equal($("drawStep").className,"timeline-step active");
+ assert.equal($("field").children.filter(el=>el.className.includes("target")).length,2);
+ assert.ok(story.some(line=>line.includes("Two matches")));
+ const first=$("field").children.find(el=>el.dataset.cardId==="7-2");
+ assert.ok(first?.listeners.click);
+ first.listeners.click();await flush();
+ assert.ok(s.captured[0].includes("7-3"));
+ assert.ok(s.captured[0].includes("7-2"));
+ assert.ok(!s.captured[0].includes("7-1"));
+ assert.equal($("drawReveal").hidden,true);
+ assert.ok(story.some(line=>line.includes("Captured 2 cards")));
 });
