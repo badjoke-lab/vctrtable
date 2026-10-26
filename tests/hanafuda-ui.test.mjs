@@ -41,7 +41,7 @@ function makeUi(){
   "matchingFieldCards","yakuProgress"];
  const create=new Function(...args,script+
   "; return {state:()=>({game,selected,selectedTarget,locked}),render};");
- const ui=create(document,{matchMedia:()=>({matches:true})},setTimeout,
+ const ui=create(document,{matchMedia:()=>({matches:true})},callback=>queueMicrotask(callback),
   cardById,localStart,playCard,chooseTarget,drawNextCard,decide,scoreCards,
   capturePreview,matchingFieldCards,yakuProgress);
  return {ui,$};
