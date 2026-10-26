@@ -140,15 +140,18 @@ function settle(s,winner,reason) {
   const multiplier=(base>=7?2:1)*(s.koiedBy!==null && s.koiedBy!==winner ? 2:1);
   finish(s,winner,base*multiplier,reason);
 }
-export function playCard(s,id) {
+export function playCard(s,id,{deferDraw=false}={}) {
   assert(s.phase==="turn","Not waiting for card");
   assert(s.hands[s.active].includes(id),"Card is not in current hand");
   s.hands[s.active].splice(s.hands[s.active].indexOf(id),1);
   s.log.push({kind:"play",seat:s.active,cardId:id});
-  if(!captureOrPlace(s,id,"hand")) draw(s);
+  if(!captureOrPlace(s,id,"hand")) {
+    if(deferDraw)s.phase="draw-pending";
+    else draw(s);
+  }
   return s;
 }
-export function chooseTarget(s,id) {
+export function chooseTarget(s,id,{deferDraw=false}={}) {
   assert(s.phase==="choose" && s.pending,"Not selecting field card");
   assert(s.pending.choices.includes(id),"Illegal field target");
   const {step,cardId}=s.pending;
@@ -157,7 +160,16 @@ export function chooseTarget(s,id) {
   s.captured[s.active].push(cardId,id);
   s.log.push({kind:"target",seat:s.active,cardId:id});
   s.phase="turn";
-  if(step==="hand") draw(s); else completeTurn(s);
+  if(step==="hand") {
+    if(deferDraw)s.phase="draw-pending";
+    else draw(s);
+  } else completeTurn(s);
+  return s;
+}
+/** Visual clients may split hand-play and mandatory deck draw into two phases. */
+export function drawNextCard(s) {
+  assert(s.phase==="draw-pending","Not waiting for mandatory deck draw");
+  draw(s);
   return s;
 }
 export function decide(s,choice) {
