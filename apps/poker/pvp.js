@@ -188,7 +188,14 @@ async function accept(update){
   peers.set(e.by,e.keys);await enroll();draw();return;
  }
  if(e.kind==="state"){await updateState(e,r);return;}
- if(e.kind==="action"&&r.table.host===me&&hostSession&&!r.paused&&unanimous(r)&&hostProposalId===r.proposal?.event.id){
+ if(e.kind==="action"&&r.table.host===me){
+  // A signed action must not vanish without an observable host-side reason.
+  // The sending seat may otherwise remain pending forever on a broken room.
+  if(!hostSession||r.paused||!unanimous(r)||
+     hostProposalId!==r.proposal?.event.id){
+   errorMessage="Action not processed: host session unavailable, paused or rules changed.";
+   draw();return;
+  }
   try{
    // Delivery after a host deadline cannot beat a timeout merely because
    // the interval callback has not executed yet.
