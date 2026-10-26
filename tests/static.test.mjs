@@ -48,12 +48,17 @@ test('mobile six-seat QA and both chat modes are bundled for WebXDC',()=>{
  const js=readFileSync('apps/poker/qa.js','utf8');
  const build=readFileSync('scripts/build.mjs','utf8');
  for(const file of ['cards.js','chat-view.js'])assert.ok(build.includes(file),'Missing '+file+' from .xdc');
- for(const id of ['qa-chat-mode','qa-chat-bubble','qa-unread','qa-chat-toast','qa-chat-messages',
+ for(const id of ['qa-chat-mode','qa-chat-open','qa-unread-top','qa-chat-toast','qa-chat-messages',
   'qa-chat-translation','qa-chat-form','qa-min','qa-half','qa-pot-preset','qa-max','qa-load-start'])
   assert.ok(html.includes('id="'+id+'"'),'Missing '+id);
  for(const cls of ['pos-top-left','pos-top','pos-top-right','pos-mid-left','pos-mid-right',
   'chat-inline','chat-drawer','action-dock','img.vcard','vcard-small'])
   assert.ok(css.includes(cls),'Missing UI style '+cls);
+ assert.ok(!html.includes('id="qa-chat-bubble"'),'Floating duplicate Chat must be removed');
+ assert.ok(!js.includes('qa-chat-bubble'),'No orphan floating Chat handlers');
+ assert.ok(js.includes('showdown?.seats[id]?.handName'),'Opponents must show calculated rank at showdown');
+ assert.ok(js.includes('showdown?.hero?.handName'),'Hero must show calculated rank by own cards');
+ assert.ok(!js.includes('entries.push(ranks)'),'No duplicate 6-seat role list below the table');
  assert.ok(js.includes('layouts[h.players.length-1]'),'Six-seat layout must be driven by player count');
  for(const file of ['apps/poker/qa.js','apps/poker/cards.js','apps/poker/chat-view.js'])
   assert.ok(!readFileSync(file,'utf8').includes('sendUpdate('),'Offline QA must not broadcast secrets');
