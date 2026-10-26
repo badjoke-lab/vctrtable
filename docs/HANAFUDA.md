@@ -43,3 +43,19 @@ Result: `dist/hanafuda.xdc`. Open as a new Mini App in Vector or a WebXDC simula
 ## Card artwork
 
 The 48 recolored SVG faces and one original geometric back are sourced from a fixed GitHub commit of a Louie Mantia derivative recolored by dotty-dev, with an original geometric back by vctrtable, licensed CC BY-SA 4.0. The originals are downloaded at **build time** and packaged inside the XDC, not fetched while playing. See [full art license and sources](HANAFUDA-ASSET-LICENSE.md).
+
+## Beginner-first UI milestone (2026-10-27, Draft PR #46)
+
+The single-device QA interface now uses a **reversible selection state**, separate from the mutable rules engine.
+
+- Hanafuda artwork is displayed using its native 976:1600 aspect, with larger touch targets / horizontally scrollable hand cards on mobile. It is not horizontally stretched.
+- Tap a hand card to highlight only its matching field month; switch to another card or cancel without consuming a turn.
+- Confirm is disabled until exactly one legal field target is selected when two choices exist. A no-match card stays on the field, one-match cards are paired, and three-match sets capture all four.
+- The game engine supports opt-in `deferDraw` after confirmed hand-play so animations can show each visible step. The mandatory deck draw still occurs exactly once; the drawn card may require a separate field-target choice.
+- After confirm, cards visually travel from the hand to the field, then to the player's **captured pile** (not back to their hand); a revealed deck card then travels separately. Opponent moves use a face-down source and reveal only the card being played. Actions are blocked during motion.
+- A compact yaku-progress indicator uses **only the player's own captured cards**; selection previews explain which completed scoring sets and progress counts can improve immediately with the chosen card and field target. Full guide shows labeled actual card faces and short English/Japanese explanations. No hidden opponent or deck predictions.
+- Reduced-motion devices skip flying animations without changing engine state.
+
+Verification completed in the assistant's execution environment: syntax checks on the game UI/rules/guide, 125 locally simulated staged rounds (3,052 engine steps), and a fake-DOM click-through of selection/target confirmation/re-draw. Repository CI adds `tests/hanafuda-ui.test.mjs` and checks that the guide module is actually packaged in the XDC.
+
+**Still pending:** independent browser visual checks at real viewport sizes, real Vector Note PC/mobile tests, and confirmation that the updated XDC release has passed the remote build workflow. Do **not** report full device QA complete or claim actual PvP.
