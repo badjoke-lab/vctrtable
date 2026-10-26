@@ -14,7 +14,6 @@
     "vector:init": "node scripts/vector-bot-operator.mjs init",
     "vector:check": "node scripts/vector-bot-operator.mjs check",
     "vector:start": "node scripts/vector-bot-operator.mjs start",
-    "build:hanafuda": "node scripts/build-hanafuda.mjs",
-    "build:preview:hanafuda": "node scripts/build-hanafuda-preview.mjs"
+    "build:hanafuda": "node scripts/build-hanafuda.mjs"
   }
 }
