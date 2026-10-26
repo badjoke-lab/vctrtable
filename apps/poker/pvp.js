@@ -17,6 +17,7 @@ const live=Boolean(api?.selfAddr&&typeof api.sendUpdate==="function"&&
 const me=live?api.selfAddr:"",updates=new Map(),peers=new Map(),seen=new Set();
 let keys=null,hostSession=null,game=null,hole=null,seq=0,turnClock=null,queue=Promise.resolve();
 let keySent=false,pending=false,errorMessage="",hostRecovered=false,hostProposalId=null;
+let activeTableId=null;
 function room(){
  return deriveSharedTable([...updates.values()].map(x=>({event:x.payload,serial:x.serial}))
  .filter(x=>validPublicEvent(x.event)||validTableEvent(x.event)));
@@ -139,7 +140,17 @@ async function accept(update){
  if(validTableEvent(e)||validPublicEvent(e)){
   updates.set(e.id,{payload:e,serial});
   const r=room();
-  if(game&&r.table?.id!==game._room){game=null;hole=null;hostSession=null;turnClock=null;seq=0;}
+  // The shared XDC stream can contain a succession of completed tables.
+  // Seat keys and local authorizations are scoped to one table only.
+  // Keeping old peers or keySent after close/recreate can mistakenly enroll
+  // the next table with the previous roster and block a fresh key exchange.
+  const nextTableId=r.table?.id??null;
+  if(nextTableId!==activeTableId){
+   activeTableId=nextTableId;
+   peers.clear();keySent=false;
+   game=null;hole=null;hostSession=null;turnClock=null;seq=0;
+   hostProposalId=null;hostRecovered=false;pending=false;errorMessage="";
+  }
   if(hostSession?.table.hand?.status==="betting"){
    const before=hostSession.table.players.map(p=>p.id).sort().join("|");
    if(before!==[...r.seats.keys()].sort().join("|")||
@@ -152,10 +163,18 @@ async function accept(update){
   // awaiting votes does not. Publish the signed new clock and checkpoint.
   if(hostSession&&r.table?.host===me&&unanimous(r)&&
      hostProposalId===r.proposal.event.id){
-   const next=reconcileTurnClock(hostSession,r.proposal.event.settings.timer,
-    r.paused,turnClock,Date.now());
-   if(JSON.stringify(next)!==JSON.stringify(turnClock)){
-    turnClock=next;await publish();
+   // An approval arriving AFTER the running turn's deadline must not
+   // retroactively pause an expired action. Resolve the old deadline first.
+   const expired=timeoutAction(hostSession,turnClock,Date.now());
+   if(expired){
+    sessionAction(hostSession,expired.playerId,expired.action);
+    await publish();
+   }else{
+    const next=reconcileTurnClock(hostSession,r.proposal.event.settings.timer,
+     r.paused,turnClock,Date.now());
+    if(JSON.stringify(next)!==JSON.stringify(turnClock)){
+     turnClock=next;await publish();
+    }
    }
   }
   draw();return;
@@ -169,7 +188,14 @@ async function accept(update){
   peers.set(e.by,e.keys);await enroll();draw();return;
  }
  if(e.kind==="state"){await updateState(e,r);return;}
- if(e.kind==="action"&&r.table.host===me&&hostSession&&!r.paused&&unanimous(r)&&hostProposalId===r.proposal?.event.id){
+ if(e.kind==="action"&&r.table.host===me){
+  // A signed action must not vanish without an observable host-side reason.
+  // The sending seat may otherwise remain pending forever on a broken room.
+  if(!hostSession||r.paused||!unanimous(r)||
+     hostProposalId!==r.proposal?.event.id){
+   errorMessage="Action not processed: host session unavailable, paused or rules changed.";
+   draw();return;
+  }
   try{
    // Delivery after a host deadline cannot beat a timeout merely because
    // the interval callback has not executed yet.

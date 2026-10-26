@@ -91,3 +91,38 @@ npm install --no-save --no-package-lock playwright@1.55.0
 npx playwright install chromium
 node scripts/pvp-browser-smoke.mjs
 ```
+
+## Multiway and room-rotation fault matrix (October 27, 2026)
+
+The packaged-XDC Chromium suite now includes `scripts/pvp-multiseat-browser-smoke.mjs`,
+which uses **three and six independent browser contexts** within a single
+simulated WebXDC update stream. It tests distinct per-seat encrypted hole cards,
+multiway Check/Call through a completed five-card showdown, conservation of
+recreational chips, identical payouts across peers, intentionally missed updates
+followed by WebXDC serial-0 replay, duplicate signed action delivery, and
+six-seat host reload from the device-local AES-GCM checkpoint.
+
+The three-seat scenario additionally closes the completed table and creates
+another in the same XDC. The UI clears old seat public keys, enrollment flags,
+private-card view and old host journal state and starts a new unanimously
+approved session using the original device-local identity keys. Keys are **not
+proof of Vector account ownership** and never leave the local browser private
+key store.
+
+A late *unanimous* pause approval cannot supersede an already expired turn.
+The host resolves the previously running turn deadline before applying the
+new approved pause state. A pause request without all votes does not freeze
+time. The browser's system time is host-controlled, so these tests do **not**
+establish a fair independent tournament clock.
+
+Run the extended checks after `npm run build` and Playwright setup:
+
+```sh
+node scripts/pvp-browser-smoke.mjs
+node scripts/pvp-multiseat-browser-smoke.mjs
+```
+
+Limitations: all transport is simulated; no authenticated Vector identities,
+actual Vector relay delivery, real-device storage behavior, cross-device host
+migration or independently honest shuffling is established. Real Vector device
+testing and private trusted-dealer integration remain release blockers.
