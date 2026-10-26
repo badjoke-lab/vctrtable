@@ -12,7 +12,7 @@ const $=id=>document.getElementById(id);
 const storageKey="vctrtable-poker-qa-v1",modeKey="vctrtable-poker-chat-mode-v1";
 const readSave=()=>{try{return localStorage.getItem(storageKey);}catch{return null;}};
 const readMode=()=>{try{return localStorage.getItem(modeKey)==="inline"?"inline":"drawer";}catch{return "drawer";}};
-let locale="en",session=null,table=null,seconds=30,paused=false,deadline=0,remaining=0,lastTurnKey="",storageNotice="",chatterHand=0,chatId=0,toastTimer=null,chatFocused=false;
+let locale="en",session=null,table=null,seconds=30,paused=false,deadline=0,remaining=0,lastTurnKey="",storageNotice="",chatterHand=0,chatId=0,toastTimer=null,chatFocused=false,raiseOpen=false;
 const demoChat=new ChatViewModel({mode:readMode()});
 const vectorChat=new ChatViewModel({mode:readMode()});
 let chat=demoChat;
@@ -29,8 +29,8 @@ const chatTransport=createPublicChatTransport({
  }
 });
 const strings={
- en:{title:"Poker",language:"Language",testLabel:"LOCAL QA · scripted opponents · not live PvP",back:"Create / Join Table",setup:"Start a session",setupHelp:"Play against scripted test seats. No other Vector users are required.",opponents:"Seats (2–6)",chips:"Starting chips",small:"Small blind",big:"Big blind",seconds:"Action time (0 = unlimited)",rebuy:"Allow rebuy between hands",start:"Start local session",board:"Community cards",hero:"Your cards",pause:"QA pause (simulated)",resume:"Resume QA",fold:"Fold",check:"Check",call:"Call",raiseTo:"Raise to",raise:"Raise",allin:"All-in",next:"Next hand",buy:"Rebuy busted seats",reset:"New session",history:"Hand history",footer:"Local game + sample chat only. Secure Vector PvP and real table chat are not yet active.",pot:"Pot",hand:"Hand",turn:"Your turn",wait:"Automated seat acting",done:"Hand complete",win:"You received",remaining:"Time remaining",unlimited:"No time limit",paused:"Paused (QA)",noChips:"Fewer than two seats have chips. Rebuy or start a new session.",invalid:"Invalid table settings.",toCall:"To call",balance:"Stack",folded:"Folded",button:"Dealer",saveTitle:"Local QA session / save",saveWarning:"Contains hidden cards and entire deck order without encryption. Do not share this saved test session.",save:"Save session",load:"Resume saved session",deleteSave:"Delete saved session",saved:"Saved on this device.",deleted:"Saved data deleted.",saveFailure:"Local storage is unavailable.",loadFailure:"Could not restore this saved game.",you:"You",chat:"Table chat",chatMode:"Chat view",drawer:"Drawer",inline:"Always on",closeChat:"Close",demo:"Demo chat",networkChat:"Share text via Vector group chat",networkWarning:"Opt-in. Everyone in this Vector chat can read text you send. This does not connect private cards or poker actions.",sharedChat:"Public Vector chat",networkUnavailable:"Public WebXDC chat is unavailable outside Vector.",networkSendFailed:"Could not send public chat message.",chatPlaceholder:"Message (local demo only)",send:"Send",translation:"Translate known demo phrases (no API)",min:"Min",half:"½ Pot",potPreset:"Pot",max:"Max",net:"Net",mainPot:"Main pot",allinCall:"(all-in)",wins:"wins",paidOut:"Paid out",showdown:"Showdown",received:"Received",betBy:"Bet",returnToGame:"Back to table",quickReplies:"Quick replies",chatSettings:"Chat options",chatHint:"Chat and play are separate on this screen"},
- ja:{title:"ポーカー",language:"言語",testLabel:"1人用テスト · 相手は自動操作 · 実際のPvPではありません",back:"卓作成・招待",setup:"セッション開始",setupHelp:"テスト用の自動席と対戦します。他のVectorユーザーは不要です。",opponents:"合計席数（2〜6）",chips:"初期チップ",small:"スモールブラインド",big:"ビッグブラインド",seconds:"行動時間（0=無制限）",rebuy:"ハンド間のチップ補充を許可",start:"端末内セッション開始",board:"共通カード",hero:"あなたのカード",pause:"QAポーズ（模擬）",resume:"QA再開",fold:"フォールド",check:"チェック",call:"コール",raiseTo:"レイズ後の合計",raise:"レイズ",allin:"オールイン",next:"次のハンド",buy:"チップ切れの席を補充",reset:"新規セッション",history:"ハンド履歴",footer:"ゲームと会話は端末内テストです。実際のVector PvPとテーブルチャットは未接続です。",pot:"ポット",hand:"ハンド",turn:"あなたの手番",wait:"自動席が操作中",done:"ハンド終了",win:"獲得チップ",remaining:"残り時間",unlimited:"時間制限なし",paused:"一時停止中（QA）",noChips:"チップを持つ席が2つ未満です。補充するか新規セッションを開始してください。",invalid:"テーブル設定が不正です。",toCall:"必要額",balance:"残高",folded:"降りた",button:"ディーラー",saveTitle:"端末内セッション保存",saveWarning:"全員の手札・山札が暗号化なしで含まれます。このテストデータを共有しないでください。",save:"セッションを保存",load:"保存した対戦を復元",deleteSave:"保存データを削除",saved:"端末内に保存しました。",deleted:"保存データを削除しました。",saveFailure:"端末内の保存領域を利用できません。",loadFailure:"保存データを復元できません。",you:"あなた",chat:"テーブルチャット",chatMode:"チャット表示",drawer:"ドロワー",inline:"常設",closeChat:"閉じる",demo:"模擬チャット",networkChat:"Vectorの公開チャットで文章を共有",networkWarning:"有効にするとこのVectorチャットの参加者全員が送信文を読めます。手札やゲーム操作は送信しません。",sharedChat:"Vector公開チャット",networkUnavailable:"Vectorの共有チャット機能を利用できません。",networkSendFailed:"公開チャットの送信に失敗しました。",chatPlaceholder:"メッセージ（この端末だけ）",send:"送信",translation:"定型文のみ翻訳（外部APIなし）",min:"最小",half:"半ポット",potPreset:"ポット",max:"最大",net:"収支",mainPot:"メインポット",allinCall:"（オールイン）",wins:"獲得",paidOut:"精算済み",showdown:"決着",received:"獲得",betBy:"投入",returnToGame:"テーブルに戻る",quickReplies:"定型文",chatSettings:"チャット設定",chatHint:"チャットを閉じて操作へ戻ります"}
+ en:{title:"Poker",language:"Language",testLabel:"LOCAL QA · scripted opponents · not live PvP",back:"Create / Join Table",chatButton:"Chat",raiseOptions:"Raise…",setup:"Start a session",setupHelp:"Play against scripted test seats. No other Vector users are required.",opponents:"Seats (2–6)",chips:"Starting chips",small:"Small blind",big:"Big blind",seconds:"Action time (0 = unlimited)",rebuy:"Allow rebuy between hands",start:"Start local session",board:"Community cards",hero:"Your cards",pause:"QA pause (simulated)",resume:"Resume QA",fold:"Fold",check:"Check",call:"Call",raiseTo:"Raise to",raise:"Raise",allin:"All-in",next:"Next hand",buy:"Rebuy busted seats",reset:"New session",history:"Hand history",footer:"Local game + sample chat only. Secure Vector PvP and real table chat are not yet active.",pot:"Pot",hand:"Hand",turn:"Your turn",wait:"Automated seat acting",done:"Hand complete",win:"You received",remaining:"Time remaining",unlimited:"No time limit",paused:"Paused (QA)",noChips:"Fewer than two seats have chips. Rebuy or start a new session.",invalid:"Invalid table settings.",toCall:"To call",balance:"Stack",folded:"Folded",button:"Dealer",saveTitle:"Local QA session / save",saveWarning:"Contains hidden cards and entire deck order without encryption. Do not share this saved test session.",save:"Save session",load:"Resume saved session",deleteSave:"Delete saved session",saved:"Saved on this device.",deleted:"Saved data deleted.",saveFailure:"Local storage is unavailable.",loadFailure:"Could not restore this saved game.",you:"You",chat:"Table chat",chatMode:"Chat view",drawer:"Drawer",inline:"Always on",closeChat:"Close",demo:"Demo chat",networkChat:"Share text via Vector group chat",networkWarning:"Opt-in. Everyone in this Vector chat can read text you send. This does not connect private cards or poker actions.",sharedChat:"Public Vector chat",networkUnavailable:"Public WebXDC chat is unavailable outside Vector.",networkSendFailed:"Could not send public chat message.",chatPlaceholder:"Message (local demo only)",send:"Send",translation:"Translate known demo phrases (no API)",min:"Min",half:"½ Pot",potPreset:"Pot",max:"Max",net:"Net",mainPot:"Main pot",allinCall:"(all-in)",wins:"wins",paidOut:"Paid out",showdown:"Showdown",received:"Received",betBy:"Bet",returnToGame:"Back to table",quickReplies:"Quick replies",chatSettings:"Chat options",chatHint:"Chat and play are separate on this screen"},
+ ja:{title:"ポーカー",language:"言語",testLabel:"1人用テスト · 相手は自動操作 · 実際のPvPではありません",back:"卓作成・招待",chatButton:"チャット",raiseOptions:"レイズ…",setup:"セッション開始",setupHelp:"テスト用の自動席と対戦します。他のVectorユーザーは不要です。",opponents:"合計席数（2〜6）",chips:"初期チップ",small:"スモールブラインド",big:"ビッグブラインド",seconds:"行動時間（0=無制限）",rebuy:"ハンド間のチップ補充を許可",start:"端末内セッション開始",board:"共通カード",hero:"あなたのカード",pause:"QAポーズ（模擬）",resume:"QA再開",fold:"フォールド",check:"チェック",call:"コール",raiseTo:"レイズ後の合計",raise:"レイズ",allin:"オールイン",next:"次のハンド",buy:"チップ切れの席を補充",reset:"新規セッション",history:"ハンド履歴",footer:"ゲームと会話は端末内テストです。実際のVector PvPとテーブルチャットは未接続です。",pot:"ポット",hand:"ハンド",turn:"あなたの手番",wait:"自動席が操作中",done:"ハンド終了",win:"獲得チップ",remaining:"残り時間",unlimited:"時間制限なし",paused:"一時停止中（QA）",noChips:"チップを持つ席が2つ未満です。補充するか新規セッションを開始してください。",invalid:"テーブル設定が不正です。",toCall:"必要額",balance:"残高",folded:"降りた",button:"ディーラー",saveTitle:"端末内セッション保存",saveWarning:"全員の手札・山札が暗号化なしで含まれます。このテストデータを共有しないでください。",save:"セッションを保存",load:"保存した対戦を復元",deleteSave:"保存データを削除",saved:"端末内に保存しました。",deleted:"保存データを削除しました。",saveFailure:"端末内の保存領域を利用できません。",loadFailure:"保存データを復元できません。",you:"あなた",chat:"テーブルチャット",chatMode:"チャット表示",drawer:"ドロワー",inline:"常設",closeChat:"閉じる",demo:"模擬チャット",networkChat:"Vectorの公開チャットで文章を共有",networkWarning:"有効にするとこのVectorチャットの参加者全員が送信文を読めます。手札やゲーム操作は送信しません。",sharedChat:"Vector公開チャット",networkUnavailable:"Vectorの共有チャット機能を利用できません。",networkSendFailed:"公開チャットの送信に失敗しました。",chatPlaceholder:"メッセージ（この端末だけ）",send:"送信",translation:"定型文のみ翻訳（外部APIなし）",min:"最小",half:"半ポット",potPreset:"ポット",max:"最大",net:"収支",mainPot:"メインポット",allinCall:"（オールイン）",wins:"獲得",paidOut:"精算済み",showdown:"決着",received:"獲得",betBy:"投入",returnToGame:"テーブルに戻る",quickReplies:"定型文",chatSettings:"チャット設定",chatHint:"チャットを閉じて操作へ戻ります"}
 };
 const t=k=>strings[locale][k]||k;
 const elem=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
@@ -86,6 +86,12 @@ function renderChat(){
  $("qa-unread").hidden=chat.unread===0;
  $("qa-unread").textContent=chat.unread>99?"99+":String(chat.unread);
  bubble.setAttribute("aria-label",t("chat")+(chat.unread?" ("+chat.unread+")":""));
+ const topButton=$("qa-chat-open");
+ const topBadge=$("qa-unread-top");
+ topBadge.hidden=chat.unread===0;
+ topBadge.textContent=chat.unread>99?"99+":String(chat.unread);
+ topButton.setAttribute("aria-label",t("chat")+(chat.unread?" ("+chat.unread+")":""));
+ topButton.setAttribute("aria-expanded",String(chatStageActive()));
  $("qa-chat-mode").value=chat.mode;
  $("qa-chat-translation").checked=chat.automaticTranslation;
  $("qa-chat-text").placeholder=t("chatPlaceholder");
@@ -248,6 +254,11 @@ function render(){
   " · "+t("paidOut")+" "+fmt(h.awards.reduce((a,b)=>a+b,0)):
   paused?t("paused"):h.turn===0?t("turn")+" · "+t("toCall")+" "+fmt(L?.toCall??0):t("wait");
  const canAct=Boolean(L&&L.seat===0&&!paused);
+ if(!canAct||!L?.canRaise)raiseOpen=false;
+ const details=$("qa-raise-details"),raiseToggle=$("qa-raise-toggle");
+ details.hidden=!raiseOpen;
+ raiseToggle.disabled=!canAct||!L?.canRaise;
+ raiseToggle.setAttribute("aria-expanded",String(raiseOpen));
  $("qa-fold").disabled=!canAct;
  $("qa-check").disabled=!canAct||!L?.canCheck;
  $("qa-call").disabled=!canAct||!L?.canCall;
@@ -321,7 +332,7 @@ function drive(){
 function move(kind,target){
  if(!table||paused)return;
  const l=legalActions(table);if(!l||l.seat!==0)return;
- try{sessionAction(session,l.playerId,kind,target);assertConservation(table);lastTurnKey="";drive();}
+ try{sessionAction(session,l.playerId,kind,target);assertConservation(table);lastTurnKey="";raiseOpen=false;drive();}
  catch(e){window.alert(e.message);render();}
 }
 function preset(which){
@@ -336,13 +347,13 @@ function restore(){
   const raw=JSON.parse(readSave()||"null");
   if(!raw||raw.qaVersion!==1||!Number.isSafeInteger(raw.seconds)||raw.seconds<0||raw.seconds>3600)throw Error("Invalid save metadata");
   const saved=restoreSession(raw.journal);
-  session=saved;table=saved.table;seconds=raw.seconds;paused=false;remaining=seconds;lastTurnKey="";storageNotice="";
+  session=saved;table=saved.table;seconds=raw.seconds;paused=false;remaining=seconds;lastTurnKey="";storageNotice="";raiseOpen=false;
   $("qa-setup").hidden=true;$("qa-table").hidden=false;
   chatFocused=false;drive();render();
  }catch(error){storageNotice=t("loadFailure")+" "+String(error.message||"");render();}
 }
 function newGame(){
- table=null;session=null;paused=false;chatterHand=0;lastTurnKey="";
+ table=null;session=null;paused=false;chatterHand=0;lastTurnKey="";raiseOpen=false;
  document.querySelector(".qa-main").classList.remove("qa-playing");
  $("qa-setup").hidden=false;$("qa-table").hidden=true;
  demoChat.messages.length=0;demoChat.unread=0;demoChat.opened=false;chatFocused=false;render();
@@ -367,7 +378,13 @@ window.visualViewport?.addEventListener("resize",updateInlineReading);
 $("qa-chat-form").addEventListener("pointerdown",updateInlineReading);
 $("qa-chat-mode").addEventListener("change",e=>setChatMode(e.target.value));
 $("qa-chat-network").addEventListener("change",e=>setChatSource(e.target.checked));
-$(`qa-chat-bubble`).addEventListener("click",()=>{chatFocused=false;chat.setOpen(true);$("qa-chat-toast").hidden=true;renderChat();});
+function openTableChat(){
+ chatFocused=true;chat.setOpen(true);
+ $("qa-chat-toast").hidden=true;
+ renderChat();
+}
+$("qa-chat-open").addEventListener("click",openTableChat);
+$("qa-chat-bubble").addEventListener("click",openTableChat);
 $("qa-chat-close").addEventListener("click",()=>{
  chatFocused=false;chat.setOpen(false);
  $("qa-chat-text").blur();
@@ -396,7 +413,7 @@ $("qa-form").addEventListener("submit",e=>{
   if(!Number.isSafeInteger(n)||n<2||n>6||!Number.isSafeInteger(seconds)||seconds<0||seconds>3600)throw Error(t("invalid"));
   session=createSession({players:Array.from({length:n},(_,i)=>({id:"p"+i,name:i===0?t("you"):"Seat "+(i+1)})),startingChips:chips,smallBlind:sb,bigBlind:bb,rebuy:$("qa-rebuy").checked});
   table=session.table;startSessionHand(session);assertConservation(table);
-  paused=false;chatterHand=0;lastTurnKey="";storageNotice="";
+  paused=false;chatterHand=0;lastTurnKey="";storageNotice="";raiseOpen=false;
   demoChat.messages.length=0;demoChat.unread=0;demoChat.opened=false;chatFocused=false;
   $("qa-setup").hidden=true;$("qa-table").hidden=false;
   notifyChat("Seat 2","gl hf",{id:"qa-demo-start"});
@@ -406,6 +423,13 @@ $("qa-form").addEventListener("submit",e=>{
 $("qa-fold").addEventListener("click",()=>move("fold"));
 $("qa-check").addEventListener("click",()=>move("check"));
 $("qa-call").addEventListener("click",()=>move("call"));
+$("qa-raise-toggle").addEventListener("click",()=>{
+ raiseOpen=!raiseOpen;
+ const details=$("qa-raise-details");
+ details.hidden=!raiseOpen;
+ $("qa-raise-toggle").setAttribute("aria-expanded",String(raiseOpen));
+ updateDockHeight();
+});
 $("qa-raise").addEventListener("click",()=>move("raise",Number($("qa-raise-amount").value)));
 $("qa-allin").addEventListener("click",()=>{const L=table?legalActions(table):null;if(!L)return;const bet=bettingControls(L,{pot:table.hand.players.reduce((sum,p)=>sum+p.total,0),currentBet:table.hand.currentBet});if(bet.allIn)move(bet.allIn.kind,bet.allIn.target);});
 for(const [id,kind] of [["qa-min","min"],["qa-half","half"],["qa-pot-preset","pot"],["qa-max","max"]])$(id).addEventListener("click",()=>preset(kind));

@@ -129,6 +129,39 @@ try{
     {total:52,png:true,unique:52,back:true,courts:4,singleImage:true,styleClean:true,originalSize:true,approvedDeck:true},
     "Every card must be ONE undistorted PNG with no wrapper, overlay or extra CSS frame");
   await page.locator("#qa-controls").waitFor({state:"visible"});
+  // Real-device regression: initial-view Chat is reachable without scrolling,
+  // and the normal betting strip is one row, not a persistent Raise form.
+  await page.evaluate(()=>window.scrollTo(0,0));
+  const firstView=await page.evaluate(()=>{
+   const rect=el=>{const r=el.getBoundingClientRect();return {
+    x:r.left,y:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height
+   };};
+   return {chat:rect(document.querySelector("#qa-chat-open")),
+    dock:rect(document.querySelector("#qa-controls")),
+    hero:[...document.querySelectorAll("#qa-hero-cards img.vcard")].map(rect),
+    viewport:window.innerHeight,scroll:scrollY};
+  });
+  assert.ok(firstView.chat.y>=0&&firstView.chat.bottom<=view.height,
+   "Chat action is not visible on first screen: "+JSON.stringify({view,firstView}));
+  assert.ok(firstView.dock.height<88,
+   "Collapsed betting dock still covers the game: "+JSON.stringify({view,firstView}));
+  const dockOverlap=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.x,b.x))*
+   Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y));
+  for(const card of firstView.hero){
+   assert.ok(card.y>=0&&card.bottom<=view.height&&dockOverlap(card,firstView.dock)<=1,
+    "Fixed betting controls obscure actual hero card in initial viewport: "+JSON.stringify({view,firstView}));
+  }
+  assert.equal(await page.locator("#qa-raise-details").isVisible(),false,
+   "Raise amount and presets must start collapsed");
+  if(await page.locator("#qa-raise-toggle").isEnabled()){
+   await page.locator("#qa-raise-toggle").click();
+   assert.equal(await page.locator("#qa-raise-details").isVisible(),true);
+   assert.equal(await page.locator("#qa-raise-toggle").getAttribute("aria-expanded"),"true");
+   await page.locator("#qa-raise-toggle").click();
+   assert.equal(await page.locator("#qa-raise-details").isVisible(),false);
+  }
+  await page.evaluate(()=>window.scrollTo(0,0));
+
   // Actual rendered geometry; Node tests cannot catch clipped or overlapping
   // seats on a six-player phone table.
   const placement=await page.evaluate(()=>{
@@ -215,7 +248,10 @@ try{
     assert.equal(await page.locator("#qa-hud-cards .vcard").count(),2);
     assert.ok(await page.locator("#qa-hud-timer").isVisible());
   };
-  await page.locator("#qa-chat-bubble").click();
+  await page.evaluate(()=>window.scrollTo(0,0));
+  await page.locator("#qa-chat-open").click();
+  assert.equal(await page.locator("#qa-table.chat-stage").count(),1,
+   "Header Chat shortcut must open the same working chat stage");
   await page.locator("#qa-chat").waitFor({state:"visible"});
   await assertChatStage("drawer open");
   await page.screenshot({path:path.join(dist,"poker-mobile-drawer-"+view.width+".png")});
@@ -504,7 +540,7 @@ try{
   await context.close();
  }
  assert.deepEqual(errors,[],"Browser runtime errors");
- console.log("Chromium QA smoke OK: 2-6 seats, 320/360/390/430px geometry, uniform seat sizes, rounded cards, card zoom, full hands and chat");
+ console.log("Chromium QA smoke OK: visible Chat shortcut, compact Raise dock; 2-6 seats, 320/360/390/430px geometry, uniform seat sizes, rounded cards, card zoom, full hands and chat");
 }finally{
  await browser?.close();
  await new Promise(resolve=>server.close(resolve));
