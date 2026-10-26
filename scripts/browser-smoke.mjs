@@ -379,6 +379,30 @@ try{
     "Pot cannot appear as active after settlement");
   assert.ok(/Showdown|決着/.test(await page.locator("#qa-round").textContent()),
     "Completed hand must not be labelled as active river");
+  assert.equal(await page.locator("#qa-street-label").isVisible(),false,
+    "Showdown text must not be tucked behind the top winning seat");
+  if(view.seats===6){
+   const cleared=await page.evaluate(()=>{
+    const rect=el=>{const r=el.getBoundingClientRect();return {
+     top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height
+    };};
+    const seats=[...document.querySelectorAll("#qa-players .poker-seat")].map(rect);
+    const cards=[...document.querySelectorAll("#qa-board-cards img.vcard:not(.vcard-empty)")].map(rect);
+    const arena=rect(document.querySelector(".poker-arena"));
+    return {seats,cards,arena,hidden:document.querySelector("#qa-street-label").hidden};
+   });
+   assert.equal(cleared.hidden,true);
+   if(cleared.cards.length===5){
+    const topEnd=Math.max(...cleared.seats.slice(0,3).map(x=>x.bottom));
+    const boardStart=Math.min(...cleared.cards.map(x=>x.top));
+    assert.ok(boardStart>=topEnd+5,
+      "Showdown board must leave clear space below top three seats: "+JSON.stringify({view,cleared,topEnd,boardStart}));
+    const boardEnd=Math.max(...cleared.cards.map(x=>x.bottom));
+    const sideStart=Math.min(...cleared.seats.slice(3).map(x=>x.top));
+    assert.ok(boardEnd<=sideStart-4,
+      "Showdown board must leave clear space above lower two seats: "+JSON.stringify({view,cleared,boardEnd,sideStart}));
+   }
+  }
   assert.ok(await page.locator(".qa-settlement-pot").count()>=1,
     "Finished hand must itemize pot recipients");
   assert.equal(await page.locator("#qa-controls").isVisible(),false,
@@ -486,6 +510,20 @@ try{
    else if(await page.locator("#qa-call").isEnabled())await page.locator("#qa-call").click();
    else if(await page.locator("#qa-fold").isEnabled())await page.locator("#qa-fold").click();
    else throw Error("No legal desktop action");
+  }
+  assert.equal(await page.locator("#qa-street-label").isVisible(),false,
+   "Desktop showdown label must not sit behind the top player card");
+  const desktopLane=await page.evaluate(()=>{
+   const box=x=>{const r=x.getBoundingClientRect();return {top:r.top,bottom:r.bottom};};
+   const seats=[...document.querySelectorAll("#qa-players .poker-seat")].map(box);
+   const cards=[...document.querySelectorAll("#qa-board-cards img.vcard:not(.vcard-empty)")].map(box);
+   return {topSeats:seats.slice(0,3),sideSeats:seats.slice(3),board:cards};
+  });
+  if(desktopLane.board.length===5){
+   const high=Math.max(...desktopLane.topSeats.map(x=>x.bottom));
+   const low=Math.min(...desktopLane.sideSeats.map(x=>x.top));
+   assert.ok(desktopLane.board.every(x=>x.top>=high+5&&x.bottom<=low-4),
+    "Desktop showdown board must be separate from both seat rows: "+JSON.stringify({view,desktopLane}));
   }
   const layout=await page.evaluate(()=>{
    const rect=selector=>{

@@ -195,6 +195,7 @@ function render(){
  const bets=bettingControls(L,{pot,currentBet:h.currentBet});
  $("qa-round").textContent=t("hand")+" "+h.number+" · "+(end?t("showdown"):h.streetName.toUpperCase());
  $("qa-street-label").textContent=end?t("showdown"):h.streetName.toUpperCase();
+ $("qa-street-label").hidden=end; // "Hand · Showdown" is already visible above the table; never mask the winning seat.
  $("qa-pot").textContent=t(end?"paidOut":"pot")+" "+fmt(pot);
  $("qa-pot").hidden=end; // The result below already names the winner and paid-out amount.
  const names=["pos-top-left","pos-top","pos-top-right","pos-mid-left","pos-mid-right"];

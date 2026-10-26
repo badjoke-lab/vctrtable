@@ -758,3 +758,16 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
  }
  .qa-main .hero-info .qa-hero-hand-rank{font-size:10px!important}
 }
+
+
+/* Contested showdown: the Hand · Showdown status lives above the felt.
+   Give the five community cards their own center lane between top seats
+   and side seats; do not hide cards behind a winner badge or stray caption.
+   Betting streets keep the Pot + Street + Board stack unchanged. */
+.qa-main.qa-showdown .poker-center{
+ top:44%!important;
+ transform:translate(-50%,-50%)!important;
+ gap:0!important;
+}
+.qa-main.qa-showdown #qa-street-label,
+.qa-main.qa-showdown #qa-pot{display:none!important}
