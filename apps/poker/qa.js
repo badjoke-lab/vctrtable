@@ -79,13 +79,9 @@ function notifyChat(author,text,{target=demoChat,id="qa-chat-"+(++chatId),own=fa
  renderChat();
 }
 function renderChat(){
- const visible=chat.visible(),isDrawer=chat.mode==="drawer",panel=$("qa-chat"),bubble=$("qa-chat-bubble");
+ const visible=chat.visible(),isDrawer=chat.mode==="drawer",panel=$("qa-chat");
  syncChatStage();
  panel.className="qa-chat "+(isDrawer?"chat-drawer":"chat-inline")+(chat.opened?" open":"");
- bubble.hidden=!isDrawer||chat.opened;
- $("qa-unread").hidden=chat.unread===0;
- $("qa-unread").textContent=chat.unread>99?"99+":String(chat.unread);
- bubble.setAttribute("aria-label",t("chat")+(chat.unread?" ("+chat.unread+")":""));
  const topButton=$("qa-chat-open");
  const topBadge=$("qa-unread-top");
  topBadge.hidden=chat.unread===0;
@@ -185,6 +181,7 @@ function render(){
  renderChat();
  if(!table)return;
  const h=table.hand,L=legalActions(table),pot=h.players.reduce((sum,p)=>sum+p.total,0),end=h.status==="complete";
+ const showdown=end?settlementSummary(table,{locale,heroId:h.players[0].id}):null;
  // During live play keep chat immediately after the felt/info, as expected
  // by the viewport observer. At showdown move it BELOW the compact payout
  // actions; don't let an always-on chat push the primary result off-screen.
@@ -199,6 +196,7 @@ function render(){
  $("qa-round").textContent=t("hand")+" "+h.number+" · "+(end?t("showdown"):h.streetName.toUpperCase());
  $("qa-street-label").textContent=end?t("showdown"):h.streetName.toUpperCase();
  $("qa-pot").textContent=t(end?"paidOut":"pot")+" "+fmt(pot);
+ $("qa-pot").hidden=end; // The result below already names the winner and paid-out amount.
  const names=["pos-top-left","pos-top","pos-top-right","pos-mid-left","pos-mid-right"];
  const layouts={
   1:["pos-top"],2:["pos-top-left","pos-top-right"],3:["pos-top-left","pos-top","pos-top-right"],
@@ -208,13 +206,14 @@ function render(){
  const seats=$("qa-players");seats.replaceChildren();
  h.players.slice(1).forEach((p,i)=>{
   const id=i+1;
-  const revealed=end&&!p.folded&&h.board.length===5;
+  const handName=showdown?.seats[id]?.handName??null;
+  const revealed=Boolean(handName);
   const awarded=end&&h.awards[id]>0;
   const seat=elem("div",undefined,"poker-seat "+slots[i]+(h.turn===id?" active":"")+
    (p.folded?" folded":"")+(p.stack===0&&p.inHand?" all-in":"")+(awarded?" winner":""));
   if(revealed){
    seat.classList.add("inspectable");seat.tabIndex=0;seat.setAttribute("role","button");
-   seat.setAttribute("aria-label",p.name+" — "+p.hole.map(c=>c[0]+SUIT_SYMBOLS[c[1]]).join(", ")+
+   seat.setAttribute("aria-label",p.name+" — "+handName+" — "+p.hole.map(c=>c[0]+SUIT_SYMBOLS[c[1]]).join(", ")+
     (locale==="ja"?"。タップで拡大":"; tap to inspect"));
    seat.addEventListener("click",()=>inspectSeat(id));
    seat.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();inspectSeat(id);}});
@@ -227,7 +226,10 @@ function render(){
   const cards=elem("div",undefined,"poker-seat-cards");
   if(p.inHand)for(const c of p.hole)cards.append(makeCard(c,{hidden:!revealed,small:true}));
   seat.append(cards);
-  seat.append(elem("span",revealed?p.hole.map(c=>c[0].replace("T","10")+SUIT_SYMBOLS[c[1]]).join(" · "):"","poker-seat-card-index"));
+  const label=elem("span",handName??(end&&p.folded?t("folded"):""),
+   "poker-seat-card-index"+(handName?" hand-rank":"")+(awarded?" win-rank":""));
+  if(handName)label.title=handName;
+  seat.append(label);
   const paymentLine=elem("span",undefined,"poker-seat-bet"+(awarded?" payout":""));
   if(p.total>0||awarded){
    paymentLine.textContent=awarded?t("received")+" +"+fmt(h.awards[id]):
@@ -272,14 +274,16 @@ function render(){
   amount.min=String(min);amount.max=String(L.maxRaiseTo);
   if(document.activeElement!==amount||Number(amount.value)>L.maxRaiseTo||Number(amount.value)<min)amount.value=String(min);
  }
- $("qa-timer").hidden=end;
- $("qa-timer").textContent=end?"":paused?t("paused"):seconds===0?"∞":Math.ceil(remaining)+"s";
+ const ownHandName=showdown?.hero?.handName??null;
+ $("qa-timer").hidden=end&&!ownHandName;
+ $("qa-timer").classList.toggle("qa-hero-hand-rank",Boolean(ownHandName));
+ $("qa-timer").textContent=end?(ownHandName??""):paused?t("paused"):seconds===0?"∞":Math.ceil(remaining)+"s";
  $("qa-hud-timer").textContent=end?"—":$("qa-timer").textContent;
  $("qa-pause").textContent=t(paused?"resume":"pause");
  $("qa-next").disabled=table.players.filter(p=>p.stack>0).length<2;
  $("qa-buy").disabled=!table.settings.rebuy||!table.players.some(p=>p.stack===0);
  if(end){
-  const summary=settlementSummary(table,{locale,heroId:h.players[0].id});
+  const summary=showdown;
   $("qa-result").textContent=t("you")+" · "+t("net")+" "+(summary.hero.net>=0?"+":"")+fmt(summary.hero.net);
   const entries=[];
   for(const p of summary.pots){
@@ -287,12 +291,6 @@ function render(){
    line.append(elem("b",p.label+" · "+fmt(p.amount)));
    const payout=p.payout.map(w=>w.name+" "+t("wins")+" "+fmt(w.amount)).join(" · ");
    line.append(elem("span",payout));entries.push(line);
-  }
-  if(h.board.length===5){
-   const ranks=elem("div",undefined,"qa-settlement-ranks");
-   for(const p of summary.seats)if(p.handName)
-     ranks.append(elem("span",p.name+": "+p.handName));
-   entries.push(ranks);
   }
   $("qa-settlement").replaceChildren(...entries);
  }else{
@@ -384,7 +382,7 @@ function openTableChat(){
  renderChat();
 }
 $("qa-chat-open").addEventListener("click",openTableChat);
-$("qa-chat-bubble").addEventListener("click",openTableChat);
+
 $("qa-chat-close").addEventListener("click",()=>{
  chatFocused=false;chat.setOpen(false);
  $("qa-chat-text").blur();

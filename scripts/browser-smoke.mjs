@@ -209,8 +209,7 @@ try{
       felt:rect(document.querySelector(".felt")),
       hero:[...document.querySelectorAll("#qa-hero-cards img.vcard")].map(rect),
       board:[...document.querySelectorAll("#qa-board-cards .vcard")].map(rect),
-      seats:[...document.querySelectorAll(".poker-seat")].map(rect),
-      chat:rect(document.querySelector("#qa-chat-bubble"))
+      seats:[...document.querySelectorAll(".poker-seat")].map(rect)
     };
    });
    assert.ok(mobile.felt.h<=545&&mobile.felt.h>=390,
@@ -223,12 +222,7 @@ try{
     for(const [k,card] of [...mobile.hero,...mobile.board].entries())
      assert.ok(overlapArea(mobile.seats[i],card)<=1,
        "Seat "+(i+2)+" overlaps a real card "+k+": "+JSON.stringify(mobile));
-    assert.ok(overlapArea(mobile.seats[i],mobile.chat)<=1,
-       "Chat button covers opponent seat "+(i+2));
    }
-   for(const card of [...mobile.hero,...mobile.board])
-    assert.ok(overlapArea(card,mobile.chat)<=1,
-     "Chat button covers playing cards");
   }
   const assertChatStage=async(where)=>{
     const m=await page.evaluate(()=>{
@@ -368,8 +362,19 @@ try{
    else throw new Error("No playable action before hand completion");
   }
   assert.equal(await page.locator("#qa-result").isVisible(),true);
-  assert.equal(await page.locator("#qa-timer").isVisible(),false,
-    "Completed hand must not show stale player countdown");
+  if(await page.locator("#qa-timer").isVisible()){
+   assert.equal(await page.locator("#qa-timer").evaluate(el=>el.classList.contains("qa-hero-hand-rank")),true,
+    "The old countdown may only be replaced by the hero's actual hand rank");
+   assert.doesNotMatch(await page.locator("#qa-timer").textContent(),/^\d+s$/,
+    "No stale countdown may survive at showdown");
+  }
+  assert.equal(await page.locator("#qa-players .poker-seat .hand-rank").count(),
+    await page.locator("#qa-players .poker-seat.inspectable").count(),
+    "Every revealed opponent must show a completed hand rank in their own seat");
+  assert.equal(await page.locator("#qa-end .qa-settlement-ranks").count(),0,
+    "Do not duplicate the same hand rankings in a separate bottom list");
+  assert.equal(await page.locator("#qa-pot").isVisible(),false,
+    "Do not overlay a redundant Paid out pill on the highlighted winning seat");
   assert.ok(/Paid out|精算済み/.test(await page.locator("#qa-pot").textContent()),
     "Pot cannot appear as active after settlement");
   assert.ok(/Showdown|決着/.test(await page.locator("#qa-round").textContent()),
@@ -380,6 +385,12 @@ try{
     "Bet controls must be hidden at showdown");
   // Showdown opponent cards are readable individually using the ORIGINAL
   // approved card art; no folded hand may be opened.
+  assert.equal(await page.locator("#qa-chat-bubble").count(),0,
+   "The old felt-floating Chat action must not exist");
+  assert.equal(await page.locator("#qa-chat-open").count(),1,
+   "There must be exactly one Chat entry point");
+  assert.equal(await page.locator("#qa-players .poker-seat.folded .hand-rank").count(),0,
+   "Folded hands must never show a completed rank");
   assert.equal(await page.locator("#qa-players .poker-seat.folded.inspectable").count(),0,
    "Folded opponents must never become inspectable");
   const inspectable=page.locator("#qa-players .poker-seat.inspectable");
@@ -485,14 +496,13 @@ try{
     main:rect(".qa-main"),felt:rect(".felt"),
     end:rect("#qa-end"),result:rect("#qa-result"),
     pot:rect("#qa-end .qa-settlement-pot"),
-    ranks:rect("#qa-end .qa-settlement-ranks"),
     next:rect("#qa-next"),buy:rect("#qa-buy"),
     reset:rect("#qa-reset"),history:rect("#qa-history-panel"),
     storage:rect("#qa-storage-panel"),pause:rect(".qa-toolrow"),
     overflow:document.documentElement.scrollWidth-innerWidth
    };
   });
-  const order=["result","pot","ranks","next","buy","history","storage","pause"];
+  const order=["result","pot","next","buy","history","storage","pause"];
   for(let i=1;i<order.length;i++){
    const a=layout[order[i-1]],b=layout[order[i]];
    assert.ok(b.top>=a.bottom-2,
