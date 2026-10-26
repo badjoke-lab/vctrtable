@@ -177,9 +177,14 @@ try{
    await observer.page.waitForFunction(()=>typeof window.__sim?.receive==="function");
    for(const update of history)
     await observer.page.evaluate(e=>window.__sim.receive(e),update);
+   // The local YOUR TURN/Waiting text legitimately differs by seat.
+   // Compare the identical public roster (stacks + marked active turn)
+   // and public pot instead of the actor-relative private UI message.
    await until("dropped-state replay",async()=>
-    (await observer.page.locator("#pvp-turn").textContent())===
-    (await clients[0].page.locator("#pvp-turn").textContent()));
+    (await observer.page.locator("#pvp-table-seats").textContent())===
+     (await clients[0].page.locator("#pvp-table-seats").textContent())&&
+    (await observer.page.locator("#pvp-pot").textContent())===
+     (await clients[0].page.locator("#pvp-pot").textContent()));
    // Replay the EXACT signed action with a new WebXDC serial. No second bet.
    const replay=signedActions.at(-1);
    assert.ok(replay,"No signed action captured");
