@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
  CARDS,cardById,shuffleCards,scoreCards,startRound,playCard,chooseTarget,
- decide,getPublicState
+ decide,drawNextCard,getPublicState
 } from "../packages/hanafuda/koikoi.js";
 const random = seed => () => ((seed = (seed*1664525 + 1013904223) >>> 0) / 4294967296);
 test("48 unique cards, four of each month, correct type counts",()=>{
@@ -120,4 +120,31 @@ test("koi-koi cannot forfeit points after all remaining turns are gone",()=>{
  assert.throws(()=>decide(s,"koi"),/No remaining turns/);
  decide(s,"stop");
  assert.equal(s.winner,0);assert.equal(s.points,5);
+});
+
+test("deferred draw separates hand play, visual beat and mandatory draw",()=>{
+ const s=startRound({rng:random(81)});
+ s.active=0;s.phase="turn";s.field=["2-1"];s.hands[0]=["2-2"];
+ s.deck=["9-2",...s.deck.filter(id=>id!=="9-2")];
+ const before=s.deck.length;
+ playCard(s,"2-2",{deferDraw:true});
+ assert.equal(s.phase,"draw-pending");
+ assert.equal(s.deck.length,before);
+ assert.ok(s.captured[0].includes("2-1"));
+ assert.throws(()=>playCard(s,"2-2"),/Not waiting/);
+ drawNextCard(s);
+ assert.equal(s.deck.length,before-1);
+});
+test("deferred two-match hand choice waits to draw until selection",()=>{
+ const s=startRound({rng:random(82)});
+ s.active=0;s.phase="turn";s.field=["7-1","7-2"];s.hands[0]=["7-3"];
+ s.deck=["9-2",...s.deck.filter(id=>id!=="9-2")];
+ const before=s.deck.length;
+ playCard(s,"7-3",{deferDraw:true});
+ assert.equal(s.phase,"choose");assert.equal(s.pending.step,"hand");
+ chooseTarget(s,"7-1",{deferDraw:true});
+ assert.equal(s.phase,"draw-pending");
+ assert.equal(s.deck.length,before);
+ drawNextCard(s);
+ assert.equal(s.deck.length,before-1);
 });
