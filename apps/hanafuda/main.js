@@ -108,7 +108,8 @@ function renderLabels() {
   for(const id of ["title","languageLabel","qaWarning","setupTitle","setupDescription",
     "roundsLabel","start","oppLabel","youLabel","oppHandLabel","oppTakenLabel",
     "yourTakenLabel","yourHandLabel","fieldLabel","deckLabel","decisionTitle",
-    "stop","koi","resultTitle","next","new","footer"])$(id).textContent=tx(id);
+    "stop","koi","resultTitle","next","new","footer","selectionTitle","confirm",
+    "cancel","guideTitle","guideIntro","guideHelp"])$(id).textContent=tx(id);
 }
 function settleOnce() {
   if(!game || game.phase!=="ended" || game.accounted) return;
