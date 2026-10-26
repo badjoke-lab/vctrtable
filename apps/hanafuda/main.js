@@ -75,6 +75,7 @@ const Y={
 const TR={h:"bright",a:"animal",t:"ribbon",k:"plain"};
 let lang="en",matchTotal=12,round=0,scores=[0,0],dealer=0,game=null;
 let selected=null,selectedTarget=null,locked=false,guideOpen=false;
+let revealedDraw=null,playbackPhase=null,playbackMessage="";
 const tx = key => M[lang][key] || key;
 const yakuText = who => {
   const y=scoreCards(game.captured[who]);
@@ -260,6 +261,7 @@ function render() {
  else status=tx("chooseCard");
  if(game.koiedBy!==null&&game.phase!=="ended")status+=" · "+tx("koiUsed");
  $("status").textContent=status;
+ updatePlaybackUI();
  if(game.phase==="decision")
   $("decisionSummary").textContent=yakuText(game.active)+" · "+tx("score")+": "+
    scoreCards(game.captured[game.active]).points+" "+tx("points")+". "+tx("decision");
@@ -290,45 +292,179 @@ function selectField(id){
  selectedTarget=selectedTarget===id?null:id;
  render();
 }
+
 const reduced=()=>Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-function zoneRect(zone,cardId=null){
- const parent=$(zone);if(!parent)return null;
- const card=cardId?[...parent.children].find(e=>e.dataset.cardId===cardId):null;
- return (card||parent.querySelector(".card")||parent).getBoundingClientRect();
+const beatPause=ms=>pause(reduced()?Math.min(160,ms):ms);
+const say=(ja,en)=>lang==="ja"?ja:en;
+const who=seat=>seat===0?tx("youLabel"):tx("oppLabel");
+function setBeat(step,seat,kind,id=null,count=0){
+ playbackPhase=step;
+ const person=who(seat),card=id?cardName(id):"";
+ const messages={
+  hand:()=>say(person+"：手札から "+card+" を出します。",person+": plays "+card+" from hand."),
+  compare:()=>say("同じ月の場札を確認中。"+count+"枚一致。",
+   "Checking field cards of the same month. "+count+" match."),
+  capture:()=>say(person+"："+count+"枚の札を取り札へ移動。",
+   person+": "+count+" cards move to the captured pile."),
+  place:()=>say("同じ月の札なし。場に残します。",
+   "No matching month. This card remains on the field."),
+  deck:()=>say(person+"：続けて山札を1枚めくります。",
+   person+": next, flip one card from the draw pile."),
+  flip:()=>say("山札は "+card+"。場札との一致を確認。",
+   "Draw revealed "+card+". Checking for a field match."),
+  pick:()=>say("山札は "+card+"。一致する場札が2枚。取る札を選んでください。",
+   "Draw revealed "+card+". Two matches: choose one highlighted field card."),
+  complete:()=>say("手札と山札の処理が完了しました。",
+   "Hand card and drawn card resolved.")
+ };
+ playbackMessage=(messages[kind]||messages.complete)();
+ updatePlaybackUI();
 }
-/** A purely visual effect. No gameplay mutation is tied to animation events. */
-async function fly(cardId,fromZone,toZone,targetId=null){
- if(reduced())return;
- const from=zoneRect(fromZone,fromZone==="opponentHand"?null:cardId);
- const to=zoneRect(toZone,targetId);
- if(!from||!to||!from.width||!to.width)return;
- const ghost=document.createElement("img");ghost.className="flying-card";
- ghost.src="cards/"+cardId+".svg";ghost.alt="";ghost.setAttribute("aria-hidden","true");
- Object.assign(ghost.style,{
-  left:from.left+"px",top:from.top+"px",width:from.width+"px",height:from.height+"px"
- });
+function updatePlaybackUI(){
+ const active=playbackPhase==="hand"?"hand":playbackPhase==="draw"?"draw":null;
+ $("handStep").className="timeline-step"+(active==="hand"?" active":playbackPhase==="draw"?" done":"");
+ $("drawStep").className="timeline-step"+(active==="draw"?" active":"");
+ $("handStep").textContent=say("1 · 手札","1 · Hand");
+ $("drawStep").textContent=say("2 · 山札","2 · Deck");
+ const narration=$("actionNarration");
+ narration.hidden=!playbackMessage;
+ narration.textContent=playbackMessage;
+ const reveal=$("drawReveal");
+ reveal.hidden=!revealedDraw;
+ if(revealedDraw){
+  $("drawRevealHeading").textContent=say("② 山札をめくった結果","② Draw pile result");
+  if(game?.phase==="choose"&&game.pending?.step==="draw"){
+   $("drawRevealDescription").textContent=say(
+    cardName(revealedDraw)+"。同じ月の場札が2枚あります。光る札から取る1枚を選んでください。",
+    cardName(revealedDraw)+". Two field matches: tap one highlighted card.");
+  }
+ }
+}
+function showStage(id,seat){
+ const s=$("playStage");
+ s.hidden=false;s.className="play-stage awaiting";
+ $("playStageLabel").textContent=say(
+  seat===0?"手札から出す札":"相手が出した札",
+  seat===0?"Played from your hand":"Opponent's played card");
+ $("playStageCard").src="cards/"+id+".svg";
+}
+function stageVisible(){
+ $("playStage").className="play-stage";
+}
+function hideStage(){$("playStage").hidden=true;}
+function openDraw(id){
+ revealedDraw=id;
+ $("drawReveal").hidden=false;
+ $("drawReveal").className="draw-reveal";
+ $("drawRevealCard").src="cards/back.svg";
+ $("drawRevealDescription").textContent=say(
+  "山札を裏向きで取りました。これから表に返します。",
+  "A card has left the deck, face down. It will now flip.");
+ updatePlaybackUI();
+}
+function clearDraw(){
+ revealedDraw=null;$("drawReveal").hidden=true;$("drawReveal").className="draw-reveal";
+}
+function cardElement(zone,id=null){
+ const root=$(zone);
+ if(!root)return null;
+ if(zone==="playStage")return $("playStageCard");
+ if(zone==="drawReveal")return $("drawRevealCard");
+ if(zone==="deckBack")return root;
+ if(zone==="opponentHand")return root.querySelector(".card")||root;
+ if(id)return [...root.children].find(el=>el.dataset.cardId===id)||root;
+ return root.querySelector(".card")||root;
+}
+function rect(zone,id=null,offset=0){
+ const el=cardElement(zone,id);
+ if(!el)return null;
+ const r=el.getBoundingClientRect();
+ if(zone==="yourCaptured"||zone==="opponentCaptured"){
+  const pile=$(zone),box=pile.getBoundingClientRect();
+  const n=pile.children.length;
+  const w=window.innerWidth&&window.innerWidth<=600?31:36;
+  const left=box.left+Math.min(Math.max(0,box.width-w),n*(w+4)+offset*(w+4));
+  return {left,top:box.top+3,width:w,height:w*1600/976};
+ }
+ return r;
+}
+async function fly(id,fromZone,toZone,targetId=null,{faceDown=false,offset=0}={}){
+ const from=rect(fromZone,id),to=rect(toZone,targetId,offset);
+ if(reduced()||!from||!to||!from.width||!to.width)return;
+ const ghost=document.createElement("img");
+ ghost.className="flying-card";ghost.alt="";ghost.setAttribute("aria-hidden","true");
+ ghost.src=faceDown?"cards/back.svg":"cards/"+id+".svg";
+ Object.assign(ghost.style,{left:from.left+"px",top:from.top+"px",
+  width:from.width+"px",height:from.height+"px"});
  document.body.append(ghost);
+ // Hide the source while its moving image is visible; restores after state render.
+ const original=cardElement(fromZone,id),prior=original?.style.visibility;
+ if(original)original.style.visibility="hidden";
  const dx=to.left+(to.width-from.width)/2-from.left;
  const dy=to.top+(to.height-from.height)/2-from.top;
  try{
   if(typeof ghost.animate==="function"){
+   const scale=to.width/from.width;
    const motion=ghost.animate([
     {transform:"translate(0px,0px) scale(1)",opacity:1},
-    {transform:"translate("+dx+"px,"+dy+"px) scale("+Math.max(.45,Math.min(1.4,to.width/from.width))+")",opacity:.93}
-   ],{duration:230,easing:"cubic-bezier(.25,.7,.35,1)",fill:"forwards"});
-   await Promise.race([motion.finished.catch(()=>{}),pause(370)]);
+    {transform:"translate("+dx+"px,"+dy+"px) scale("+scale+")",opacity:1}
+   ],{duration:340,easing:"cubic-bezier(.2,.7,.2,1)",fill:"forwards"});
+   await Promise.race([motion.finished.catch(()=>{}),pause(560)]);
    motion.cancel();
-  }else await pause(90);
- }finally{ghost.remove();}
+  }else await pause(120);
+ }finally{
+  ghost.remove();
+  if(original)original.style.visibility=prior||"";
+ }
 }
-async function visuallyCapture(cardId,origin,seat,matches,targetId=null){
- const taken=matches.length===2?[targetId]:matches.length===3?matches:matches.slice(0,1);
- const captured=seat===0?"yourCaptured":"opponentCaptured";
- await fly(cardId,origin,"field",taken[0]||null);
- if(!taken.length)return;
- for(const id of taken)await fly(id,"field",captured);
- await fly(cardId,origin,captured);
+function markMatches(ids){
+ const cards=[...$("field").children];
+ for(const el of cards)if(ids.includes(el.dataset.cardId))el.className+=" captured-now";
+}
+async function moveCapture(played,source,seat,taken){
+ const dest=seat===0?"yourCaptured":"opponentCaptured";
+ if(!taken.length){
+  setBeat(source==="drawReveal"?"draw":"hand",seat,"place",played);
+  await fly(played,source,"field");
+  await beatPause(290);
+  return;
+ }
+ setBeat(source==="drawReveal"?"draw":"hand",seat,"compare",played,taken.length);
+ markMatches(taken);
+ await beatPause(390);
+ setBeat(source==="drawReveal"?"draw":"hand",seat,"capture",played,taken.length+1);
+ // A single move moves all matched FIELD cards together with the played card.
+ await Promise.all([
+  ...taken.map((id,index)=>fly(id,"field",dest,null,{offset:index})),
+  fly(played,source,dest,null,{offset:taken.length})
+ ]);
+ $(dest).className="captured capture-flash";
+ await beatPause(340);
+ $(dest).className="captured";
+}
+async function animateHandCard(seat,id,taken){
+ setBeat("hand",seat,"hand",id);
+ showStage(id,seat);
+ await fly(id,seat===0?"yourHand":"opponentHand","playStage",null,{faceDown:seat===1});
+ stageVisible();
+ await beatPause(320); // the newly played card stays visible on the table first
+ await moveCapture(id,"playStage",seat,taken);
+ hideStage();
+}
+async function flipDrawCard(id){
+ const face=$("drawRevealCard");
+ if(!reduced()&&typeof face.animate==="function"){
+  const out=face.animate([{transform:"rotateY(0)"},{transform:"rotateY(90deg)"}],
+   {duration:150,easing:"ease-in"});
+  await Promise.race([out.finished.catch(()=>{}),pause(220)]);
+ }
+ face.src="cards/"+id+".svg";
+ if(!reduced()&&typeof face.animate==="function"){
+  const into=face.animate([{transform:"rotateY(-90deg)"},{transform:"rotateY(0)"}],
+   {duration:170,easing:"ease-out"});
+  await Promise.race([into.finished.catch(()=>{}),pause(250)]);
+ }
 }
 function bestTarget(choices){
  const rank=id=>({h:20,a:8,t:5,k:1})[cardById(id).type];
