@@ -11,7 +11,8 @@ const html=fs.readFileSync(path.join(root,"apps/hanafuda/index.html"),"utf8");
 const script=fs.readFileSync(path.join(root,"apps/hanafuda/main.js"),"utf8")
  .replace(/^import .*?;\s*$/gm,"");
 class FakeElement{
- constructor(){
+ constructor(animationLog=[]){
+  this.animationLog=animationLog;
   this.children=[];this.style={};this.listeners={};this.dataset={};
   this.hidden=false;this.disabled=false;this.className="";this.textContent="";
   this.value="";this.attrs={};
@@ -23,10 +24,16 @@ class FakeElement{
  addEventListener(name,fn){this.listeners[name]=fn;}
  querySelector(){return this.children.find(el=>el.className.includes("card"))||null;}
  getBoundingClientRect(){return {left:0,top:0,width:70,height:115};}
+ animate(frames,options){
+  this.animationLog.push({frames,options,src:this.src});
+  return {finished:Promise.resolve(),cancel(){}};
+ }
+ remove(){}
 }
-function makeUi(){
+function makeUi({motion=false}={}){
+ const animations=[];
  const ids=[...html.matchAll(/id="([^"]+)"/g)].map(match=>match[1]);
- const elements=new Map(ids.map(id=>[id,new FakeElement()]));
+ const elements=new Map(ids.map(id=>[id,new FakeElement(animations)]));
  const $=id=>elements.get(id);
  const story=[];
  const narration=$("actionNarration");
@@ -36,8 +43,8 @@ function makeUi(){
   set:value=>{narrationValue=String(value);if(value)story.push(String(value));}
  });
  const document={
-  documentElement:new FakeElement(),body:new FakeElement(),
-  getElementById:$,createElement:()=>new FakeElement()
+  documentElement:new FakeElement(animations),body:new FakeElement(animations),
+  getElementById:$,createElement:()=>new FakeElement(animations)
  };
  $("lang").value="en";$("rounds").value="3";
  let seed=19;
@@ -48,10 +55,11 @@ function makeUi(){
   "matchingFieldCards","yakuProgress"];
  const create=new Function(...args,script+
   "; return {state:()=>({game,selected,selectedTarget,locked}),render};");
- const ui=create(document,{matchMedia:()=>({matches:true})},callback=>queueMicrotask(callback),
+ const ui=create(document,{innerWidth:390,matchMedia:()=>({matches:!motion})},
+  callback=>queueMicrotask(callback),
   cardById,localStart,playCard,chooseTarget,drawNextCard,decide,scoreCards,
   capturePreview,matchingFieldCards,yakuProgress);
- return {ui,$,story};
+ return {ui,$,story,animations};
 }
 async function flush(){
  for(let i=0;i<200;i++)await Promise.resolve();
@@ -160,4 +168,25 @@ test("A drawn card with two matches stays face-up until a legal field card is ch
  assert.ok(!s.captured[0].includes("7-1"));
  assert.equal($("drawReveal").hidden,true);
  assert.ok(story.some(line=>line.includes("Captured 2 cards")));
+});
+
+test("Actual animated path moves physical pairs and flips the drawn card",async()=>{
+ const {ui,$,animations,story}=makeUi({motion:true});
+ $("start").listeners.click();await flush();
+ const s=ui.state().game;
+ s.active=0;s.phase="turn";s.hands[0]=["3-3"];
+ s.field=["9-2","5-1"];
+ s.deck=["9-1",...s.deck.filter(id=>id!=="9-1")];
+ ui.render();
+ $("yourHand").children[0].listeners.click();
+ $("confirm").listeners.click();await flush();
+ assert.equal(ui.state().locked,false);
+ assert.ok(s.captured[0].includes("9-1")&&s.captured[0].includes("9-2"));
+ assert.ok(animations.some(a=>a.options.duration===150),"deck flip front half must animate");
+ assert.ok(animations.some(a=>a.options.duration===170),"deck flip back half must animate");
+ assert.ok(animations.filter(a=>a.options.duration===340).length>=4,
+  "hand, deck, field and capture movement must each animate");
+ const played=story.findIndex(s=>s.includes("plays")&&s.includes("from hand"));
+ const drawn=story.findIndex(s=>s.includes("Draw revealed"));
+ assert.ok(played>=0&&drawn>played);
 });
