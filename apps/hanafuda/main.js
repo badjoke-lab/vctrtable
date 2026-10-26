@@ -1,4 +1,5 @@
-import {cardById,startRound,playCard,chooseTarget,decide,scoreCards} from "../../packages/hanafuda/koikoi.js";
+import {capturePreview,matchingFieldCards,yakuProgress} from "../../packages/hanafuda/guide.js";
+import {cardById,startRound,playCard,chooseTarget,drawNextCard,decide,scoreCards} from "../../packages/hanafuda/koikoi.js";
 // Entire game, including hidden opponent cards, is intentionally local QA only.
 // Nothing here calls webxdc.sendUpdate or uses a real Vector multiplayer channel.
 const $ = id => document.getElementById(id);
@@ -21,6 +22,16 @@ const M={
   youWin:"You win",theyWin:"Opponent wins",draw:"No score",points:"points",
   bright:"Bright",animal:"Seed",ribbon:"Ribbon",plain:"Plain",
   match:"Matching month",score:"Score",empty:"None",koiUsed:"Koi-Koi declared",
+  selectionTitle:"Selected card",confirm:"Play this card",cancel:"Cancel / choose another",
+  guideTitle:"Build scoring sets (Yaku)",guideIntro:"Match cards by month and collect combinations.",
+  guideToggle:"Show all sets",guideClose:"Hide guide",
+  guideHelp:"Play one hand card; the deck then draws automatically. Matched pairs go to your captured cards, not your hand.",
+  noMatch:"No same-month card: this card stays on the field.",
+  oneMatch:"One matching field card: capture both.",
+  twoMatch:"Two matching field cards: tap ONE highlighted target before confirming.",
+  threeMatch:"Three matching field cards: capture all four cards.",
+  chosen:"Chosen target",pendingDraw:"The deck revealed a card. Choose a matching target; this draw cannot be cancelled.",
+  working:"Cards moving…",gain:"Capture increases score",noGain:"No new points immediately; keep collecting toward a set.",
   artistNote:"Hanafuda SVG card artwork: Louie Mantia / すけじょ, CC BY-SA 4.0."
  },
  ja:{
@@ -41,6 +52,16 @@ const M={
   youWin:"あなたの勝ち",theyWin:"相手の勝ち",draw:"流局",points:"点",
   bright:"光",animal:"タネ",ribbon:"短冊",plain:"カス",
   match:"同じ月の札",score:"得点",empty:"なし",koiUsed:"こいこい宣言中",
+  selectionTitle:"選択中の札",confirm:"この札を出す",cancel:"キャンセル・選び直す",
+  guideTitle:"役の集め方",guideIntro:"同じ月を合わせ、取り札を集めて役を作ります。",
+  guideToggle:"役の一覧を見る",guideClose:"役の一覧を閉じる",
+  guideHelp:"手札を1枚出すと、続けて山札を1枚めくります。取った札は手札ではなく「取り札」に入ります。",
+  noMatch:"一致する月がありません。この札は場に残ります。",
+  oneMatch:"同じ月の札が1枚あります。2枚とも取れます。",
+  twoMatch:"同じ月の札が2枚あります。光っている候補から1枚選んでください。",
+  threeMatch:"同じ月の札が3枚あります。4枚すべて取れます。",
+  chosen:"選んだ場札",pendingDraw:"山札からめくった札です。取る札を選んでください。山札はキャンセルできません。",
+  working:"札を動かしています…",gain:"この取得で増える得点",noGain:"今は役が完成しませんが、役の材料になります。",
   artistNote:"花札画像：Louie Mantia / すけじょ、CC BY-SA 4.0。"
  }
 };
@@ -53,30 +74,26 @@ const Y={
 };
 const TR={h:"bright",a:"animal",t:"ribbon",k:"plain"};
 let lang="en",matchTotal=12,round=0,scores=[0,0],dealer=0,game=null;
+let selected=null,selectedTarget=null,locked=false,guideOpen=false;
 const tx = key => M[lang][key] || key;
 const yakuText = who => {
   const y=scoreCards(game.captured[who]);
   return y.yaku.length ? y.yaku.map(v=>`${Y[v.key][lang==="ja"?1:0]} ${v.points}`).join(" · "):tx("empty");
 };
 const format = n => n.toLocaleString(lang==="ja"?"ja-JP":"en-US");
-function makeCard(id,{faceDown=false,compact=false,click=null,match=false,target=false}={}) {
-  const c=faceDown ? null:cardById(id);
+function makeCard(id,{faceDown=false,compact=false,click=null,match=false,target=false,chosen=false,selectedCard=false}={}) {
+  const c=faceDown?null:cardById(id);
   const e=document.createElement("button");
-  e.type="button";e.className="card "+(c?c.type:"back")+(match?" match":"")+(target?" target":"")+(click?" selectable":"");
-  const img=document.createElement("img");
-  img.className="card-art";
-  img.src=faceDown?"cards/back.svg":`cards/${c.id}.svg`;
-  img.alt="";
-  img.draggable=false;
-  img.loading="eager";
-  e.append(img);
-  if(faceDown) {
-    e.setAttribute("aria-label",lang==="ja"?"伏せ札":"Face-down card");
-  }else{
-    const label=`${c.monthJa} / ${c.monthEn} / ${c.name} / ${tx(TR[c.type])}`;
-    e.title=label;
-    e.setAttribute("aria-label",label);
-  }
+  e.type="button";
+  e.className="card"+(match?" match":"")+(target?" target":"")+(chosen?" chosen":"")+
+    (selectedCard?" selected-card":"")+(click?" selectable":"");
+  if(c)e.dataset.cardId=id; // Never add a hidden opponent hand ID to the DOM.
+  const img=document.createElement("img");img.className="card-art";
+  img.src=faceDown?"cards/back.svg":"cards/"+c.id+".svg";
+  img.alt="";img.draggable=false;img.loading="eager";e.append(img);
+  const label=c?(lang==="ja"?c.monthJa:c.monthEn)+" / "+tx(TR[c.type]):
+    (lang==="ja"?"伏せ札":"Face-down card");
+  e.setAttribute("aria-label",label);e.title=label;
   if(click)e.addEventListener("click",click);
   else e.disabled=true;
   if(compact)e.classList.add("compact");
