@@ -164,6 +164,7 @@ export function decide(s,choice) {
   assert(s.phase==="decision","No koi-koi decision");
   assert(choice==="stop"||choice==="koi","Expected stop or koi");
   if(choice==="stop") {settle(s,s.active,"stop");return s;}
+  assert(s.hands.some(h=>h.length>0),"No remaining turns for koi");
   s.koiedBy=s.active;
   s.offered[s.active]=scoreCards(s.captured[s.active]).points;
   s.log.push({kind:"koi",seat:s.active,score:s.offered[s.active]});
