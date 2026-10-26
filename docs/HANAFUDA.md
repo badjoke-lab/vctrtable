@@ -4,7 +4,7 @@
 
 New standalone game under `apps/hanafuda` and `packages/hanafuda`, intentionally isolated from Poker.
 
-**Local QA prototype only:** One human on one device vs a deterministic-rule, scripted local opponent. It is neither live Vector PvP nor a trustworthy online deal. The visual cards are **temporary identification placeholders**, not complete Hanafuda artwork. Do not call this release-ready.
+**Local QA prototype only:** One human on one device vs a deterministic-rule, scripted local opponent. It is neither live Vector PvP nor a trustworthy online deal. All 48 card faces and one back use licensed Wikimedia Commons traditional-color SVG artwork included in the resulting XDC. Do not call this release-ready.
 
 ## Rules profile
 
@@ -28,14 +28,18 @@ npm test
 npm run build:hanafuda
 ```
 
-Result: `dist/hanafuda.xdc`. Open as a new Mini App in Vector or a WebXDC simulator. The existing Poker `dist/poker.xdc` remains independent.
+Result: `dist/hanafuda.xdc`. Open as a new Mini App in Vector or a WebXDC simulator. The existing Poker `dist/poker.xdc` remains independent. The Hanafuda build downloads licensed source SVGs only at build time; playback needs no network for card art.
 
 ## Blocking work before actual Vector PvP
 
-1. License-check and integrate complete, accurate 48-card artwork with mapping audits and owner attribution. Current emoji/month/type cards are provisional QA markers only.
+1. Verify all 48 Wikimedia Commons SVG illustrations visually on real phones/PCs, retain CC BY-SA 4.0 attribution and pin asset hashes for long-term reproducibility.
 2. Rules QA: exact official variants, simultaneous special hands, full end-of-deck and replay edge cases. Test on real PC/phone.
 3. Trusted dealer: only dealer holds deck order and secret hands, authenticated per-seat moves with revisions, replay/timeout/reconnect, robust shuffle.
 4. Verify that the SDK can deliver private per-recipient data into the Mini App without broadcasting it through WebXDC shared update. This is already a blocking issue for Poker, not solved here.
 5. Two real Vector accounts and devices: privacy verification, out-of-order delivery, resync, pause consensus; test close to production.
 
 **Privacy:** Never publish `game`, `hands`, `deck`, complete local logs, or RNG seeds through `webxdc.sendUpdate`. Only recipient-private authenticated delivery and safe public projections are viable for online use.
+
+## Card artwork
+
+The 48 traditional SVG faces and one matching black back are sourced from Wikimedia Commons, with original illustrations by Louie Mantia, color adaptations by すけじょ, and a back by Spenĉjo, licensed CC BY-SA 4.0. The originals are downloaded at **build time** and packaged inside the XDC, not fetched while playing. See [full art license and sources](HANAFUDA-ASSET-LICENSE.md).
