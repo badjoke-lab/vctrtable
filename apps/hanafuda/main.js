@@ -250,47 +250,172 @@ function render() {
  }
  showGuide();
 }
-function runBot() {
-  // Deliberately transparent scripted QA behavior, not an AI opponent.
-  for(let n=0;n<8&&game.phase!=="ended"&&game.active===1;n++) {
-    if(game.phase==="choose"){
-      const best=game.pending.choices.slice().sort((a,b)=>{
-        const val=c=>({h:20,a:8,t:5,k:1})[cardById(c).type];
-        return val(b)-val(a);
-      })[0];
-      chooseTarget(game,best);
-    }else if(game.phase==="decision"){
-      const points=scoreCards(game.captured[1]).points;
-      decide(game,points<5 && game.koiedBy===null && game.hands[1].length>=4?"koi":"stop");
-    }else if(game.phase==="turn") {
-      const score=id=>game.field.filter(f=>cardById(f).month===cardById(id).month)
-        .reduce((sum,f)=>sum+({h:20,a:8,t:5,k:1})[cardById(f).type],0);
-      const sorted=game.hands[1].slice().sort((a,b)=>score(b)-score(a));
-      playCard(game,sorted[0]);
-    }else break;
-  }
+function selectCard(id){
+ if(locked||!game||game.active!==0||game.phase!=="turn")return;
+ if(selected===id){selected=null;selectedTarget=null;}
+ else {selected=id;selectedTarget=null;}
+ render();
 }
-function apply(action) {
-  try{action();runBot();render();}
-  catch(err){$("status").textContent=String(err.message||err);}
+function selectField(id){
+ if(locked||!game||game.active!==0)return;
+ if(game.phase==="choose"&&game.pending?.choices.includes(id)){
+  void chooseDrawTarget(id);return;
+ }
+ if(!selected)return;
+ const candidates=matchingFieldCards(game.field,selected);
+ if(candidates.length!==2||!candidates.includes(id))return;
+ selectedTarget=selectedTarget===id?null:id;
+ render();
 }
-function play(id){if(game?.active===0)apply(()=>playCard(game,id));}
-function takeField(id){if(game?.active===0)apply(()=>chooseTarget(game,id));}
-function newRound() {
-  round++;
-  game=startRound({dealer});
-  runBot();render();
+const reduced=()=>Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+function zoneRect(zone,cardId=null){
+ const parent=$(zone);if(!parent)return null;
+ const card=cardId?[...parent.children].find(e=>e.dataset.cardId===cardId):null;
+ return (card||parent.querySelector(".card")||parent).getBoundingClientRect();
 }
-$("lang").addEventListener("change",e=>{lang=e.target.value;render();});
+/** A purely visual effect. No gameplay mutation is tied to animation events. */
+async function fly(cardId,fromZone,toZone,targetId=null){
+ if(reduced())return;
+ const from=zoneRect(fromZone,fromZone==="opponentHand"?null:cardId);
+ const to=zoneRect(toZone,targetId);
+ if(!from||!to||!from.width||!to.width)return;
+ const ghost=document.createElement("img");ghost.className="flying-card";
+ ghost.src="cards/"+cardId+".svg";ghost.alt="";ghost.setAttribute("aria-hidden","true");
+ Object.assign(ghost.style,{
+  left:from.left+"px",top:from.top+"px",width:from.width+"px",height:from.height+"px"
+ });
+ document.body.append(ghost);
+ const dx=to.left+(to.width-from.width)/2-from.left;
+ const dy=to.top+(to.height-from.height)/2-from.top;
+ try{
+  if(typeof ghost.animate==="function"){
+   const motion=ghost.animate([
+    {transform:"translate(0px,0px) scale(1)",opacity:1},
+    {transform:"translate("+dx+"px,"+dy+"px) scale("+Math.max(.45,Math.min(1.4,to.width/from.width))+")",opacity:.93}
+   ],{duration:230,easing:"cubic-bezier(.25,.7,.35,1)",fill:"forwards"});
+   await Promise.race([motion.finished.catch(()=>{}),pause(370)]);
+   motion.cancel();
+  }else await pause(90);
+ }finally{ghost.remove();}
+}
+async function visuallyCapture(cardId,origin,seat,matches,targetId=null){
+ const taken=matches.length===2?[targetId]:matches.length===3?matches:matches.slice(0,1);
+ const captured=seat===0?"yourCaptured":"opponentCaptured";
+ await fly(cardId,origin,"field",taken[0]||null);
+ if(!taken.length)return;
+ for(const id of taken)await fly(id,"field",captured);
+ await fly(cardId,origin,captured);
+}
+function bestTarget(choices){
+ const rank=id=>({h:20,a:8,t:5,k:1})[cardById(id).type];
+ return choices.slice().sort((a,b)=>rank(b)-rank(a))[0];
+}
+/** Draw is compulsory after a confirmed hand play; if two targets, wait. */
+async function compulsoryDraw(seat){
+ if(game.phase!=="draw-pending")return;
+ const drawn=game.deck[0],matches=matchingFieldCards(game.field,drawn);
+ if(matches.length===2)await fly(drawn,"deckBack","field",matches[0]);
+ else await visuallyCapture(drawn,"deckBack",seat,matches);
+ drawNextCard(game);render();
+ if(game.phase==="choose"&&seat===1){
+  const t=bestTarget(game.pending.choices);
+  await fly(t,"field","opponentCaptured");
+  await fly(drawn,"deckBack","opponentCaptured");
+  chooseTarget(game,t);render();
+ }
+}
+/** The rules engine commits only once, after the visual hand movement. */
+async function actionSequence(seat,id,target=null){
+ const matches=matchingFieldCards(game.field,id);
+ if(matches.length===2&&!matches.includes(target))throw Error("Select one matching target");
+ await visuallyCapture(id,seat===0?"yourHand":"opponentHand",seat,matches,target);
+ playCard(game,id,{deferDraw:true});
+ if(game.phase==="choose"&&game.pending.step==="hand")
+  chooseTarget(game,target,{deferDraw:true});
+ render();
+ await compulsoryDraw(seat);
+}
+async function runBot(){
+ for(let n=0;n<10&&game&&game.active===1&&game.phase!=="ended";n++){
+  if(game.phase==="turn"){
+   const value=id=>game.field.filter(f=>cardById(f).month===cardById(id).month)
+    .reduce((sum,f)=>sum+({h:20,a:8,t:5,k:1})[cardById(f).type],0);
+   const id=game.hands[1].slice().sort((a,b)=>value(b)-value(a))[0];
+   const matches=matchingFieldCards(game.field,id);
+   await actionSequence(1,id,matches.length===2?bestTarget(matches):null);
+  }else if(game.phase==="decision"){
+   const points=scoreCards(game.captured[1]).points;
+   decide(game,points<5&&game.koiedBy===null&&game.hands[1].length>=4?"koi":"stop");
+  }else if(game.phase==="choose"){
+   const id=bestTarget(game.pending.choices);
+   const step=game.pending.step,drawn=game.pending.cardId;
+   await fly(id,"field","opponentCaptured");
+   await fly(drawn,step==="draw"?"deckBack":"opponentHand","opponentCaptured");
+   chooseTarget(game,id,{deferDraw:step==="hand"});
+   await compulsoryDraw(1);
+  }else if(game.phase==="draw-pending"){
+   await compulsoryDraw(1);
+  }else break;
+  render();
+ }
+}
+async function withAction(action){
+ if(locked||!game)return;
+ locked=true;render();
+ try{await action();await runBot();}
+ catch(err){$("status").textContent=String(err?.message||err);}
+ finally{locked=false;render();}
+}
+$("confirm").addEventListener("click",()=>{
+ if(locked||!selected||!game||game.active!==0||game.phase!=="turn")return;
+ const p=selectedPreview();if(!p?.ready)return;
+ const id=selected,target=selectedTarget;
+ void withAction(async()=>{
+  await actionSequence(0,id,target);
+  selected=null;selectedTarget=null;
+ });
+});
+$("cancel").addEventListener("click",()=>{
+ if(locked)return;
+ selected=null;selectedTarget=null;render();
+});
+async function chooseDrawTarget(id){
+ if(locked||!game||game.phase!=="choose"||game.active!==0||game.pending?.step!=="draw")return;
+ await withAction(async()=>{
+  const drawn=game.pending.cardId;
+  await fly(id,"field","yourCaptured");
+  await fly(drawn,"deckBack","yourCaptured");
+  chooseTarget(game,id);
+ });
+}
+$("guideToggle").addEventListener("click",()=>{
+ guideOpen=!guideOpen;render();
+});
+$("lang").addEventListener("change",()=>{lang=$("lang").value;render();});
+async function newRound(){
+ round++;game=startRound({dealer});
+ selected=null;selectedTarget=null;
+ locked=true;render();
+ try{await runBot();}
+ catch(err){$("status").textContent=String(err?.message||err);}
+ finally{locked=false;render();}
+}
 $("start").addEventListener("click",()=>{
-  matchTotal=Number($("rounds").value);scores=[0,0];round=0;
-  dealer=Math.random()<.5?0:1;newRound();
+ if(locked)return;
+ matchTotal=Number($("rounds").value);scores=[0,0];round=0;
+ dealer=Math.random()<.5?0:1;
+ void newRound();
 });
-$("stop").addEventListener("click",()=>apply(()=>decide(game,"stop")));
-$("koi").addEventListener("click",()=>apply(()=>decide(game,"koi")));
+$("stop").addEventListener("click",()=>{void withAction(async()=>{decide(game,"stop");});});
+$("koi").addEventListener("click",()=>{void withAction(async()=>{decide(game,"koi");});});
 $("next").addEventListener("click",()=>{
-  if(!game||game.phase!=="ended"||round>=matchTotal)return;
-  dealer=game.winner===null?1-game.dealer:game.winner;newRound();
+ if(locked||!game||game.phase!=="ended"||round>=matchTotal)return;
+ dealer=game.winner===null?1-game.dealer:game.winner;
+ void newRound();
 });
-$("new").addEventListener("click",()=>{game=null;round=0;scores=[0,0];render();});
+$("new").addEventListener("click",()=>{
+ if(locked)return;
+ game=null;selected=null;selectedTarget=null;round=0;scores=[0,0];render();
+});
 render();
