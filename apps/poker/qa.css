@@ -529,8 +529,8 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
  .qa-main .poker-seat.pos-top-left{left:17%!important;top:15%!important}
  .qa-main .poker-seat.pos-top{left:50%!important;top:15%!important}
  .qa-main .poker-seat.pos-top-right{left:83%!important;top:15%!important}
- .qa-main .poker-seat.pos-mid-left{left:11%!important;top:70%!important}
- .qa-main .poker-seat.pos-mid-right{left:89%!important;top:70%!important}
+ .qa-main .poker-seat.pos-mid-left{left:11%!important;top:72%!important}
+ .qa-main .poker-seat.pos-mid-right{left:89%!important;top:72%!important}
  .qa-main .poker-seat .poker-seat-name{
   font-size:clamp(10px,3vw,12px)!important;line-height:15px
  }
@@ -558,7 +558,7 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
   line-height:15px;min-height:15px;font-size:10px!important
  }
  .qa-main .poker-center{
-  top:29%!important;gap:4px!important;transform:translate(-50%,-5%)!important
+  top:31%!important;gap:4px!important;transform:translate(-50%,-5%)!important
  }
  .qa-main .pot-pill{font-size:clamp(13px,3.6vw,16px);padding:4px 11px}
  .qa-main .street-label{font-size:11px}
@@ -589,9 +589,9 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
  .qa-main .felt{height:clamp(400px,calc(100svh - 225px),440px)!important}
  .qa-main .poker-seat.pos-top-left{left:16%!important}
  .qa-main .poker-seat.pos-top-right{left:84%!important}
- .qa-main .poker-seat.pos-mid-left{left:11%!important;top:69%!important}
- .qa-main .poker-seat.pos-mid-right{left:89%!important;top:69%!important}
- .qa-main .poker-center{top:30%!important}
+ .qa-main .poker-seat.pos-mid-left{left:11%!important;top:72%!important}
+ .qa-main .poker-seat.pos-mid-right{left:89%!important;top:72%!important}
+ .qa-main .poker-center{top:31%!important}
  .qa-main .community-cards .vcard,
  .qa-main .community-cards .vcard-empty{width:40px!important;flex-basis:40px!important}
 }
