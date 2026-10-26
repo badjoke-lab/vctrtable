@@ -83,7 +83,21 @@ try{
     await cycles(1);
     if(await fn())return;
    }
-   throw Error(label+" did not converge for "+playerCount+" players");
+   const diagnostics=[];
+   for(const c of clients){
+    diagnostics.push({seat:c.name,
+     status:await c.page.locator("#pvp-status").textContent(),
+     turn:await c.page.locator("#pvp-turn").textContent(),
+     roster:await c.page.locator("#pvp-table-seats").textContent(),
+     check:await c.page.locator("#pvp-check").isEnabled(),
+     call:await c.page.locator("#pvp-call").isEnabled(),
+     pendingOutbound:await c.page.evaluate(()=>window.__sim.out.length)});
+   }
+   throw Error(label+" did not converge for "+playerCount+
+    " players; states="+(await statePackets()).length+
+    " actions="+signedActions.length+
+    " diagnostics="+JSON.stringify(diagnostics)+
+    " browserErrors="+JSON.stringify(errors));
   }
   async function statePackets(){
    return history.filter(x=>x.payload.app==="vctrtable-pvp"&&
@@ -139,7 +153,7 @@ try{
    assert.ok(action,"No active seat had an available Check or Call");
    const before=(await statePackets()).length;
    await action.c.page.locator("#pvp-"+action.kind).click();
-   await until("signed action settlement",async()=>
+   await until("signed action settlement "+action.c.name+" "+action.kind,async()=>
     (await statePackets()).length>before);
    return action;
   }
