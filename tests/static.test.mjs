@@ -74,6 +74,16 @@ test('Vector opens the new mobile solo game, with old lobby preserved separately
  assert.ok(root.includes('id="qa-chat-mode"'));
  assert.ok(root.includes('src="qa.js"'));
  assert.ok(root.includes('href="lobby.html"'));
+ assert.ok(root.includes('class="qa-primary-mode" href="lobby.html"'),
+   'Experimentally shared lobby must be the prominent first choice');
+ assert.ok(root.includes('id="qa-practice-details"'),
+   'Solo QA fields must only appear after opting into solo practice');
+ assert.ok(root.includes('id="qa-mode-banner" class="qa-mode-banner" hidden'),
+   'LOCAL QA banner must not mislabel the landing screen');
+ assert.ok(root.includes('id="qa-form"'),
+   'Legacy solo settings and test rig must be retained');
+ assert.equal(root,qa,'Root and solo QA entry must stay synchronized');
+
  assert.ok(!root.includes('id="join"'),'old lobby must not be app entry point');
  assert.ok(lobby.includes('id="join"'),'shared non-secret lobby remains accessible');
  assert.ok(lobby.includes('href="qa.html"'),'solo QA remains available from lobby');

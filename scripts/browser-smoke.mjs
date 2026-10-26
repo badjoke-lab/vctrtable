@@ -57,6 +57,17 @@ try{
   page.on("dialog",async dialog=>{dialogs.push(dialog.message());await dialog.dismiss();});
   const response=await page.goto(base+"/",{waitUntil:"networkidle"});
   assert.equal(response.status(),200);
+  const topChoice=page.locator(".qa-primary-mode");
+  assert.equal(await topChoice.isVisible(),true,"Multiplayer choice must be the first obvious entry");
+  assert.equal(await topChoice.getAttribute("href"),"lobby.html");
+  assert.equal(await page.locator("#qa-practice-details").evaluate(x=>x.open),false,
+    "Solo QA settings must start collapsed, not look like the main app");
+  assert.equal(await page.locator("#qa-mode-banner").isVisible(),false,
+    "LOCAL QA label should only appear after selecting local practice");
+  fs.mkdirSync(dist,{recursive:true});
+  await page.screenshot({path:path.join(dist,"poker-landing-"+view.width+".png"),fullPage:true});
+  const practiceSummary=page.locator("#qa-practice-details summary");
+  await practiceSummary.click();
   await page.locator("#qa-form").waitFor({state:"visible"});
   assert.equal(await page.locator("#join").count(),0,"Old lobby must not be app entry");
   assert.equal(await page.locator("#qa-chat-mode").count(),1);
@@ -305,6 +316,9 @@ try{
   const holeBefore=await page.locator("#qa-hero-cards .vcard").evaluateAll(xs=>xs.map(x=>x.getAttribute("aria-label")));
   await page.locator("#qa-save").click();
   await page.reload({waitUntil:"networkidle"});
+  assert.equal(await page.locator("#qa-practice-details").evaluate(x=>x.open),false,
+    "Reloaded app must return to a simple mode choice, not reopen advanced settings");
+  await page.locator("#qa-practice-details summary").click();
   await page.locator("#qa-form").waitFor({state:"visible"});
   await page.locator("#qa-load-start").click();
   await page.locator("#qa-table").waitFor({state:"visible"});
@@ -499,6 +513,10 @@ try{
   const page=await ctx.newPage();
   page.on("pageerror",error=>errors.push("desktop-"+view.width+": "+error.message));
   await page.goto(base+"/",{waitUntil:"networkidle"});
+  assert.equal(await page.locator(".qa-primary-mode").isVisible(),true,
+    "The desktop first screen must also show mode choice instead of developer fields");
+  await page.screenshot({path:path.join(dist,"poker-landing-"+view.width+".png"),fullPage:true});
+  await page.locator("#qa-practice-details summary").click();
   await page.locator("#qa-seats").fill("6");
   await page.locator("#qa-seconds").fill("0");
   await page.locator("#qa-form button[type=submit]").click();
