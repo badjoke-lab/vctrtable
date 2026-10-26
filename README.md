@@ -1,5 +1,19 @@
 # vctrtable
 
+## WebXDC community technology review (October 2026)
+
+[Transport decisions, existing components, priority and acceptance gates](docs/WEBXDC-ADOPTION-20261026.md).
+
+Our current `npm run build` remains authoritative (no Vite migration).
+Developers may optionally run `npm run dev:webxdc` to build the .xdc and
+open it in upstream `@webxdc/webxdc-dev@0.21.0` with **separate simulated
+users**. This command fetches an external development tool on demand, requires
+npm network access and is **not** run automatically by CI or normal users.
+Use the official simulator's `Drop Updates` and `Reload` controls for manual
+recovery checks. This does **not** substitute for two real Vector devices.
+
+
+
 A monorepo for standalone Vector/WebXDC table games. Poker (Texas Hold'em) comes first.
 
 ## Status
