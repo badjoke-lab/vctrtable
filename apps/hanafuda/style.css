@@ -218,3 +218,7 @@ footer,.art-credit{font-size:11px;color:#9eb5a8;line-height:1.5;margin-top:20px}
 .impact-card{position:fixed;z-index:9998;object-fit:contain;pointer-events:none;
  border-radius:4px;box-shadow:0 3px 12px #000b;will-change:transform}
 @media(prefers-reduced-motion:reduce){.impact-card{display:none}}
+
+/* Before a card has physically arrived from the deck, the reveal panel shows
+   its label but does not display an impossible duplicate card back. */
+.draw-reveal.awaiting .draw-reveal-face img{visibility:hidden}
