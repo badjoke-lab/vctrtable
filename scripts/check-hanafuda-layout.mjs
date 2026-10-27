@@ -111,6 +111,12 @@ try{
    throw Error(name+": clipped/outside viewport "+JSON.stringify(before));
   if(name==="phone-small"&&before.cards[0]?.w<40)
    throw Error(name+": starting field card is too small: "+before.cards[0]?.w);
+  if(name==="phone-landscape"&&before.cards[0]?.w<35)
+   throw Error(name+": landscape field cards are unreadably narrow: "+before.cards[0]?.w);
+  if(name==="phone-landscape"){
+   const handWidth=await evaluate("document.querySelector('#yourHand .card').getBoundingClientRect().width");
+   if(handWidth<28)throw Error(name+": landscape hand cards are too narrow: "+handWidth);
+  }
   if(before.cards.some(card=>card.w<15||card.h<20||
      card.y<r.field.y-2||card.bottom>r.field.bottom+2))
    throw Error(name+": field artwork clipped "+JSON.stringify(before.cards));
