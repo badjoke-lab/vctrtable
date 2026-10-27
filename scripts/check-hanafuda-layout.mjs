@@ -118,6 +118,10 @@ try{
    throw Error(name+": clipped/outside viewport "+JSON.stringify(before));
   if(name==="phone-small"&&before.cards[0]?.w<40)
    throw Error(name+": starting field card is too small: "+before.cards[0]?.w);
+  if(["desktop-window","compact-window"].includes(name)&&before.cards[0]?.w<50)
+   throw Error(name+": normal desktop field cards shrank below 50px: "+before.cards[0]?.w);
+  if(["desktop-window","compact-window"].includes(name)&&initialHand<85)
+   throw Error(name+": normal desktop hand cards shrank below 85px tall: "+initialHand);
   if(name==="phone-landscape"&&before.cards[0]?.w<35)
    throw Error(name+": landscape field cards are unreadably narrow: "+before.cards[0]?.w);
   if(name==="phone-landscape"){
