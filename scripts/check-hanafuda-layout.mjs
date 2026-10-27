@@ -105,6 +105,13 @@ try{
   await sleep(80);
   const before=await evaluate(expr);
   if(before.body!=="in-game")throw Error(name+": fixed viewport game class is missing");
+  const header=await evaluate("(()=>{const r=document.getElementById('lang').getBoundingClientRect();return {left:r.left,right:r.right,width:r.width};})()");
+  if(header.right>width-55)
+   throw Error(name+": Vector close-button reserved top-right space overlaps language switch "+JSON.stringify(header));
+  const initialHand=await evaluate("document.querySelector('#yourHand .card').getBoundingClientRect().height");
+  if((height>=640&&initialHand<55)||(height>=700&&width<600&&initialHand<85))
+   throw Error(name+": hand artwork remains too small: "+initialHand);
+
   const r=before.sections;
   if(before.scrollH>height+2||before.scrollW>width+2||r.actionDock.bottom>height+2||
      r.yourHand.bottom>height+2||r.board.h<110||r.field.h<30)
@@ -177,6 +184,25 @@ try{
   if(Math.abs(before.sections.yourHand.y-withCaptures.sections.yourHand.y)>1 ||
      Math.abs(before.sections.actionDock.bottom-withCaptures.sections.actionDock.bottom)>1)
    throw Error(name+": filled captured pile changed table geometry");
+  const captureHeight=await evaluate("document.querySelector('#yourCaptured .card').getBoundingClientRect().height");
+  if(width<600&&height>=640&&captureHeight<32)
+   throw Error(name+": captured cards too small: "+captureHeight);
+  // Inspect a real public field card without changing the layout.
+  await evaluate("(()=>{const item=document.querySelector('#field .card');item.click();})()");
+  const modal=await evaluate("(()=>{const el=document.getElementById('cardInspect'),r=document.getElementById('cardInspectImage').getBoundingClientRect();return {hidden:el.hidden,h:r.height,bottom:r.bottom};})()");
+  if(modal.hidden||modal.h<Math.min(140,height*.3)||modal.bottom>height+2)
+   throw Error(name+": zoom modal cropped or nonfunctional "+JSON.stringify(modal));
+  const zoomShot=await run("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
+  await fsp.writeFile(path.join(output,name+"-inspect.png"),Buffer.from(zoomShot.data,"base64"));
+  await evaluate("document.getElementById('cardInspectClose').click()");
+  // Hints and switching language must not modify the physical table regions.
+  await evaluate("document.getElementById('hintsToggle').click()");
+  await evaluate("(()=>{const e=document.getElementById('lang');e.value='ja';e.dispatchEvent(new Event('change',{bubbles:true}));})()");
+  const afterHints=await evaluate(expr);
+  if(Math.abs(before.sections.yourHand.y-afterHints.sections.yourHand.y)>1 ||
+     Math.abs(before.sections.field.h-afterHints.sections.field.h)>1)
+   throw Error(name+": language / hints toggle moved the board");
+
   await evaluate("document.getElementById('guideToggle').click()");
   const shot=await run("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
   await fsp.writeFile(path.join(output,name+"-guide.png"),Buffer.from(shot.data,"base64"));
