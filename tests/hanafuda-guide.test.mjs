@@ -87,3 +87,20 @@ test("Rain Four cannot be completed if only two non-rain brights remain accessib
  assert.equal(p.oneAway,false);
  assert.equal(p.impossible,true);
 });
+
+test("Rain Four does not falsely award a separate Three Bright",()=>{
+ const captured=["11-1","1-1","3-1","8-1"];
+ const progress=Object.fromEntries(publicYakuOutlook(captured,[]).map(p=>[p.key,p]));
+ assert.equal(progress["ame-shiko"].completed,true);
+ assert.equal(progress.sanko.have,3);
+ assert.equal(progress.sanko.completed,false);
+ assert.equal(progress.sanko.superseded,true);
+ assert.equal(progress.sanko.oneAway,false);
+});
+test("Four Bright does not falsely claim both a Four Bright and a Three Bright yaku",()=>{
+ const captured=["1-1","3-1","8-1","12-1"];
+ const progress=Object.fromEntries(publicYakuOutlook(captured,[]).map(p=>[p.key,p]));
+ assert.equal(progress.shiko.completed,true);
+ assert.equal(progress.sanko.completed,false);
+ assert.equal(progress.sanko.superseded,true);
+});
