@@ -582,6 +582,9 @@ async function moveCapture(played,source,seat,taken){
 async function showCapturedResult(seat,takenCount){
  if(!takenCount)return;
  const dest=$(seat===0?"yourCaptured":"opponentCaptured");
+ // Capture rows scroll horizontally on small screens; reveal the newest cards
+ // rather than letting freshly taken cards disappear off the right edge.
+ if(Number.isFinite(dest.scrollWidth))dest.scrollLeft=dest.scrollWidth;
  dest.className="captured capture-flash";
  await beatPause(350);
  dest.className="captured";
