@@ -754,3 +754,12 @@ body.in-game #field .card.chosen{
  }
  body.in-game .captured .card{height:23px}
 }
+
+/* Prevent the generic zone-heading display:flex rule from reviving labels
+   that overlap the center field in the short landscape layout. */
+@media(min-width:700px) and (max-height:440px){
+ body.in-game .board .opp-capture-head,
+ body.in-game .board .own-capture-head{display:none!important}
+ body.in-game .board .opp-hand-head strong{font-size:10px}
+ body.in-game .board .own-hand-head strong{font-size:10px}
+}
