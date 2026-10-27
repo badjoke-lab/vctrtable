@@ -83,6 +83,7 @@ export function publicYakuOutlook(theirCaptured,yourCaptured,yourHand=[]) {
  },0);
  const all=Array.from({length:12},(_,m)=>
   Array.from({length:4},(_,i)=>(m+1)+"-"+(i+1))).flat();
+ const scored=new Set(scoreCards(theirCaptured).yaku.map(y=>y.key));
  return yakuProgress(theirCaptured).map(p=>{
   const missing=p.missing||[];
   const blockedIds=missing.filter(id=>mine.has(id));
@@ -102,8 +103,12 @@ export function publicYakuOutlook(theirCaptured,yourCaptured,yourHand=[]) {
    possibleTotal=counts(all,kind)-counts(yourCaptured,kind);
    impossible=possibleTotal<p.need;
   }
+  const completed=scored.has(p.key);
+  // Three-Bright may appear as 3/3 while Four-Bright / Rain Four-Bright
+  // supersedes it. Only the actually scored yaku may say "Completed".
+  const superseded=p.have>=p.need&&!completed;
   return {...p,blockedIds,heldIds,impossible,possibleTotal,
-   completed:p.have>=p.need,
-   oneAway:p.need-p.have===1&&!impossible};
+   completed,superseded,
+   oneAway:p.need-p.have===1&&!impossible&&!superseded};
  });
 }
