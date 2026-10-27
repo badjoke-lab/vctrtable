@@ -88,10 +88,11 @@ const expr="(()=>{const ids=['board','field','yourHand','actionDock','status','y
  "const rect=id=>{const el=document.getElementById(id)||document.querySelector('.'+id);if(!el)throw Error('Missing region '+id);const r=el.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height,bottom:r.bottom};};"+
  "const sections=Object.fromEntries(ids.map(id=>[id,rect(id)]));"+
  "const cards=[...document.querySelectorAll('#field .card')].map(e=>{let r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height,bottom:r.bottom};});"+
- "return {vw:innerWidth,vh:innerHeight,scrollH:document.documentElement.scrollHeight,sections,cards,body:document.body.className};})()";
+ "return {vw:innerWidth,vh:innerHeight,scrollH:document.documentElement.scrollHeight,scrollW:document.documentElement.scrollWidth,sections,cards,body:document.body.className};})()";
 const checkpoints=[];
 try{
  for(const [name,width,height] of [["phone-small",360,640],["phone",390,760],
+  ["phone-landscape",740,420],["compact-window",800,600],
   ["desktop-window",960,680],["desktop",1280,800]]){
   await run("Emulation.setDeviceMetricsOverride",{width,height,deviceScaleFactor:1,mobile:width<600});
   await run("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:"reduce"}]});
@@ -105,7 +106,7 @@ try{
   const before=await evaluate(expr);
   if(before.body!=="in-game")throw Error(name+": fixed viewport game class is missing");
   const r=before.sections;
-  if(before.scrollH>height+2||r.actionDock.bottom>height+2||
+  if(before.scrollH>height+2||before.scrollW>width+2||r.actionDock.bottom>height+2||
      r.yourHand.bottom>height+2||r.board.h<110||r.field.h<30)
    throw Error(name+": clipped/outside viewport "+JSON.stringify(before));
   if(name==="phone-small"&&before.cards[0]?.w<40)
@@ -151,6 +152,13 @@ try{
    throw Error(name+": 15 field cards moved the hand vertically");
   if(many.cards.some(card=>card.w<12||card.bottom>many.sections.field.bottom+2))
    throw Error(name+": 15 field cards exceed their fixed field zone");
+  await evaluate("(()=>{const pile=document.getElementById('yourCaptured');"+
+   "const art=document.querySelector('#yourHand .card');"+
+   "for(let i=0;i<20;i++)pile.append(art.cloneNode(true));})()");
+  const withCaptures=await evaluate(expr);
+  if(Math.abs(before.sections.yourHand.y-withCaptures.sections.yourHand.y)>1 ||
+     Math.abs(before.sections.actionDock.bottom-withCaptures.sections.actionDock.bottom)>1)
+   throw Error(name+": filled captured pile changed table geometry");
   await evaluate("document.getElementById('guideToggle').click()");
   const shot=await run("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
   await fsp.writeFile(path.join(output,name+"-guide.png"),Buffer.from(shot.data,"base64"));
