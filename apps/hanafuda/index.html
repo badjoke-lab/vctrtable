@@ -18,6 +18,23 @@
   <button id="start" class="primary">Start</button>
 </section>
 <section id="game" hidden>
+  <section id="roundIntro" class="round-overlay" role="dialog" aria-modal="true" aria-labelledby="roundIntroTitle" hidden>
+    <div class="overlay-content">
+      <div class="overlay-eyebrow" id="roundIntroEyebrow">New round</div>
+      <h2 id="roundIntroTitle">Round 1 / 12</h2>
+      <p id="roundIntroParent">Dealer: You</p>
+      <p id="roundIntroScore"></p>
+      <p id="roundIntroNote"></p>
+      <button id="beginRound" class="primary" type="button">Deal cards / Start round</button>
+    </div>
+  </section>
+  <section id="yakuFlash" class="yaku-flash" role="status" aria-live="assertive" hidden>
+    <div class="overlay-content">
+      <div class="overlay-eyebrow" id="yakuFlashEyebrow">Yaku complete!</div>
+      <h2 id="yakuFlashTitle">Scoring combination</h2>
+      <p id="yakuFlashDetails"></p>
+    </div>
+  </section>
   <div class="scoreboard panel">
     <div><small id="oppLabel">Opponent</small><strong id="oppScore">0</strong></div>
     <div class="center-score"><span id="roundLabel">Round 1 / 12</span><b id="dealerLabel">Dealer: You</b></div>
@@ -81,13 +98,19 @@
       <div id="guideExamples" class="guide-examples"></div>
     </div>
   </section>
-  <section id="decision" class="decision panel" hidden>
+  <section id="decision" class="decision panel" role="dialog" aria-modal="true" aria-labelledby="decisionTitle" hidden>
+    <div class="overlay-content">
     <h2 id="decisionTitle">You made a yaku!</h2><p id="decisionSummary"></p>
     <div class="decision-actions"><button id="stop" class="primary">Stop & score</button><button id="koi" class="secondary">Koi-Koi — continue</button></div>
+    </div>
   </section>
-  <section id="result" class="result panel" hidden>
-    <h2 id="resultTitle">Round complete</h2><p id="resultSummary"></p>
-    <button id="next" class="primary">Next round</button><button id="new" class="secondary">New match</button>
+  <section id="result" class="result panel" role="dialog" aria-modal="true" aria-labelledby="resultTitle" hidden>
+    <div class="overlay-content">
+      <h2 id="resultTitle">Round complete</h2>
+      <p id="resultReason"></p>
+      <p id="resultSummary"></p>
+      <div class="result-actions"><button id="next" class="primary">Next round</button><button id="new" class="secondary">New match</button></div>
+    </div>
   </section>
 </section>
 <footer id="footer">All gameplay stays on this device. The WebXDC shared-update API is not used for secret cards or turns.</footer>
