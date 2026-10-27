@@ -604,6 +604,7 @@ async function resolveDrawChoice(seat,target){
  setBeat("draw",seat,"result",drawn,1);
  await beatPause(520);
  clearDraw();render();
+ await announceYaku(seat);
 }
 /** Every turn's second step is mandatory and visually independent of the hand. */
 async function compulsoryDraw(seat){
@@ -645,6 +646,7 @@ async function compulsoryDraw(seat){
  setBeat("draw",seat,"result",drawn,taken.length);
  await beatPause(520);
  clearDraw();render();
+ await announceYaku(seat);
 }
 async function actionSequence(seat,id,target=null){
  const matches=matchingFieldCards(game.field,id);
@@ -713,29 +715,42 @@ $("guideToggle").addEventListener("click",()=>{
  guideOpen=!guideOpen;render();
 });
 $("lang").addEventListener("change",()=>{lang=$("lang").value;render();});
-async function newRound(){
- round++;game=startRound({dealer});
- selected=null;selectedTarget=null;
- locked=true;render();
- try{await runBot();}
- catch(err){$("status").textContent=String(err?.message||err);}
- finally{locked=false;render();}
+function newRound(){
+ round++;
+ game=startRound({dealer});
+ selected=null;selectedTarget=null;locked=false;
+ introOpen=true;roleFlashActive=false;
+ yakuSeen=[scoreCards([]),scoreCards([])];
+ playbackMessage="";playbackPhase=null;revealedDraw=null;
+ $("yakuFlash").hidden=true;$("drawReveal").hidden=true;
+ $("playStage").hidden=true;
+ render();
+ $("beginRound").focus?.();
 }
+$("beginRound").addEventListener("click",()=>{
+ if(!introOpen||locked||!game)return;
+ introOpen=false;firstParentDraw=null;
+ if(game.phase==="ended"){render();$("next").focus?.();return;}
+ void withAction(async()=>{await runBot();});
+});
 $("start").addEventListener("click",()=>{
  if(locked)return;
  matchTotal=Number($("rounds").value);scores=[0,0];round=0;
- dealer=Math.random()<.5?0:1;
- void newRound();
+ firstParentDraw=chooseInitialDealer();
+ dealer=firstParentDraw.dealer;
+ newRound();
 });
 $("stop").addEventListener("click",()=>{void withAction(async()=>{decide(game,"stop");});});
 $("koi").addEventListener("click",()=>{void withAction(async()=>{decide(game,"koi");});});
 $("next").addEventListener("click",()=>{
  if(locked||!game||game.phase!=="ended"||round>=matchTotal)return;
  dealer=game.winner===null?1-game.dealer:game.winner;
- void newRound();
+ newRound();
 });
 $("new").addEventListener("click",()=>{
  if(locked)return;
- game=null;selected=null;selectedTarget=null;round=0;scores=[0,0];render();
+ game=null;selected=null;selectedTarget=null;round=0;scores=[0,0];
+ introOpen=false;firstParentDraw=null;playbackPhase=null;playbackMessage="";
+ roleFlashActive=false;$("yakuFlash").hidden=true;render();
 });
 render();
