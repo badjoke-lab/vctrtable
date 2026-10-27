@@ -35,6 +35,8 @@ function makeUi({motion=false}={}){
  const ids=[...html.matchAll(/id="([^"]+)"/g)].map(match=>match[1]);
  const elements=new Map(ids.map(id=>[id,new FakeElement(animations)]));
  const $=id=>elements.get(id);
+ // DOM fixture must honor the initial HTML hidden attribute of the inspector.
+ $("cardInspect").hidden=true;
  const story=[];
  const narration=$("actionNarration");
  let narrationValue="";
