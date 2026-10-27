@@ -33,12 +33,13 @@ const baseUrl="http://127.0.0.1:"+server.address().port;
 const chrome=process.env.CHROME_BIN||["/usr/bin/google-chrome","/usr/bin/chromium","/usr/bin/chromium-browser"].find(fs.existsSync);
 if(!chrome)throw Error("Chrome/Chromium not installed");
 const child=spawn(chrome,["--headless=new","--no-sandbox","--disable-dev-shm-usage",
- "--disable-gpu","--disable-extensions","--hide-scrollbars","--remote-debugging-port=0",
+ "--disable-gpu","--disable-extensions","--disable-background-networking",
+ "--disable-crash-reporter","--hide-scrollbars","--remote-debugging-port=0",
  "--remote-allow-origins=*","--user-data-dir="+path.join(temp,"chrome"),"about:blank"],
- {stdio:["ignore","ignore","pipe"]});
+ {stdio:["ignore","ignore","pipe"],env:{...process.env,DBUS_SESSION_BUS_ADDRESS:""}});
 const wsUrl=await new Promise((resolve,reject)=>{
  let accumulated="";
- const timer=setTimeout(()=>reject(Error("Chrome failed to start "+accumulated.slice(-600))),15000);
+ const timer=setTimeout(()=>reject(Error("Chrome failed to start "+accumulated.slice(-1200))),35000);
  child.stderr.on("data",data=>{
   accumulated+=String(data);
   const found=accumulated.match(/DevTools listening on (ws:\/\/[^\s]+)/);
