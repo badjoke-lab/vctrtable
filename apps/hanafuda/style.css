@@ -649,3 +649,25 @@ body.in-game .turn-prompt{
  body.in-game #drawReveal .draw-reveal-face{width:100%}
  body.in-game .turn-prompt{padding:5px 6px;font-size:11px}
 }
+
+/* On phones confirmation actions are two wide touch controls instead of two
+   narrow stacked buttons. The dock height is unchanged. */
+@media(max-width:600px){
+ body.in-game .selection{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  grid-template-rows:22px minmax(0,1fr);gap:2px 5px
+ }
+ body.in-game .selection-top{grid-column:1;grid-row:1}
+ body.in-game .preview-text{
+  grid-column:2;grid-row:1;line-height:11px;
+  overflow:hidden;max-height:22px;font-size:9px
+ }
+ body.in-game .selection-actions{
+  grid-column:1/-1;grid-row:2;
+  flex-direction:row;align-items:stretch;gap:5px
+ }
+ body.in-game .selection-actions button{
+  flex:1;min-width:0;max-width:none;min-height:39px;
+  padding:3px 5px;font-size:11px
+ }
+}
