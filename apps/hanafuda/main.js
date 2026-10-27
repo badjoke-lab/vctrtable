@@ -261,7 +261,7 @@ function renderIntro(){
   (lang==="ja"?"結果を見る":"View round result"):
   (lang==="ja"?"配札して開始":"Deal & start");
 }
-async function announceYaku(seat){
+async function announceYaku(seat,{beforeDraw=false}={}){
  const now=scoreCards(game.captured[seat]),before=yakuSeen[seat];
  yakuSeen[seat]=now;
  const improved=now.points>before.points;
@@ -273,11 +273,13 @@ async function announceYaku(seat){
  $("yakuFlashEyebrow").textContent=lang==="ja"?"役成立！":"Scoring set completed!";
  $("yakuFlashTitle").textContent=(seat===0?tx("youLabel"):tx("oppLabel"))+
   " — "+(names|| (lang==="ja"?"役が加点":"Scoring set improved"));
- $("yakuFlashDetails").textContent=lang==="ja"?
+ $("yakuFlashDetails").textContent=(lang==="ja"?
   "今回 +"+(now.points-before.points)+"点分の役を獲得。役の合計 "+
   now.points+"点。":
   "+"+(now.points-before.points)+" points. Total scoring sets: "+
-  now.points+" points.";
+  now.points+" points.")+(beforeDraw?
+   (lang==="ja"?" 続いて山札をめくってから、あがり／こいこいを判断します。":
+   " The deck card must still be drawn before the Stop/Koi decision."):"");
  $("yakuFlash").hidden=false;
  await beatPause(1100);
  roleFlashActive=false;$("yakuFlash").hidden=true;
@@ -666,6 +668,9 @@ async function actionSequence(seat,id,target=null){
  if(seat===0){selected=null;selectedTarget=null;}
  render();
  await showCapturedResult(seat,taken.length);
+ // If completing a scoring set with the played hand card, show it now;
+ // the mandatory deck draw still follows, and Stop/Koi is offered only then.
+ await announceYaku(seat,{beforeDraw:true});
  await beatPause(240); // clear visual boundary before the compulsory deck draw
  await compulsoryDraw(seat);
 }
