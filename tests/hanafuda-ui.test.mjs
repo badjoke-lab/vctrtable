@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 import {cardById,startRound,chooseInitialDealer,playCard,chooseTarget,drawNextCard,decide,scoreCards} from "../packages/hanafuda/koikoi.js";
-import {matchingFieldCards,capturePreview,yakuProgress} from "../packages/hanafuda/guide.js";
+import {matchingFieldCards,capturePreview,yakuProgress,publicYakuOutlook} from "../packages/hanafuda/guide.js";
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const html=fs.readFileSync(path.join(root,"apps/hanafuda/index.html"),"utf8");
@@ -52,13 +52,13 @@ function makeUi({motion=false}={}){
  const localStart=()=>startRound({dealer:0,rng});
  const args=["document","window","setTimeout","cardById","startRound","chooseInitialDealer","playCard",
   "chooseTarget","drawNextCard","decide","scoreCards","capturePreview",
-  "matchingFieldCards","yakuProgress"];
+  "matchingFieldCards","yakuProgress","publicYakuOutlook"];
  const create=new Function(...args,script+
   "; return {state:()=>({game,selected,selectedTarget,locked}),render};");
  const ui=create(document,{innerWidth:390,matchMedia:()=>({matches:!motion})},
   callback=>queueMicrotask(callback),
   cardById,localStart,()=>({dealer:0,monthBySeat:[1,12]}),playCard,chooseTarget,drawNextCard,decide,scoreCards,
-  capturePreview,matchingFieldCards,yakuProgress);
+  capturePreview,matchingFieldCards,yakuProgress,publicYakuOutlook);
  return {ui,$,story,animations};
 }
 async function flush(){
