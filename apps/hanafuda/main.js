@@ -117,13 +117,13 @@ function makeCard(id,{faceDown=false,compact=false,click=null,match=false,target
   // A long press followed by pointerup/click cannot select or commit a card.
   // A scroll/drag cancels the inspection and its trailing synthetic click.
   let gesture=null,suppressClick=false;
-  e.addEventListener("click",ev=>{
+  if(click||inspectable)e.addEventListener("click",ev=>{
     if(suppressClick){suppressClick=false;ev.preventDefault?.();return;}
     if(inspectingCard)return;
     if(click)click();
-    else if(inspectable)openInspect(id);
+    else openInspect(id);
   });
-  if(!click&&!inspectable)e.disabled=true;
+  else e.disabled=true;
   if(c&&inspectable){
     const cancelTimer=()=>{
       if(gesture?.timer!==null&&gesture?.timer!==undefined){
