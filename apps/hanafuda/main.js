@@ -171,6 +171,8 @@ function showGuide(){
  }
  $("guidePanel").hidden=!guideOpen;
  $("guideToggle").textContent=tx(guideOpen?"guideClose":"guideToggle");
+ $("guideClose").textContent=lang==="ja"?"閉じる":"Close";
+ $("guidePanelTitle").textContent=lang==="ja"?"役の一覧":"Scoring combinations (Yaku)";
  $("guideToggle").setAttribute("aria-expanded",String(guideOpen));
  if(!guideOpen)return;
  const ex=$("guideExamples");ex.replaceChildren();
@@ -479,19 +481,24 @@ function rect(zone,id=null,offset=0){
   // New unmatched cards must land in the NEXT free grid slot,
   // never on an unrelated field card.
   const parent=$("field"),grid=parent.getBoundingClientRect();
-  const cards=parent.children,n=cards.length,first=cards[0]?.getBoundingClientRect();
-  const cell=grid.width/4,w=Math.min(86,Math.max(34,cell-9));
-  const height=w*1600/976,step=height+9;
-  return {left:grid.left+(n%4)*cell+(cell-w)/2,
-   top:first?first.top+Math.floor(n/4)*step:grid.top,
-   width:w,height};
+  const n=parent.children.length;
+  const rows=n>=12?4:3;
+  const cellW=grid.width/4,cellH=grid.height/rows;
+  const w=Math.max(10,Math.min(cellW-5,(cellH-5)*976/1600));
+  const h=w*1600/976;
+  return {left:grid.left+(n%4)*cellW+(cellW-w)/2,
+   top:grid.top+Math.floor(n/4)*cellH+(cellH-h)/2,
+   width:w,height:h};
  }
  if(zone==="yourCaptured"||zone==="opponentCaptured"){
   const pile=$(zone),box=pile.getBoundingClientRect();
   const n=pile.children.length;
-  const w=window.innerWidth&&window.innerWidth<=600?31:36;
-  const left=box.left+Math.min(Math.max(0,box.width-w),n*(w+4)+offset*(w+4));
-  return {left,top:box.top+3,width:w,height:w*1600/976};
+  const existing=pile.children[0]?.getBoundingClientRect();
+  const h=existing?.height||Math.max(10,box.height-6);
+  const w=existing?.width||h*976/1600;
+  const left=box.left+Math.min(Math.max(0,box.width-w),
+    (n+offset)*(w+3));
+  return {left,top:box.top+(box.height-h)/2,width:w,height:h};
  }
  return r;
 }
