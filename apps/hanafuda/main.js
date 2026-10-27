@@ -89,7 +89,7 @@ const yFullName=key=>lang==="ja"?yName(key):(
 const TR={h:"bright",a:"animal",t:"ribbon",k:"plain"};
 let lang="en",matchTotal=12,round=0,scores=[0,0],dealer=0,game=null;
 let selected=null,selectedTarget=null,locked=false,guideOpen=false,hintsOn=false;
-let inspectingCard=null,inspectOrigin=null,longPressHandled=false,pressTimer=null;
+let inspectingCard=null;
 let revealedDraw=null,playbackPhase=null,playbackMessage="";
 let introOpen=false,firstParentDraw=null,roleFlashActive=false;
 let yakuSeen=[{points:0,yaku:[]},{points:0,yaku:[]}];
@@ -113,20 +113,51 @@ function makeCard(id,{faceDown=false,compact=false,click=null,match=false,target
   const label=c?(lang==="ja"?c.monthJa:c.monthEn)+" / "+tx(TR[c.type]):
     (lang==="ja"?"伏せ札":"Face-down card");
   e.setAttribute("aria-label",label);e.title=label;
-  if(click)e.addEventListener("click",()=>{
-    if(longPressHandled){longPressHandled=false;return;}
-    click();
+  // Card selection and 500ms inspection must be mutually exclusive.
+  // A long press followed by pointerup/click cannot select or commit a card.
+  // A scroll/drag cancels the inspection and its trailing synthetic click.
+  let gesture=null,suppressClick=false;
+  e.addEventListener("click",ev=>{
+    if(suppressClick){suppressClick=false;ev.preventDefault?.();return;}
+    if(inspectingCard)return;
+    if(click)click();
+    else if(inspectable)openInspect(id);
   });
-  else if(inspectable)e.addEventListener("click",()=>openInspect(id));
-  else e.disabled=true;
+  if(!click&&!inspectable)e.disabled=true;
   if(c&&inspectable){
+    const cancelTimer=()=>{
+      if(gesture?.timer!==null&&gesture?.timer!==undefined){
+        clearTimeout(gesture.timer);gesture.timer=null;
+      }
+    };
     e.addEventListener("pointerdown",ev=>{
-      if(ev.pointerType==="mouse")return;
-      if(pressTimer)clearTimeout(pressTimer);
-      pressTimer=setTimeout(()=>{pressTimer=null;longPressHandled=true;openInspect(id);},500);
+      if(ev.pointerType!=="touch"&&ev.pointerType!=="pen"){
+        gesture=null;suppressClick=false;return;
+      }
+      cancelTimer();
+      suppressClick=false;
+      const current={
+        x:ev.clientX??0,y:ev.clientY??0,id:ev.pointerId,
+        timer:null,triggered:false,moved:false
+      };
+      gesture=current;
+      current.timer=setTimeout(()=>{
+        current.timer=null;
+        if(gesture!==current||current.moved)return;
+        current.triggered=true;suppressClick=true;
+        openInspect(id);
+      },500);
     });
-    const stop=()=>{if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}};
-    for(const type of ["pointerup","pointerleave","pointercancel"])e.addEventListener(type,stop);
+    e.addEventListener("pointermove",ev=>{
+      if(!gesture||gesture.id!==ev.pointerId)return;
+      if(Math.hypot((ev.clientX??0)-gesture.x,
+        (ev.clientY??0)-gesture.y)>9){
+        gesture.moved=true;suppressClick=true;cancelTimer();
+      }
+    });
+    e.addEventListener("pointerup",()=>{cancelTimer();gesture=null;});
+    e.addEventListener("pointercancel",()=>{cancelTimer();gesture=null;});
+    e.addEventListener("pointerleave",()=>{cancelTimer();gesture=null;});
     e.addEventListener("contextmenu",ev=>ev.preventDefault?.());
   }
   if(compact)e.classList.add("compact");
@@ -173,7 +204,7 @@ function openInspect(id){
  $("cardInspect").hidden=false;$("cardInspectClose").focus?.();
 }
 function closeInspect(){
- inspectingCard=null;longPressHandled=false;$("cardInspect").hidden=true;
+ inspectingCard=null;$("cardInspect").hidden=true;
 }
 function renderLabels() {
   document.documentElement.lang=lang;
