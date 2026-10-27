@@ -111,6 +111,9 @@ try{
   if(before.cards.some(card=>card.w<15||card.h<20||
      card.y<r.field.y-2||card.bottom>r.field.bottom+2))
    throw Error(name+": field artwork clipped "+JSON.stringify(before.cards));
+  const baselineShot=await run("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
+  await fsp.writeFile(path.join(output,name+"-table.png"),
+   Buffer.from(baselineShot.data,"base64"));
   // Historically each of these transient regions pushed the hand downward.
   await evaluate("(()=>{document.getElementById('roundIntro').hidden=true;"+
    "document.getElementById('actionNarration').hidden=false;"+
@@ -120,6 +123,9 @@ try{
    "document.getElementById('selection').hidden=false;"+
    "document.getElementById('turnPrompt').hidden=true;})()");
   const during=await evaluate(expr);
+  const eventShot=await run("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
+  await fsp.writeFile(path.join(output,name+"-event.png"),
+   Buffer.from(eventShot.data,"base64"));
   for(const id of ["board","field","yourHand","actionDock","status","yourCaptured"]){
    for(const property of ["y","h","bottom"])
     if(Math.abs(before.sections[id][property]-during.sections[id][property])>1)
@@ -129,15 +135,15 @@ try{
   // A long-lived round can have 15 field cards. The hand must stay fixed.
   await evaluate("(()=>{const field=document.getElementById('field');"+
    "while(field.children.length<15)field.append(field.children[0].cloneNode(true));"+
-   "field.style.setProperty('--field-rows',innerWidth>=700?'3':'4');"+
-   "document.getElementById('guidePanel').hidden=false;})()");
+   "field.style.setProperty('--field-rows',innerWidth>=700?'3':'4');})()");
   const many=await evaluate(expr);
   if(Math.abs(before.sections.yourHand.y-many.sections.yourHand.y)>1)
    throw Error(name+": 15 field cards moved the hand vertically");
   if(many.cards.some(card=>card.w<12||card.bottom>many.sections.field.bottom+2))
    throw Error(name+": 15 field cards exceed their fixed field zone");
+  await evaluate("document.getElementById('guideToggle').click()");
   const shot=await run("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
-  await fsp.writeFile(path.join(output,name+".png"),Buffer.from(shot.data,"base64"));
+  await fsp.writeFile(path.join(output,name+"-guide.png"),Buffer.from(shot.data,"base64"));
   checkpoints.push({name,width,height,scrollHeight:before.scrollH,
    boardHeight:Math.round(r.board.h),fieldHeight:Math.round(r.field.h),
    fieldCardWidth:Math.round(before.cards[0]?.w||0),
