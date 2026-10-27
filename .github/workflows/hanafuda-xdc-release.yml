@@ -8,6 +8,7 @@ on:
       - "packages/hanafuda/**"
       - "scripts/build-hanafuda.mjs"
       - "scripts/hanafuda-card-assets.mjs"
+      - "scripts/check-hanafuda-layout.mjs"
       - "tests/hanafuda*.test.mjs"
       - "package.json"
       - ".github/workflows/hanafuda-xdc-release.yml"
@@ -54,6 +55,15 @@ jobs:
           test "$(unzip -Z1 dist/hanafuda.xdc | grep '^cards/[0-9].*\.svg$' | wc -l)" -eq 48
           unzip -Z1 dist/hanafuda.xdc | grep -q '^cards/back.svg$'
           unzip -Z1 dist/hanafuda.xdc | grep -q '^index.html$'
+      - name: Check PC and phone viewport geometry in real Chrome
+        run: node scripts/check-hanafuda-layout.mjs
+      - name: Save Hanafuda viewport screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hanafuda-viewport-screenshots
+          path: dist/hanafuda-layout-preview/*.png
+          if-no-files-found: warn
       - name: Publish stable direct .xdc URL on prerelease
         env:
           GH_TOKEN: ${{ github.token }}
