@@ -276,3 +276,73 @@ test("Yaku formed by hand capture announces BEFORE mandatory deck reveal",async(
  assert.equal(s.phase,"decision","Stop/Koi offered only after the deck draw");
  assert.equal($("decision").hidden,false);
 });
+
+
+test("Japanese yaku identity comes first even in English, with romanization and meaning",async()=>{
+ const {ui,$}=makeUi();
+ $("start").listeners.click();$("beginRound").listeners.click();await flush();
+ const s=ui.state().game;
+ s.captured[0]=["7-1","10-1","6-1"];
+ ui.render();
+ assert.ok($("yourYaku").textContent.includes("猪鹿蝶"));
+ $("guideToggle").listeners.click();
+ const guideText=$("guideExamples").children.find(
+  x=>x.children[0]?.textContent.includes("猪鹿蝶")).children[0].textContent;
+ assert.equal(guideText,"猪鹿蝶 (Inoshikachō — Boar, Deer & Butterfly)");
+ $("lang").value="ja";$("lang").listeners.change();
+ assert.equal($("yourYaku").textContent.includes("猪鹿蝶"),true);
+ assert.equal($("guideExamples").children.find(
+  x=>x.children[0]?.textContent==="猪鹿蝶").children[0].textContent,"猪鹿蝶");
+});
+test("Hint mode distinguishes opponent's exposed captures and blocked yaku from secret deck",async()=>{
+ const {ui,$}=makeUi();
+ $("start").listeners.click();$("beginRound").listeners.click();await flush();
+ const s=ui.state().game;
+ s.captured[1]=["7-1","10-1"];
+ s.captured[0]=["6-1"];
+ ui.render();
+ $("hintsToggle").listeners.click();
+ assert.equal($("hintsToggle").textContent,"Hints: On");
+ assert.equal($("hintsToggle").attrs["aria-pressed"],"true");
+ $("guideToggle").listeners.click();
+ assert.ok($("outlookDisclaimer").textContent.includes("hidden hand"));
+ const opponent=$("oppOutlook").children.find(x=>x.children[0]?.textContent.includes("猪鹿蝶"));
+ assert.ok(opponent);
+ assert.ok(opponent.children[1].textContent.includes("Blocked"));
+ assert.ok(opponent.className.includes("outlook-blocked"));
+ const before=JSON.stringify(s);
+ $("hintsToggle").listeners.click();
+ assert.equal(JSON.stringify(s),before,"Toggling hints must not change game state");
+ assert.equal($("hintsToggle").textContent,"Hints: Off");
+});
+test("Captured card tap or hand long-press opens inspection without selecting or playing",async()=>{
+ const {ui,$}=makeUi();
+ $("start").listeners.click();$("beginRound").listeners.click();await flush();
+ const s=ui.state().game;
+ s.captured[0]=["7-1"];
+ s.captured[1]=["6-1"];
+ ui.render();
+ const before=JSON.stringify(s);
+ const captured=$("opponentCaptured").children[0];
+ captured.listeners.click();
+ assert.equal($("cardInspect").hidden,false);
+ assert.equal($("cardInspectImage").src,"cards/6-1.svg");
+ assert.ok($("cardInspectYaku").children.some(x=>x.textContent.includes("猪鹿蝶")));
+ assert.equal(JSON.stringify(s),before);
+ $("cardInspectClose").listeners.click();
+ assert.equal($("cardInspect").hidden,true);
+ const hand=$("yourHand").children[0],id=hand.dataset.cardId;
+ hand.listeners.pointerdown({pointerType:"touch"});
+ await flush();
+ assert.equal($("cardInspect").hidden,false);
+ assert.equal($("cardInspectImage").src,"cards/"+id+".svg");
+ assert.equal(ui.state().selected,null);
+ assert.equal(JSON.stringify(s),before);
+ $("cardInspectClose").listeners.click();
+});
+test("Inspect never exposes the opponent's actual hidden hand",async()=>{
+ const {ui,$}=makeUi();
+ $("start").listeners.click();$("beginRound").listeners.click();await flush();
+ assert.ok($("opponentHand").children.every(e=>e.dataset.cardId===undefined));
+ assert.ok($("opponentHand").children.every(e=>!e.listeners.click));
+});
