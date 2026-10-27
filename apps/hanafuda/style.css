@@ -292,3 +292,332 @@ footer,.art-credit{font-size:11px;color:#9eb5a8;line-height:1.5;margin-top:20px}
   animation:none
  }
 }
+
+
+/* One-viewport game table. Never let transient feedback participate in layout. */
+body.in-game{overflow:hidden;overscroll-behavior:none}
+body.in-game .app{
+ height:100vh;height:100dvh;max-width:1120px;
+ overflow:hidden;display:flex;flex-direction:column;
+ padding:5px 8px max(5px,env(safe-area-inset-bottom));gap:0
+}
+body.in-game .top{flex:0 0 37px;min-height:0;margin:0}
+body.in-game .eyebrow{font-size:9px;line-height:1}
+body.in-game h1{font-size:clamp(16px,2.5vw,22px);line-height:1.1}
+body.in-game .banner,body.in-game footer,body.in-game .art-credit{display:none}
+body.in-game #game{
+ display:grid;flex:1;min-height:0;max-height:100%;
+ grid-template-columns:minmax(0,1fr);
+ grid-template-rows:43px 36px minmax(0,1fr) 29px 92px;
+ grid-template-areas:"score" "guide" "board" "status" "dock";
+ gap:4px
+}
+body.in-game #game > *{min-width:0;min-height:0}
+body.in-game .scoreboard{
+ grid-area:score;margin:0;padding:3px 9px;
+ gap:6px;border-radius:9px;min-width:0
+}
+body.in-game .scoreboard strong{font-size:21px;line-height:1.1}
+body.in-game .scoreboard small,.scoreboard .center-score span,
+body.in-game .scoreboard .center-score b{font-size:10px;line-height:1.2}
+body.in-game .scoreboard .center-score{min-width:0}
+body.in-game .scoreboard .center-score b{margin-top:3px}
+body.in-game .guide{
+ grid-area:guide;margin:0;padding:3px 9px;
+ border-radius:8px;display:grid;grid-template-columns:auto minmax(0,1fr);
+ align-items:center;column-gap:10px;overflow:visible
+}
+body.in-game .guide-heading{gap:0}
+body.in-game .guide-heading h2,body.in-game .guide-heading p{display:none}
+body.in-game .guide-heading button{
+ padding:4px 8px;font-size:11px;min-height:26px;
+ border-radius:6px;white-space:nowrap
+}
+body.in-game .guide-progress{
+ display:flex;flex-wrap:nowrap;align-items:center;gap:10px;
+ margin:0;overflow:hidden;min-width:0
+}
+body.in-game .guide-progress > p{
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+ font-size:11px;flex:1
+}
+body.in-game .yaku-progress-item{flex:1 1 0;min-width:0;max-width:160px}
+body.in-game .yaku-progress-head{font-size:10px;white-space:nowrap}
+body.in-game .yaku-progress-head strong{max-width:70%;overflow:hidden;text-overflow:ellipsis}
+body.in-game .yaku-progress-track{height:3px;margin-top:2px}
+body.in-game #guidePanel{
+ position:fixed;z-index:500;inset:clamp(6px,3vh,22px);
+ margin:auto;width:min(96vw,600px);height:min(90dvh,730px);
+ max-height:90dvh;overflow:auto;overscroll-behavior:contain;
+ border:2px solid #e2c07a;border-radius:15px;
+ background:#1b392a;padding:16px 18px;
+ box-shadow:0 0 0 100vmax #07130fe3,0 15px 38px #000c
+}
+body.in-game #guidePanel .guide-close{
+ display:block;position:sticky;top:0;z-index:1;margin:0 0 12px auto;
+ padding:6px 14px
+}
+body.in-game #guidePanel h2{font-size:19px}
+body.in-game .guide-examples{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px
+}
+body.in-game .board{
+ grid-area:board;min-height:0;min-width:0;overflow:hidden;
+ margin:0;padding:5px 9px 6px;border-radius:12px;
+ display:grid;column-gap:7px;
+ grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+ grid-template-rows:14px 36px 26px 27px minmax(0,1fr) 14px 37px 14px 77px
+}
+body.in-game .board > *{min-width:0;min-height:0}
+body.in-game .board .zone-head{
+ margin:0;min-height:0;height:14px;line-height:14px;
+ white-space:nowrap;overflow:hidden;display:flex;gap:5px;
+ font-size:10px;align-items:baseline
+}
+body.in-game .board .zone-head strong{
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0
+}
+body.in-game .board .zone-head span{
+ min-width:0;overflow:hidden;text-overflow:ellipsis;
+ font-size:10px;white-space:nowrap
+}
+body.in-game .opp-hand-head{grid-column:1;grid-row:1}
+body.in-game .opp-capture-head{grid-column:2;grid-row:1}
+body.in-game #opponentHand{
+ grid-column:1;grid-row:2;min-height:0;height:36px;
+ display:flex;justify-content:flex-start;align-items:center;gap:3px;
+ overflow:hidden
+}
+body.in-game #opponentCaptured{
+ grid-column:2;grid-row:2;height:36px;min-height:0
+}
+body.in-game .opponent-hand .card{
+ width:auto;height:100%;aspect-ratio:var(--card-ratio)
+}
+body.in-game #turnTimeline{
+ grid-column:1 / -1;grid-row:3;margin:0;min-height:0;
+ align-self:center;height:25px
+}
+body.in-game #turnTimeline .timeline-step{
+ padding:4px 9px;font-size:11px;line-height:13px
+}
+body.in-game #actionNarration{
+ grid-column:1 / -1;grid-row:4;align-self:center;
+ min-height:26px;height:26px;max-height:26px;
+ display:block!important;margin:0;padding:4px 9px;
+ overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+ line-height:17px;font-size:11px;
+}
+body.in-game #actionNarration[hidden]{visibility:hidden}
+body.in-game .middle{
+ grid-column:1 / -1;grid-row:5;position:relative;
+ display:flex;align-items:stretch;justify-content:center;
+ gap:9px;margin:0;min-height:0;height:100%;overflow:hidden
+}
+body.in-game .field-side{
+ flex:1;min-width:0;min-height:0;max-width:none;
+ display:flex;flex-direction:column;overflow:hidden
+}
+body.in-game .field-side .zone-head{
+ flex:0 0 14px;min-height:14px
+}
+body.in-game #field{
+ flex:1;min-height:0;height:100%;max-height:100%;
+ padding:2px 3px;gap:4px;
+ display:grid;align-content:stretch;justify-items:center;
+ grid-template-columns:repeat(4,minmax(0,1fr));
+ grid-template-rows:repeat(var(--field-rows,2),minmax(0,1fr));
+ overflow:hidden
+}
+body.in-game #field .card{
+ width:auto;height:100%;max-width:100%;max-height:100%;
+ aspect-ratio:var(--card-ratio);align-self:center;justify-self:center
+}
+body.in-game #field .card .card-art{
+ height:100%;width:100%;object-fit:contain
+}
+body.in-game .deck-side{
+ align-self:stretch;justify-content:center;flex:0 0 56px;
+ width:56px;min-width:0;min-height:0;gap:4px;font-size:10px
+}
+body.in-game .deck-side .card{width:min(100%,45px);height:auto}
+body.in-game .deck-side strong{font-size:16px;line-height:1}
+body.in-game #drawReveal{
+ position:absolute;z-index:30;right:0;top:8px;
+ width:min(39%,152px);height:clamp(92px,40%,160px);min-height:0;
+ pointer-events:none;margin:0;padding:6px;
+ display:flex;align-items:center;gap:6px;overflow:hidden;
+ box-shadow:0 4px 13px #000c
+}
+body.in-game #drawReveal .draw-reveal-face{width:clamp(35px,35%,64px)}
+body.in-game #drawReveal .draw-reveal-copy{flex:1;min-width:0}
+body.in-game #drawReveal strong{font-size:10px;line-height:1.2}
+body.in-game #drawReveal p{
+ font-size:10px;line-height:1.3;max-height:90px;overflow:hidden;
+ margin:3px 0 0;overflow-wrap:anywhere
+}
+body.in-game #playStage{max-height:95%;overflow:hidden}
+body.in-game .own-capture-head{
+ grid-column:1/-1;grid-row:6
+}
+body.in-game #yourCaptured{
+ grid-column:1/-1;grid-row:7;height:37px;min-height:0
+}
+body.in-game .own-hand-head{
+ grid-column:1/-1;grid-row:8
+}
+body.in-game #yourHand{
+ grid-column:1/-1;grid-row:9;height:77px;min-height:0;
+ overflow-x:auto;overflow-y:hidden;
+ display:flex;align-items:center;justify-content:flex-start;gap:6px;
+ padding:2px 3px 4px;scroll-snap-type:x proximity;
+ scrollbar-width:thin
+}
+body.in-game #yourHand .card{
+ height:69px;width:auto;min-width:0;aspect-ratio:var(--card-ratio);
+ flex:none;scroll-snap-align:start
+}
+body.in-game .captured{
+ display:flex;align-items:center;gap:3px;
+ overflow-x:auto;overflow-y:hidden;padding:2px 3px;
+ scrollbar-width:thin
+}
+body.in-game .captured .card{
+ height:31px;width:auto;aspect-ratio:var(--card-ratio);flex:none
+}
+body.in-game .card .card-art{width:100%;height:100%;object-fit:contain}
+body.in-game #status{
+ grid-area:status;min-height:0;max-height:29px;height:29px;
+ padding:5px 9px;margin:0;
+ font-size:11px;line-height:17px;border-radius:7px;
+ overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+body.in-game .action-dock{
+ grid-area:dock;height:92px;min-height:0;max-height:92px;
+ border:1px solid #536d57;border-radius:9px;background:#182c23;
+ overflow:hidden;padding:5px 7px
+}
+body.in-game .turn-prompt{
+ margin:0;height:100%;display:flex;align-items:center;
+ justify-content:center;text-align:center;font-size:12px;color:#d6e9d7
+}
+body.in-game .selection{
+ position:static;transform:none;z-index:auto;
+ box-shadow:none;background:transparent;border:0;border-radius:0;
+ height:100%;padding:0;margin:0;overflow:hidden;
+ display:grid;grid-template-columns:minmax(0,1fr) auto;
+ grid-template-rows:32px minmax(0,1fr);gap:3px 8px
+}
+body.in-game .selection[hidden]{display:none!important}
+body.in-game .selection-top{
+ grid-column:1;grid-row:1;min-width:0;min-height:0;
+ gap:4px;justify-content:flex-start;overflow:hidden
+}
+body.in-game .selection-top h2{font-size:11px;margin:0;line-height:14px}
+body.in-game #selectedCardDetail{
+ line-height:13px;font-size:10px;white-space:nowrap;
+ overflow:hidden;text-overflow:ellipsis
+}
+body.in-game .selection-art{display:none}
+body.in-game .preview-text{
+ grid-column:1;grid-row:2;margin:0;font-size:11px;
+ line-height:14px;overflow-y:auto;overflow-x:hidden;
+ overflow-wrap:anywhere;min-width:0
+}
+body.in-game .selection-actions{
+ grid-column:2;grid-row:1 / 3;
+ display:flex;flex-direction:column;gap:4px
+}
+body.in-game .selection-actions button{
+ flex:1;min-height:0;min-width:112px;max-width:135px;
+ font-size:11px;line-height:14px;padding:2px 6px;border-radius:7px
+}
+/* Overlay modal views are independent of table dimensions. */
+body.in-game .round-overlay,
+body.in-game .decision,body.in-game .result,body.in-game .yaku-flash{
+ position:fixed;inset:0;z-index:250;overflow-y:auto;
+}
+@media(max-width:600px){
+ body.in-game .app{padding:3px 5px max(3px,env(safe-area-inset-bottom))}
+ body.in-game .top{flex-basis:35px}
+ body.in-game #game{
+  grid-template-rows:39px 33px minmax(0,1fr) 26px 77px;
+  gap:3px
+ }
+ body.in-game .scoreboard{padding:2px 4px}
+ body.in-game .scoreboard strong{font-size:18px}
+ body.in-game .guide{padding:2px 5px;column-gap:6px}
+ body.in-game .guide-heading button{font-size:10px;min-height:24px;padding:3px 6px}
+ body.in-game .guide-progress{gap:5px}
+ body.in-game .guide-progress .yaku-progress-item:nth-child(n+3){display:none}
+ body.in-game .board{
+  padding:3px 5px 4px;column-gap:5px;
+  grid-template-rows:12px 30px 22px 23px minmax(0,1fr) 12px 30px 12px 72px
+ }
+ body.in-game .board .zone-head{height:12px;line-height:12px;font-size:9px}
+ body.in-game .board .zone-head span{font-size:9px}
+ body.in-game #opponentHand,body.in-game #opponentCaptured{height:30px}
+ body.in-game #turnTimeline{height:21px}
+ body.in-game #turnTimeline .timeline-step{font-size:10px;padding:2px 7px}
+ body.in-game #actionNarration{
+  height:23px;min-height:23px;max-height:23px;
+  font-size:10px;line-height:15px;padding:3px 7px
+ }
+ body.in-game .middle{gap:4px}
+ body.in-game #field{gap:3px;padding:1px}
+ body.in-game .deck-side{flex-basis:39px;width:39px;font-size:9px}
+ body.in-game .deck-side .card{width:min(100%,37px)}
+ body.in-game #yourCaptured{height:30px}
+ body.in-game .captured .card{height:26px}
+ body.in-game #yourHand{height:72px;gap:5px}
+ body.in-game #yourHand .card{height:63px}
+ body.in-game #status{height:26px;max-height:26px;padding:4px 6px;font-size:10px}
+ body.in-game .action-dock{height:77px;max-height:77px;padding:4px}
+ body.in-game .selection{grid-template-rows:24px minmax(0,1fr);gap:2px 5px}
+ body.in-game .selection-top h2{font-size:10px}
+ body.in-game #selectedCardDetail{font-size:9px}
+ body.in-game .preview-text{font-size:10px;line-height:13px}
+ body.in-game .selection-actions button{min-width:98px;max-width:103px;font-size:10px}
+ body.in-game #drawReveal{
+  right:0;top:2px;width:min(42%,116px);height:96px;padding:4px;gap:3px
+ }
+ body.in-game #drawReveal .draw-reveal-face{width:39px}
+ body.in-game #drawReveal p{font-size:9px;line-height:1.2}
+ body.in-game #playStage img{width:clamp(35px,9vh,58px)}
+ body.in-game .guide-examples{grid-template-columns:1fr}
+}
+@media(max-height:620px){
+ body.in-game #game{
+  grid-template-rows:33px 30px minmax(0,1fr) 23px 69px;gap:2px
+ }
+ body.in-game .board{
+  grid-template-rows:11px 25px 20px 20px minmax(0,1fr) 11px 25px 11px 58px
+ }
+ body.in-game #opponentHand,body.in-game #opponentCaptured{height:25px}
+ body.in-game .board .zone-head{height:11px;line-height:11px}
+ body.in-game #turnTimeline{height:20px}
+ body.in-game #actionNarration{height:20px;min-height:20px;max-height:20px}
+ body.in-game #yourCaptured{height:25px}
+ body.in-game #yourHand{height:58px}
+ body.in-game #yourHand .card{height:51px}
+ body.in-game .captured .card{height:21px}
+ body.in-game #status{height:23px}
+ body.in-game .action-dock{height:69px;max-height:69px}
+}
+@media (max-height:440px){
+ body.in-game .top{flex-basis:27px}
+ body.in-game .top h1{font-size:14px}
+ body.in-game #game{
+  grid-template-rows:29px 24px minmax(0,1fr) 18px 55px;gap:2px
+ }
+ body.in-game .board{
+  grid-template-rows:9px 19px 16px 16px minmax(0,1fr) 9px 20px 9px 43px
+ }
+ body.in-game #opponentHand,body.in-game #opponentCaptured{height:19px}
+ body.in-game #yourCaptured{height:20px}
+ body.in-game #yourHand{height:43px}
+ body.in-game #yourHand .card{height:37px}
+ body.in-game .captured .card{height:17px}
+ body.in-game #status{height:18px;line-height:12px;padding:2px 5px}
+ body.in-game .action-dock{height:55px;max-height:55px}
+}
