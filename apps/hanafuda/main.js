@@ -255,6 +255,7 @@ const cardName=id=>{
 
 function outlookLabel(p,isOpponent){
  if(p.completed)return lang==="ja"?"成立済み":"Completed";
+ if(p.superseded)return lang==="ja"?"上位の光役へ移行":"Upgraded to a higher Bright set";
  if(p.impossible)return lang==="ja"?"必要札が相手に取られ成立不可":"Blocked by captured cards";
  if(p.heldIds?.length&&isOpponent)return lang==="ja"?
    "必要札をあなたが手札に所持":"A required card is currently in your hand";
@@ -263,7 +264,7 @@ function outlookLabel(p,isOpponent){
 }
 function showOutlook(parentId,progress,isOpponent){
  const zone=$(parentId);zone.replaceChildren();
- const relevant=progress.filter(p=>p.have>0).sort((a,b)=>{
+ const relevant=progress.filter(p=>p.have>0&&!p.superseded).sort((a,b)=>{
   if(a.completed!==b.completed)return a.completed?-1:1;
   if(a.impossible!==b.impossible)return a.impossible?1:-1;
   return (a.need-a.have)-(b.need-b.have);
@@ -288,7 +289,7 @@ function showGuide(){
  if(!game)return;
  const own=yakuProgress(game.captured[0]);
  const opponent=publicYakuOutlook(game.captured[1],game.captured[0],game.hands[0]);
- const top=values=>values.filter(p=>p.have>0&&!p.impossible).sort(
+ const top=values=>values.filter(p=>p.have>0&&!p.impossible&&!p.superseded).sort(
   (a,b)=>(a.need-a.have)-(b.need-b.have))[0];
  if(hintsOn){
   const hintPairs=[
