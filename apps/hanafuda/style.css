@@ -671,3 +671,16 @@ body.in-game .turn-prompt{
   padding:3px 5px;font-size:11px
  }
 }
+
+/* Selected mobile hand card was jumping 9px above its clipped horizontal rail.
+   Keep the selection visible without changing rail scroll height. */
+body.in-game #yourHand .card.selected-card,
+body.in-game #yourHand .card.selected-card:hover{
+ transform:translateY(-2px);
+ outline-offset:0;
+ box-shadow:0 0 0 3px #f3c977,0 4px 10px #000b
+}
+body.in-game #field .card.target,
+body.in-game #field .card.chosen{
+ outline-offset:0
+}
