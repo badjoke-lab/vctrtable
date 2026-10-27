@@ -268,3 +268,27 @@ footer,.art-credit{font-size:11px;color:#9eb5a8;line-height:1.5;margin-top:20px}
  .result .overlay-content,.yaku-flash .overlay-content{padding:19px 15px}
  .decision-actions button,.result-actions button{min-width:130px}
 }
+
+/* The actual 8 + 8 + 8 dealt cards are introduced in short successive
+   groups before the first turn. Animation does not change the dealt state. */
+.field.dealing .card,.your-hand.dealing .card,.opponent-hand.dealing .card{
+ animation:hanafuda-deal-in .34s ease-out both
+}
+.field.dealing .card:nth-child(2n),
+.your-hand.dealing .card:nth-child(2n),
+.opponent-hand.dealing .card:nth-child(2n){animation-delay:.12s}
+.field.dealing .card:nth-child(3n),
+.your-hand.dealing .card:nth-child(3n),
+.opponent-hand.dealing .card:nth-child(3n){animation-delay:.23s}
+.field.dealing .card:nth-child(4n),
+.your-hand.dealing .card:nth-child(4n),
+.opponent-hand.dealing .card:nth-child(4n){animation-delay:.34s}
+@keyframes hanafuda-deal-in{
+ from{opacity:0;transform:translateY(-14px) scale(.93)}
+ to{opacity:1;transform:translateY(0) scale(1)}
+}
+@media(prefers-reduced-motion:reduce){
+ .field.dealing .card,.your-hand.dealing .card,.opponent-hand.dealing .card{
+  animation:none
+ }
+}
