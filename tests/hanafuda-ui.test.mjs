@@ -250,3 +250,29 @@ test("Six-point dealt opening is explicitly explained, never silently skipped",a
  assert.equal($("result").hidden,false);
  assert.ok($("resultReason").textContent.includes("6 points"));
 });
+
+test("Yaku formed by hand capture announces BEFORE mandatory deck reveal",async()=>{
+ const {ui,$,story}=makeUi();
+ const notice=$("yakuFlashTitle");
+ let label="";
+ Object.defineProperty(notice,"textContent",{
+  get:()=>label,
+  set:v=>{label=String(v);story.push("ROLE: "+label);}
+ });
+ $("start").listeners.click();$("beginRound").listeners.click();await flush();
+ const s=ui.state().game;
+ s.active=0;s.phase="turn";
+ s.captured[0]=["3-1","8-1"];
+ s.field=["1-2","4-3"];
+ s.hands[0]=["1-1"];
+ s.deck=["7-2",...s.deck.filter(id=>id!=="7-2")];
+ ui.render();
+ $("yourHand").children[0].listeners.click();
+ $("confirm").listeners.click();await flush();
+ const roleAt=story.findIndex(v=>v.includes("ROLE:")&&v.includes("Three Bright"));
+ const deckAt=story.findIndex(v=>v.includes("flip one card"));
+ assert.ok(roleAt>=0,"Sanko should visibly announce after the hand capture");
+ assert.ok(deckAt>roleAt,"The yaku must be visible before the compulsory draw");
+ assert.equal(s.phase,"decision","Stop/Koi offered only after the deck draw");
+ assert.equal($("decision").hidden,false);
+});
