@@ -1,5 +1,5 @@
 import {capturePreview,matchingFieldCards,yakuProgress} from "../../packages/hanafuda/guide.js";
-import {cardById,startRound,playCard,chooseTarget,drawNextCard,decide,scoreCards} from "../../packages/hanafuda/koikoi.js";
+import {cardById,startRound,chooseInitialDealer,playCard,chooseTarget,drawNextCard,decide,scoreCards} from "../../packages/hanafuda/koikoi.js";
 // Entire game, including hidden opponent cards, is intentionally local QA only.
 // Nothing here calls webxdc.sendUpdate or uses a real Vector multiplayer channel.
 const $ = id => document.getElementById(id);
@@ -76,6 +76,8 @@ const TR={h:"bright",a:"animal",t:"ribbon",k:"plain"};
 let lang="en",matchTotal=12,round=0,scores=[0,0],dealer=0,game=null;
 let selected=null,selectedTarget=null,locked=false,guideOpen=false;
 let revealedDraw=null,playbackPhase=null,playbackMessage="";
+let introOpen=false,firstParentDraw=null,roleFlashActive=false;
+let yakuSeen=[{points:0,yaku:[]},{points:0,yaku:[]}];
 const tx = key => M[lang][key] || key;
 const yakuText = who => {
   const y=scoreCards(game.captured[who]);
@@ -207,10 +209,80 @@ function selectionText(p){
  }
  return explanation;
 }
+function endReason(){
+ if(!game)return "";
+ const whoText=game.winner===null?tx("draw"):game.winner===0?tx("youLabel"):tx("oppLabel");
+ const reasons={
+  "initial-bonus":lang==="ja"?
+    "配札時に「"+(game.initialBonus?.kind==="teshi"?"手四":"くっつき")+
+    "」が成立しました。"+whoText+"に6点。通常の対局は行わず、この局を終了します。":
+    whoText+" was dealt "+(game.initialBonus?.kind==="teshi"?
+    "four cards from one month (Teshi)":"four pairs of months (Kuttsuki)")+
+    ". The official opening rule awards 6 points and ends this round before play.",
+  "stop":lang==="ja"?whoText+"が「あがり」を選んだため、この局は終了です。":
+    whoText+" chose Stop & Score. The round ends immediately.",
+  "koi-improvement":lang==="ja"?whoText+"が「こいこい」の後に新たな役・加点を成立させ、局が終了しました。":
+    whoText+" improved a scoring set after declaring Koi-Koi, ending the round.",
+  "koi-counter":lang==="ja"?whoText+"が相手の「こいこい」後に役を成立させました。逆転で2倍です。":
+    whoText+" formed a set after the other player declared Koi-Koi. Counter score is doubled.",
+  "exhausted":lang==="ja"?"双方の手札がなくなり、加点を確定せずに流局しました。":
+    "Both hands are empty. No further scoring set was claimed; the round is a draw."
+ };
+ return reasons[game.endedReason]||"";
+}
+function renderIntro(){
+ $("roundIntro").hidden=!introOpen;
+ if(!introOpen)return;
+ $("roundIntroEyebrow").textContent=lang==="ja"?"新しい局":"New round";
+ $("roundIntroTitle").textContent=lang==="ja"?"第"+round+"局 / "+matchTotal+"局":
+  "Round "+round+" of "+matchTotal;
+ $("roundIntroParent").textContent=lang==="ja"?
+  "親（先攻）："+(dealer===0?"あなた":"相手"):
+  "Dealer / first turn: "+(dealer===0?"You":"Opponent");
+ $("roundIntroScore").textContent=lang==="ja"?
+  "合計点　あなた "+scores[0]+" ― 相手 "+scores[1]:
+  "Match scores: You "+scores[0]+" — Opponent "+scores[1];
+ const drawText=firstParentDraw?
+  (lang==="ja"?
+   "親決め：あなた "+firstParentDraw.monthBySeat[0]+"月 / 相手 "+
+    firstParentDraw.monthBySeat[1]+"月。月の早い方が親です。":
+   "First dealer draw: You drew month "+firstParentDraw.monthBySeat[0]+
+    ", opponent month "+firstParentDraw.monthBySeat[1]+
+    ". The earlier month goes first."):
+  lang==="ja"?"前局の結果で親が決まりました。":
+    "The previous round decided the first player.";
+ const bonus=game.endedReason==="initial-bonus"?endReason():"";
+ $("roundIntroNote").textContent=(bonus?bonus+" ":"")+drawText;
+ $("beginRound").textContent=game.phase==="ended"?
+  (lang==="ja"?"結果を見る":"View round result"):
+  (lang==="ja"?"配札して開始":"Deal & start");
+}
+async function announceYaku(seat){
+ const now=scoreCards(game.captured[seat]),before=yakuSeen[seat];
+ yakuSeen[seat]=now;
+ const improved=now.points>before.points;
+ if(!improved)return;
+ const previous=new Map(before.yaku.map(y=>[y.key,y.points]));
+ const changed=now.yaku.filter(y=>y.points>(previous.get(y.key)||0));
+ const names=changed.map(y=>yName(y.key)).join(" · ");
+ roleFlashActive=true;
+ $("yakuFlashEyebrow").textContent=lang==="ja"?"役成立！":"Scoring set completed!";
+ $("yakuFlashTitle").textContent=(seat===0?tx("youLabel"):tx("oppLabel"))+
+  " — "+(names|| (lang==="ja"?"役が加点":"Scoring set improved"));
+ $("yakuFlashDetails").textContent=lang==="ja"?
+  "今回 +"+(now.points-before.points)+"点分の役を獲得。役の合計 "+
+  now.points+"点。":
+  "+"+(now.points-before.points)+" points. Total scoring sets: "+
+  now.points+" points.";
+ $("yakuFlash").hidden=false;
+ await beatPause(1100);
+ roleFlashActive=false;$("yakuFlash").hidden=true;
+}
 function render() {
  renderLabels();
  $("setup").hidden=!!game;$("game").hidden=!game;
  if(!game)return;
+ renderIntro();
  settleOnce();
  $("oppScore").textContent=format(scores[1]);$("yourScore").textContent=format(scores[0]);
  $("roundLabel").textContent=lang==="ja"?tx("round")+round+"局 / "+matchTotal+"局":
@@ -247,10 +319,10 @@ function render() {
  }
  $("matchHint").textContent=selected?(
   legal.size?(lang==="ja"?legal.size+"枚一致":legal.size+" matches"):tx("noMatch")):"";
- $("decision").hidden=game.phase!=="decision"||game.active!==0||locked;
+ $("decision").hidden=introOpen||game.phase!=="decision"||game.active!==0||locked;
  $("koi").disabled=locked||game.hands.every(h=>h.length===0);
  $("stop").disabled=locked;
- $("result").hidden=game.phase!=="ended"||locked;
+ $("result").hidden=introOpen||game.phase!=="ended"||locked;
  let status;
  if(locked||game.phase==="draw-pending")status=tx("working");
  else if(game.phase==="ended")status=tx("roundOver");
@@ -268,6 +340,7 @@ function render() {
  if(game.phase==="ended"){
   const who=game.winner;
   $("resultTitle").textContent=round===matchTotal?tx("matchOver"):tx("resultTitle");
+  $("resultReason").textContent=endReason();
   $("resultSummary").textContent=(who===null?tx("draw"):who===0?tx("youWin"):tx("theyWin"))+
    " · "+game.points+" "+tx("points")+(who===null?"":" · "+yakuText(who))+
    (round===matchTotal?" · "+tx("score")+": "+format(scores[0])+" / "+format(scores[1]):"");
