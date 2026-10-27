@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
-import {cardById,startRound,playCard,chooseTarget,drawNextCard,decide,scoreCards} from "../packages/hanafuda/koikoi.js";
+import {cardById,startRound,chooseInitialDealer,playCard,chooseTarget,drawNextCard,decide,scoreCards} from "../packages/hanafuda/koikoi.js";
 import {matchingFieldCards,capturePreview,yakuProgress} from "../packages/hanafuda/guide.js";
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
@@ -50,14 +50,14 @@ function makeUi({motion=false}={}){
  let seed=19;
  const rng=()=>((seed=(seed*1664525+1013904223)>>>0)/4294967296);
  const localStart=()=>startRound({dealer:0,rng});
- const args=["document","window","setTimeout","cardById","startRound","playCard",
+ const args=["document","window","setTimeout","cardById","startRound","chooseInitialDealer","playCard",
   "chooseTarget","drawNextCard","decide","scoreCards","capturePreview",
   "matchingFieldCards","yakuProgress"];
  const create=new Function(...args,script+
   "; return {state:()=>({game,selected,selectedTarget,locked}),render};");
  const ui=create(document,{innerWidth:390,matchMedia:()=>({matches:!motion})},
   callback=>queueMicrotask(callback),
-  cardById,localStart,playCard,chooseTarget,drawNextCard,decide,scoreCards,
+  cardById,localStart,chooseInitialDealer,playCard,chooseTarget,drawNextCard,decide,scoreCards,
   capturePreview,matchingFieldCards,yakuProgress);
  return {ui,$,story,animations};
 }
@@ -66,7 +66,10 @@ async function flush(){
 }
 test("Hanafuda hand selection, replacement and cancellation never commit a game event",async()=>{
  const {ui,$}=makeUi();
- $("start").listeners.click();await flush();
+ $("start").listeners.click();
+ assert.equal($("roundIntro").hidden,false,"round intro must be visible");
+ assert.ok($("roundIntroTitle").textContent.includes("Round"));
+ $("beginRound").listeners.click();await flush();
  const s=ui.state().game;
  assert.equal(s.active,0);assert.equal(s.phase,"turn");
  const before=JSON.stringify(s);
@@ -189,4 +192,61 @@ test("Actual animated path moves physical pairs and flips the drawn card",async(
  const played=story.findIndex(s=>s.includes("plays")&&s.includes("from hand"));
  const drawn=story.findIndex(s=>s.includes("Draw revealed"));
  assert.ok(played>=0&&drawn>played);
+});
+
+test("Opening round is visible BEFORE opponent moves and subsequent rounds get their own intro",async()=>{
+ const {ui,$}=makeUi();
+ $("start").listeners.click();
+ assert.equal($("roundIntro").hidden,false);
+ assert.ok($("roundIntroParent").textContent.includes("Dealer"));
+ assert.ok($("roundIntroNote").textContent.includes("month"));
+ assert.equal($("beginRound").textContent,"Deal & start");
+ assert.equal(ui.state().game.deck.length,24,"No draw before pressing Deal & start");
+ $("beginRound").listeners.click();await flush();
+ assert.equal($("roundIntro").hidden,true);
+ // Force a completed local round only to test visible next-round transition.
+ const s=ui.state().game;
+ s.phase="ended";s.winner=0;s.points=5;s.endedReason="stop";
+ ui.render();
+ assert.equal($("result").hidden,false);
+ assert.ok($("resultReason").textContent.includes("Stop"));
+ $("next").listeners.click();await flush();
+ assert.equal($("roundIntro").hidden,false);
+ assert.equal($("roundIntroTitle").textContent,"Round 2 of 3");
+});
+test("A completed yaku has a visible announcement then a Stop/Koi modal",async()=>{
+ const {ui,$}=makeUi();
+ const flashed=[];
+ Object.defineProperty($("yakuFlashTitle"),"textContent",{
+  get:()=>flashed.at(-1)||"",
+  set:v=>flashed.push(String(v))
+ });
+ $("start").listeners.click();$("beginRound").listeners.click();await flush();
+ const s=ui.state().game;
+ s.active=0;s.phase="turn";s.hands[0]=["1-1"];
+ s.field=["1-2"];s.captured[0]=["3-1","8-1"];
+ s.deck=["7-2",...s.deck.filter(id=>id!=="7-2")];
+ ui.render();
+ $("yourHand").children[0].listeners.click();
+ $("confirm").listeners.click();await flush();
+ assert.equal(s.phase,"decision");
+ assert.ok(flashed.some(v=>v.includes("Three Bright")));
+ assert.equal($("decision").hidden,false);
+ assert.ok($("decisionSummary").textContent.includes("5"));
+ $("stop").listeners.click();await flush();
+ assert.equal($("result").hidden,false);
+ assert.ok($("resultReason").textContent.includes("Stop"));
+ assert.equal(s.endedReason,"stop");
+});
+test("Six-point dealt opening is explicitly explained, never silently skipped",async()=>{
+ const {ui,$}=makeUi();
+ $("start").listeners.click();
+ const s=ui.state().game;
+ s.phase="ended";s.endedReason="initial-bonus";
+ s.initialBonus={winner:0,kind:"teshi"};s.winner=0;s.points=6;
+ ui.render();
+ assert.ok($("roundIntroNote").textContent.includes("Teshi"));
+ $("beginRound").listeners.click();await flush();
+ assert.equal($("result").hidden,false);
+ assert.ok($("resultReason").textContent.includes("6 points"));
 });
