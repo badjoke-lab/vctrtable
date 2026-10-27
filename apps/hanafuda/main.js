@@ -454,14 +454,19 @@ async function announceYaku(seat,{beforeDraw=false}={}){
  await beatPause(1100);
  roleFlashActive=false;$("yakuFlash").hidden=true;
 }
+function refreshFieldRows(){
+ if(!game)return;
+ const columns=window.innerWidth>=700?6:4;
+ $("field").style.setProperty?.("--field-rows",String(Math.max(2,
+  Math.ceil(game.field.length/columns))));
+}
+window.addEventListener?.("resize",refreshFieldRows);
 function render() {
  document.body.className=game?"in-game":"";
  renderLabels();
  $("setup").hidden=!!game;$("game").hidden=!game;
  if(!game)return;
- const fieldColumns=window.innerWidth>=700?6:4;
- $("field").style.setProperty?.("--field-rows",String(Math.max(2,
-  Math.ceil(game.field.length/fieldColumns))));
+ refreshFieldRows();
  renderIntro();
  settleOnce();
  $("oppScore").textContent=format(scores[1]);$("yourScore").textContent=format(scores[0]);
