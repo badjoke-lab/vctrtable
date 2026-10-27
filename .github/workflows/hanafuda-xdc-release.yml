@@ -23,6 +23,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  issues: write
 concurrency:
   group: hanafuda-qa-xdc-latest
   cancel-in-progress: false
@@ -70,3 +71,25 @@ jobs:
             gh release create "$TAG" dist/hanafuda.xdc --target "$SHA" --prerelease --title "Hanafuda Koi-Koi — local QA (latest)" --notes "$NOTES"
           fi
           echo "URL: https://github.com/${GH_REPO}/releases/download/${TAG}/hanafuda.xdc"
+
+      - name: Record verified published SHA and workflow link
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA="${{ github.event.pull_request.head.sha || github.sha }}"
+          RUN="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/hanafuda-qa-latest/hanafuda.xdc"
+          BODY="### 花札ローカルQA版 — 自動配布確認
+          
+          **状態：公開成功（GitHub Actions自動検証）**
+          
+          - ビルドSHA: ${SHA}
+          - 実行・ログ: ${RUN}
+          - Noteへ貼るXDC: ${URL}
+          - 検証: npm test、48枚の画像を含むXDC作成、ZIP整合性
+          
+          実VectorのPC/スマホでの見え方・操作は、別途実機確認が必要です。"
+          gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/6431662373" -f body="$BODY" >/dev/null
+
