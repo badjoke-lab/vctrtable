@@ -76,7 +76,9 @@
     <div id="yourHand" class="your-hand"></div>
   </div>
   <p class="status" id="status" role="status" aria-live="polite">Choose a card from your hand.</p>
-  <section id="selection" class="selection panel" hidden aria-labelledby="selectionTitle">
+  <div id="actionDock" class="action-dock">
+    <p id="turnPrompt" class="turn-prompt">Select a card from your hand.</p>
+    <section id="selection" class="selection panel" hidden aria-labelledby="selectionTitle">
     <div class="selection-top">
       <div><h2 id="selectionTitle">Selected card</h2><p id="selectedCardDetail"></p></div>
       <div id="selectedCardArt" class="selection-art"></div>
@@ -86,14 +88,17 @@
       <button id="confirm" class="primary" type="button">Play this card</button>
       <button id="cancel" class="secondary" type="button">Cancel / Choose another</button>
     </div>
-  </section>
-  <section class="guide panel" aria-labelledby="guideTitle">
+    </section>
+  </div>
+  <section id="guide" class="guide panel" aria-labelledby="guideTitle">
     <div class="guide-heading">
       <div><h2 id="guideTitle">Build a scoring set (Yaku)</h2><p id="guideIntro">Match cards from the same month and collect combinations.</p></div>
       <button id="guideToggle" class="secondary" type="button" aria-expanded="false" aria-controls="guidePanel">Show Yaku guide</button>
     </div>
     <div id="yakuProgress" class="guide-progress" aria-live="polite"></div>
-    <div id="guidePanel" hidden>
+    <div id="guidePanel" role="dialog" aria-modal="true" aria-labelledby="guideTitle" hidden>
+      <button id="guideClose" class="secondary guide-close" type="button">Close guide</button>
+      <h2 id="guidePanelTitle">Scoring combinations / 役一覧</h2>
       <p id="guideHelp">Cards captured from the field form scoring combinations. Nothing in the hidden deck is predicted here.</p>
       <div id="guideExamples" class="guide-examples"></div>
     </div>
