@@ -296,7 +296,7 @@ function render() {
  $("setup").hidden=!!game;$("game").hidden=!game;
  if(!game)return;
  const fieldColumns=window.innerWidth>=700?6:4;
- $("field").style.setProperty?.("--field-rows",String(Math.max(fieldColumns===6?2:3,
+ $("field").style.setProperty?.("--field-rows",String(Math.max(2,
   Math.ceil(game.field.length/fieldColumns))));
  renderIntro();
  settleOnce();
@@ -327,9 +327,10 @@ function render() {
  $("oppYaku").textContent=yakuText(1);$("yourYaku").textContent=yakuText(0);
  $("selection").hidden=!selected||game.phase!=="turn"||game.active!==0;
  $("turnPrompt").hidden=!$("selection").hidden;
- $("turnPrompt").textContent=lang==="ja"?
-  (game.active===0&&game.phase==="turn"?"手札を選んでください。":"盤面を確認してください。"):
-  (game.active===0&&game.phase==="turn"?"Select a hand card to preview a move.":"Follow the cards on the table.");
+ $("turnPrompt").textContent=playbackMessage||
+  (lang==="ja"?
+   (game.active===0&&game.phase==="turn"?"手札を選んでください。":"盤面を確認してください。"):
+   (game.active===0&&game.phase==="turn"?"Select a hand card to preview a move.":"Follow the cards on the table."));
  if(selected&&game.phase==="turn"&&game.active===0){
   $("selectedCardDetail").textContent=cardName(selected);
   $("selectedPreview").textContent=selectionText(p);
@@ -485,7 +486,7 @@ function rect(zone,id=null,offset=0){
   const parent=$("field"),grid=parent.getBoundingClientRect();
   const n=parent.children.length;
   const cols=window.innerWidth>=700?6:4;
-  const rows=Math.max(cols===6?2:3,Math.ceil((n+1)/cols));
+  const rows=Math.max(2,Math.ceil((n+1)/cols));
   const cellW=grid.width/cols,cellH=grid.height/rows;
   const w=Math.max(10,Math.min(cellW-5,(cellH-5)*976/1600));
   const h=w*1600/976;
