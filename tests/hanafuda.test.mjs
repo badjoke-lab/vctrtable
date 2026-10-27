@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
- CARDS,cardById,shuffleCards,scoreCards,startRound,playCard,chooseTarget,
+ CARDS,cardById,shuffleCards,scoreCards,startRound,chooseInitialDealer,initialBonusKind,playCard,chooseTarget,
  decide,drawNextCard,getPublicState
 } from "../packages/hanafuda/koikoi.js";
 const random = seed => () => ((seed = (seed*1664525 + 1013904223) >>> 0) / 4294967296);
@@ -147,4 +147,68 @@ test("deferred two-match hand choice waits to draw until selection",()=>{
  assert.equal(s.deck.length,before);
  drawNextCard(s);
  assert.equal(s.deck.length,before-1);
+});
+
+test("Parent is selected by earlier revealed month rather than unexplained random coin flip",()=>{
+ for(let seed=1;seed<=80;seed++){
+  const dealer=chooseInitialDealer(random(seed));
+  assert.ok([0,1].includes(dealer.dealer));
+  const [you,other]=dealer.monthBySeat;
+  assert.notEqual(you,other);
+  assert.equal(dealer.dealer,you<other?0:1);
+ }
+});
+test("Six-point opening hands are classified for player-visible explanation",()=>{
+ assert.equal(initialBonusKind(["1-1","1-2","1-3","1-4","2-1","3-1","4-1","5-1"]),"teshi");
+ assert.equal(initialBonusKind(["1-1","1-2","2-1","2-2","3-1","3-2","4-1","4-2"]),"kuttsuki");
+ assert.equal(initialBonusKind(["1-1","1-2","2-1","3-1","4-1","5-1","6-1","7-1"]),null);
+});
+test("After Koi-Koi, a new scoring point ENDS round instead of offering another Koi",()=>{
+ const s=startRound({rng:random(81)});
+ s.phase="decision";s.active=0;
+ s.captured[0]=["2-1","4-1","5-1","6-1","7-1"]; // 5 seeds → 1 point
+ decide(s,"koi");
+ assert.equal(s.offered[0],1);
+ s.active=0;s.phase="turn";
+ s.field=["8-1"];s.hands[0]=["8-2"]; // 6th seed → 2 points
+ s.deck=["9-2"];
+ playCard(s,"8-2");
+ assert.equal(s.phase,"ended");
+ assert.equal(s.endedReason,"koi-improvement");
+ assert.equal(s.winner,0);
+ assert.equal(s.points,2);
+ assert.ok(s.hands[0].length===0);
+});
+test("Exhausting both hands without claiming any score is no-game, not a silent win",()=>{
+ const s=startRound({rng:random(82)});
+ s.active=0;s.phase="turn";s.hands=[[ "4-3" ],[]];
+ s.field=[];s.deck=["5-3"];s.captured=[[],[]];
+ playCard(s,"4-3");
+ assert.equal(s.phase,"ended");
+ assert.equal(s.winner,null);
+ assert.equal(s.points,0);
+ assert.equal(s.endedReason,"exhausted");
+});
+test("Whole twelve-round match never silently truncates; only legal end reasons",()=>{
+ const valid=new Set(["stop","koi-counter","koi-improvement","exhausted","initial-bonus"]);
+ for(let match=1;match<=40;match++){
+  let dealer=chooseInitialDealer(random(match*31)).dealer,scores=[0,0];
+  for(let round=1;round<=12;round++){
+   const s=startRound({dealer,rng:random(match*300+round)});
+   let turns=0;
+   while(s.phase!=="ended"&&turns++<110){
+    if(s.phase==="turn")playCard(s,s.hands[s.active][0]);
+    else if(s.phase==="choose")chooseTarget(s,s.pending.choices[0]);
+    else if(s.phase==="decision"){
+     const canContinue=s.hands.some(h=>h.length>0);
+     decide(s,canContinue&&s.koiedBy===null&&round%2===0?"koi":"stop");
+    }else assert.fail("Invalid phase "+s.phase);
+   }
+   assert.equal(s.phase,"ended","match "+match+" round "+round);
+   assert.ok(valid.has(s.endedReason));
+   if(s.winner!==null)scores[s.winner]+=s.points;
+   dealer=s.winner===null?1-s.dealer:s.winner;
+  }
+  assert.ok(scores.every(v=>Number.isSafeInteger(v)&&v>=0));
+ }
 });
