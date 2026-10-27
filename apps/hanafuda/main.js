@@ -214,32 +214,92 @@ const cardName=id=>{
  const card=cardById(id);
  return (lang==="ja"?card.monthJa:card.monthEn)+" / "+tx(TR[card.type]);
 };
+
+function outlookLabel(p,isOpponent){
+ if(p.completed)return lang==="ja"?"成立済み":"Completed";
+ if(p.impossible)return lang==="ja"?"必要札が相手に取られ成立不可":"Blocked by captured cards";
+ if(p.heldIds?.length&&isOpponent)return lang==="ja"?
+   "必要札をあなたが手札に所持":"A required card is currently in your hand";
+ return p.oneAway?(lang==="ja"?"あと1枚":"One card away"):
+   (lang==="ja"?"進行中":"In progress");
+}
+function showOutlook(parentId,progress,isOpponent){
+ const zone=$(parentId);zone.replaceChildren();
+ const relevant=progress.filter(p=>p.have>0).sort((a,b)=>{
+  if(a.completed!==b.completed)return a.completed?-1:1;
+  if(a.impossible!==b.impossible)return a.impossible?1:-1;
+  return (a.need-a.have)-(b.need-b.have);
+ }).slice(0,8);
+ if(!relevant.length){
+  const p=document.createElement("p");p.textContent=lang==="ja"?
+   "取り札が集まると、狙える役がここに表示されます。":
+   "Potential sets appear as captured cards accumulate.";
+  zone.append(p);
+ }
+ for(const item of relevant){
+  const row=document.createElement("div");row.className="outlook-item"+
+   (item.impossible?" outlook-blocked":"")+(item.oneAway?" outlook-near":"");
+  const label=document.createElement("strong");label.textContent=yFullName(item.key);
+  const status=document.createElement("span");status.textContent=item.have+"/"+item.need+
+   " · "+outlookLabel(item,isOpponent);
+  row.append(label,status);zone.append(row);
+ }
+}
 function showGuide(){
  const progress=$("yakuProgress");progress.replaceChildren();
  if(!game)return;
- const rows=yakuProgress(game.captured[0]).filter(p=>p.have>0).slice(0,4);
- if(!rows.length){
-  const p=document.createElement("p");
-  p.textContent=lang==="ja"?"初心者ヒント：同じ月の4枚は絵が違っても組になります。":
-   "Beginner tip: all four pictures from the same month can match.";
-  progress.append(p);
+ const own=yakuProgress(game.captured[0]);
+ const opponent=publicYakuOutlook(game.captured[1],game.captured[0],game.hands[0]);
+ const top=values=>values.filter(p=>p.have>0&&!p.impossible).sort(
+  (a,b)=>(a.need-a.have)-(b.need-b.have))[0];
+ if(hintsOn){
+  const hintPairs=[
+   [lang==="ja"?"自":"You",top(publicYakuOutlook(game.captured[0],game.captured[1]))],
+   [lang==="ja"?"相":"Opp",top(opponent)]
+  ];
+  for(const [label,p] of hintPairs){
+   const item=document.createElement("div");item.className="hint-inline";
+   item.textContent=label+": "+(p?(yName(p.key)+" "+p.have+"/"+p.need):
+    (lang==="ja"?"成立候補なし":"No set yet"));
+   progress.append(item);
+  }
+ }else {
+  const rows=own.filter(p=>p.have>0).slice(0,2);
+  if(!rows.length){
+   const item=document.createElement("p");item.textContent=lang==="ja"?
+    "同じ月の札を取って役を集めましょう。":
+    "Match the same month to build scoring sets.";
+   progress.append(item);
+  }
+  for(const p of rows){
+   const item=document.createElement("div");item.className="yaku-progress-item";
+   const head=document.createElement("div");head.className="yaku-progress-head";
+   const title=document.createElement("strong");title.textContent=yName(p.key);
+   const count=document.createElement("span");count.textContent=p.have+"/"+p.need;
+   head.append(title,count);
+   const bar=document.createElement("div");bar.className="yaku-progress-track";
+   const fill=document.createElement("span");
+   fill.style.width=Math.round(p.have/p.need*100)+"%";
+   bar.append(fill);item.append(head,bar);progress.append(item);
+  }
  }
- for(const p of rows){
-  const item=document.createElement("div");item.className="yaku-progress-item";
-  const head=document.createElement("div");head.className="yaku-progress-head";
-  const title=document.createElement("strong");title.textContent=yName(p.key);
-  const count=document.createElement("span");count.textContent=p.have+" / "+p.need;
-  const bar=document.createElement("div");bar.className="yaku-progress-track";
-  const fill=document.createElement("span");fill.style.width=Math.round(100*p.have/p.need)+"%";
-  bar.append(fill);head.append(title,count);item.append(head,bar);progress.append(item);
- }
+ $("hintsToggle").textContent=tx(hintsOn?"hintsEnabled":"hintsDisabled");
+ $("hintsToggle").setAttribute("aria-pressed",String(hintsOn));
  $("guidePanel").hidden=!guideOpen;
  $("guideToggle").textContent=tx(guideOpen?"guideClose":"guideToggle");
  $("guideClose").textContent=lang==="ja"?"閉じる":"Close";
  $("guidePanelTitle").textContent=lang==="ja"?"役の一覧":"Scoring combinations (Yaku)";
  $("guideToggle").setAttribute("aria-expanded",String(guideOpen));
  if(!guideOpen)return;
- const ex=$("guideExamples");ex.replaceChildren();
+ $("ownOutlookTitle").textContent=lang==="ja"?"自分の役の状況":"Your scoring sets";
+ $("oppOutlookTitle").textContent=lang==="ja"?"相手の役の状況":"Opponent's public scoring outlook";
+ $("outlookDisclaimer").textContent=lang==="ja"?
+  "相手の裏向きの手札と山札は不明です。相手の取り札、あなたの取り札・手札だけをもとに判断します。":
+  "The opponent's hidden hand and the deck are unknown. Only public captures and your own cards inform these hints.";
+ $("yakuReferenceTitle").textContent=lang==="ja"?"役の種類と必要な札":"Scoring combinations and required cards";
+ showOutlook("ownOutlook",publicYakuOutlook(game.captured[0],game.captured[1]),false);
+ showOutlook("oppOutlook",opponent,true);
+ const examples=$("guideExamples");examples.replaceChildren();
  for(const [key,ids] of SETS){
   const item=document.createElement("div");item.className="yaku-example";
   const title=document.createElement("strong");title.textContent=yFullName(key);
@@ -250,7 +310,7 @@ function showGuide(){
   }
   const description=document.createElement("p");
   description.textContent=Y_DESC[key][lang==="ja"?1:0];
-  item.append(title,description,pictures);ex.append(item);
+  item.append(title,description,pictures);examples.append(item);
  }
 }
 function selectedPreview(){
@@ -376,18 +436,20 @@ function render() {
  const legal=new Set(selected?matchingFieldCards(game.field,selected):[]);
  fill("opponentHand",game.hands[1],()=>({faceDown:true}));
  fill("field",game.field,id=>({
+  inspectable:true,
   match:legal.has(id),
   target:legal.has(id)||Boolean(pending?.choices.includes(id)),
   chosen:selectedTarget===id,
   click:!locked&&(pending?.choices.includes(id)||(selected&&legal.size===2&&legal.has(id)))?
-   ()=>selectField(id):null
+   ()=>selectField(id):()=>openInspect(id)
  }));
  fill("yourHand",game.hands[0],id=>({
   click:!locked&&game.active===0&&game.phase==="turn"?()=>selectCard(id):null,
-  selectedCard:selected===id
+  selectedCard:selected===id,
+  inspectable:true
  }));
- fill("opponentCaptured",game.captured[1],()=>({compact:true}));
- fill("yourCaptured",game.captured[0],()=>({compact:true}));
+ fill("opponentCaptured",game.captured[1],id=>({compact:true,click:()=>openInspect(id),inspectable:true}));
+ fill("yourCaptured",game.captured[0],id=>({compact:true,click:()=>openInspect(id),inspectable:true}));
  $("oppYaku").textContent=yakuText(1);$("yourYaku").textContent=yakuText(0);
  $("selection").hidden=!selected||game.phase!=="turn"||game.active!==0;
  $("turnPrompt").hidden=!$("selection").hidden;
