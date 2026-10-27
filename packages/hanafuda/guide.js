@@ -52,7 +52,16 @@ export function yakuProgress(captured) {
  for(const [key,type,need] of [["tane","a",5],["tan","t",5],["kasu","k",10]])
   entries.push({key,have:Math.min(counts[type],need),need,missing:[],points:1,
    total:counts[type]});
- // Light sets have distinct rules; do not falsely promise a particular yaku.
+ // Bright set progression follows the actual three/four/rain/five tiers.
+ // Three Bright excludes the rain card, Four Bright requires the four
+ // non-rain brights, and Rain Four requires rain + any three non-rain.
+ const nonRain=["1-1","3-1","8-1","12-1"],rain="11-1";
+ const n=nonRain.filter(id=>own.has(id)).length,hasRain=own.has(rain);
+ entries.push({key:"sanko",have:Math.min(n,3),need:3,missing:[],points:5});
+ entries.push({key:"shiko",have:n,need:4,
+  missing:nonRain.filter(id=>!own.has(id)),points:8});
+ entries.push({key:"ame-shiko",have:Math.min(n,3)+Number(hasRain),need:4,
+  missing:hasRain?[]:[rain],points:7});
  entries.push({key:"goko",have:counts.h,need:5,
   missing:["1-1","3-1","8-1","11-1","12-1"].filter(id=>!own.has(id)),points:10});
  return entries.sort((a,b)=>{
@@ -80,6 +89,14 @@ export function publicYakuOutlook(theirCaptured,yourCaptured,yourHand=[]) {
   const heldIds=missing.filter(id=>inHand.has(id));
   let impossible=blockedIds.length>0;
   let possibleTotal=null;
+  if(p.key==="sanko"||p.key==="shiko"||p.key==="ame-shiko"){
+   const nonRain=["1-1","3-1","8-1","12-1"];
+   const possible=nonRain.filter(id=>!mine.has(id)).length;
+   impossible=p.key==="sanko"?possible<3:
+    p.key==="shiko"?possible<4:
+     mine.has("11-1")||possible<3;
+   possibleTotal=possible;
+  }
   if(["tane","tan","kasu"].includes(p.key)) {
    const kind=p.key==="tane"?"a":p.key==="tan"?"t":"k";
    possibleTotal=counts(all,kind)-counts(yourCaptured,kind);
