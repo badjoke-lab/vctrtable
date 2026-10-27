@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {capturePreview,matchingFieldCards,yakuProgress} from "../packages/hanafuda/guide.js";
+import {capturePreview,matchingFieldCards,yakuProgress,publicYakuOutlook} from "../packages/hanafuda/guide.js";
 
 test("selection and previews are immutable and handle zero, one, two, three matches",()=>{
  for(const [field,expected] of [
@@ -40,4 +40,33 @@ test("progress accounts for cup's extra plain value without revealing other hand
 test("invalid card IDs are not legal candidates",()=>{
  assert.throws(()=>matchingFieldCards(["9-99"],"1-1"),/Unknown card/);
  assert.throws(()=>capturePreview([],[],"bad"),/Unknown card/);
+});
+
+test("Opponent set threat shows public progress and privately known held key cards",()=>{
+ const theirs=["7-1","10-1"];
+ const ours=["1-3","2-3"];
+ const hand=["6-1","4-1"];
+ const snapshot=JSON.stringify({theirs,ours,hand});
+ const outlook=publicYakuOutlook(theirs,ours,hand);
+ const boar=outlook.find(p=>p.key==="inoshikacho");
+ assert.equal(boar.have,2);
+ assert.equal(boar.need,3);
+ assert.equal(boar.oneAway,true);
+ assert.deepEqual(boar.heldIds,["6-1"]);
+ assert.equal(boar.impossible,false);
+ assert.equal(snapshot,JSON.stringify({theirs,ours,hand}),"Guidance is read-only");
+});
+test("Captured unique prerequisite blocks opponent from completing a named yaku",()=>{
+ const theirs=["7-1","10-1"];
+ const ours=["6-1"];
+ const entry=publicYakuOutlook(theirs,ours).find(p=>p.key==="inoshikacho");
+ assert.equal(entry.impossible,true);
+ assert.equal(entry.oneAway,false);
+ assert.deepEqual(entry.blockedIds,["6-1"]);
+});
+test("Type-based yaku can be blocked without inventing hidden information",()=>{
+ const ours=["2-1","4-1","5-1","6-1","7-1"];
+ const entry=publicYakuOutlook(["9-1"],ours).find(p=>p.key==="tane");
+ assert.equal(entry.possibleTotal,4);
+ assert.equal(entry.impossible,true);
 });
