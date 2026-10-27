@@ -13,7 +13,9 @@ const script=fs.readFileSync(path.join(root,"apps/hanafuda/main.js"),"utf8")
 class FakeElement{
  constructor(animationLog=[]){
   this.animationLog=animationLog;
-  this.children=[];this.style={};this.listeners={};this.dataset={};
+  this.children=[];
+  this.style={setProperty(k,v){this[k]=v;},getPropertyValue(k){return this[k]||"";}};
+  this.listeners={};this.dataset={};
   this.hidden=false;this.disabled=false;this.className="";this.textContent="";
   this.value="";this.attrs={};
   this.classList={add:name=>{this.className+=" "+name;}};
@@ -57,11 +59,14 @@ function makeUi({motion=false}={}){
   "matchingFieldCards","yakuProgress","publicYakuOutlook"];
  const create=new Function(...args,script+
   "; return {state:()=>({game,selected,selectedTarget,locked}),render};");
- const ui=create(document,{innerWidth:390,matchMedia:()=>({matches:!motion})},
+ const windowListeners={};
+ const win={innerWidth:390,matchMedia:()=>({matches:!motion}),
+  addEventListener:(event,fn)=>{windowListeners[event]=fn;}};
+ const ui=create(document,win,
   callback=>queueMicrotask(callback),
   cardById,localStart,()=>({dealer:0,monthBySeat:[1,12]}),playCard,chooseTarget,drawNextCard,decide,scoreCards,
   capturePreview,matchingFieldCards,yakuProgress,publicYakuOutlook);
- return {ui,$,story,animations};
+ return {ui,$,story,animations,win,windowListeners};
 }
 async function flush(){
  for(let i=0;i<2000;i++)await Promise.resolve();
@@ -391,4 +396,21 @@ test("Pointer cancellation leaves no delayed inspection or click after cancelled
  await flush();
  assert.equal($("cardInspect").hidden,true);
  assert.equal(ui.state().selected,null);
+});
+
+test("Resizing the Vector window recomputes field slots without resetting cards or the round",async()=>{
+ const {ui,$,win,windowListeners}=makeUi();
+ $("start").listeners.click();$("beginRound").listeners.click();await flush();
+ const s=ui.state().game;
+ s.field=["1-1","2-1","3-1","4-1","5-1","6-1","7-1","8-1","9-1","10-1",
+  "11-1","12-1","1-2"];
+ ui.render();
+ assert.equal($("field").style.getPropertyValue("--field-rows"),"4");
+ const original=$("field").children[0],before=JSON.stringify(s);
+ win.innerWidth=960;windowListeners.resize();
+ assert.equal($("field").style.getPropertyValue("--field-rows"),"3");
+ assert.equal($("field").children[0],original,"resize must not recreate the in-motion card DOM");
+ assert.equal(JSON.stringify(s),before);
+ win.innerWidth=390;windowListeners.resize();
+ assert.equal($("field").style.getPropertyValue("--field-rows"),"4");
 });
