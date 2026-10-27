@@ -111,6 +111,7 @@ try{
   if(before.cards.some(card=>card.w<15||card.h<20||
      card.y<r.field.y-2||card.bottom>r.field.bottom+2))
    throw Error(name+": field artwork clipped "+JSON.stringify(before.cards));
+  await evaluate("document.getElementById('roundIntro').hidden=true");
   const baselineShot=await run("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
   await fsp.writeFile(path.join(output,name+"-table.png"),
    Buffer.from(baselineShot.data,"base64"));
