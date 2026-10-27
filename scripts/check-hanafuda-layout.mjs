@@ -177,7 +177,12 @@ try{
  if(errors.length)throw Error("Uncaught game UI error: "+errors.join(" / "));
  console.log(JSON.stringify({status:"PASS",checkpoints},null,2));
 }finally{
- socket.close();child.kill();
+ socket.close();
+ if(child.exitCode===null) {
+  const exited=new Promise(resolve=>child.once("exit",resolve));
+  child.kill();
+  await Promise.race([exited,sleep(3000)]);
+ }
  await new Promise(resolve=>server.close(resolve));
- await fsp.rm(temp,{recursive:true,force:true});
+ await fsp.rm(temp,{recursive:true,force:true,maxRetries:12,retryDelay:150});
 }
