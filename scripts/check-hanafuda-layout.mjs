@@ -127,6 +127,9 @@ try{
    "document.getElementById('selection').hidden=false;"+
    "document.getElementById('turnPrompt').hidden=true;})()");
   const during=await evaluate(expr);
+  const selectedInsideRail=await evaluate("(()=>{const rail=document.getElementById('yourHand');const card=rail.querySelector('.card');card.classList.add('selected-card');const a=rail.getBoundingClientRect(),b=card.getBoundingClientRect();return {railTop:a.top,cardTop:b.top};})()");
+  if(selectedInsideRail.cardTop<selectedInsideRail.railTop-2)
+   throw Error(name+": selected hand card is clipped above scrollable hand rail");
   const buttons=await evaluate("(()=>{const rect=id=>{const r=document.getElementById(id).getBoundingClientRect();return {w:r.width,h:r.height}};return {play:rect('confirm'),cancel:rect('cancel')}})()");
   if(width<=600&&(buttons.play.w<95||buttons.cancel.w<95||
     buttons.play.h<38||buttons.cancel.h<38))
