@@ -103,3 +103,22 @@ jobs:
           実VectorのPC/スマホでの見え方・操作は、別途実機確認が必要です。"
           gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/6431662373" -f body="$BODY" >/dev/null
 
+
+      - name: Record a failed viewport/release check
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA="${{ github.event.pull_request.head.sha || github.sha }}"
+          RUN="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          BODY="### 花札ローカルQA版 — 自動配布確認
+          
+          **状態：検証失敗・最新版は公開されていません**
+          
+          - 失敗したビルドSHA: ${SHA}
+          - 検証ログ: ${RUN}
+          - 前の成功版の配布ファイルが存在していても今回の修正は未反映です。
+          - テスト、描画、画面外はみ出し、または配布のいずれかで失敗。ログを確認して修正してください。"
+          gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/6431662373" -f body="$BODY" >/dev/null
