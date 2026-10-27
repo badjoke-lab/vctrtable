@@ -627,3 +627,25 @@ body.in-game .decision,body.in-game .result,body.in-game .yaku-flash{
 @media(min-width:700px){
  body.in-game #field{grid-template-columns:repeat(6,minmax(0,1fr))}
 }
+
+/* Drawn card must never cover a selectable field card. Its dedicated slot is
+   the narrow deck column; the narration lives in the fixed bottom action dock. */
+body.in-game #drawReveal{
+ right:0;top:50%;transform:translateY(-50%);
+ width:56px;max-width:56px;height:auto;min-height:0;
+ border-radius:7px;padding:3px;display:flex;justify-content:center;
+ pointer-events:none
+}
+body.in-game #drawReveal .draw-reveal-face{
+ width:100%;min-width:0;flex:none
+}
+body.in-game #drawReveal .draw-reveal-copy{display:none}
+body.in-game .turn-prompt{
+ padding:6px 10px;line-height:1.5;white-space:normal;
+ overflow-y:auto;overflow-x:hidden;overflow-wrap:anywhere
+}
+@media(max-width:600px){
+ body.in-game #drawReveal{width:39px;max-width:39px;height:auto;padding:2px}
+ body.in-game #drawReveal .draw-reveal-face{width:100%}
+ body.in-game .turn-prompt{padding:5px 6px;font-size:11px}
+}
