@@ -184,5 +184,7 @@ try{
   await Promise.race([exited,sleep(3000)]);
  }
  await new Promise(resolve=>server.close(resolve));
- await fsp.rm(temp,{recursive:true,force:true,maxRetries:12,retryDelay:150});
+ try{await fsp.rm(temp,{recursive:true,force:true,maxRetries:12,retryDelay:150});}
+ catch(err){console.warn("Temporary Chrome cache cleanup skipped:",err.message);}
+
 }
