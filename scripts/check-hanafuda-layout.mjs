@@ -108,6 +108,8 @@ try{
   if(before.scrollH>height+2||r.actionDock.bottom>height+2||
      r.yourHand.bottom>height+2||r.board.h<110||r.field.h<30)
    throw Error(name+": clipped/outside viewport "+JSON.stringify(before));
+  if(name==="phone-small"&&before.cards[0]?.w<40)
+   throw Error(name+": starting field card is too small: "+before.cards[0]?.w);
   if(before.cards.some(card=>card.w<15||card.h<20||
      card.y<r.field.y-2||card.bottom>r.field.bottom+2))
    throw Error(name+": field artwork clipped "+JSON.stringify(before.cards));
@@ -124,6 +126,13 @@ try{
    "document.getElementById('selection').hidden=false;"+
    "document.getElementById('turnPrompt').hidden=true;})()");
   const during=await evaluate(expr);
+  const drawOverlap=await evaluate("(()=>{"+
+   "const draw=document.getElementById('drawReveal').getBoundingClientRect();"+
+   "const field=document.getElementById('field').getBoundingClientRect();"+
+   "return {drawLeft:draw.left,fieldRight:field.right};})()");
+  if(drawOverlap.drawLeft<drawOverlap.fieldRight-2)
+   throw Error(name+": deck flip obscures a selectable field card "+
+    JSON.stringify(drawOverlap));
   const eventShot=await run("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
   await fsp.writeFile(path.join(output,name+"-event.png"),
    Buffer.from(eventShot.data,"base64"));
