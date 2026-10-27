@@ -57,7 +57,7 @@ function makeUi({motion=false}={}){
   "; return {state:()=>({game,selected,selectedTarget,locked}),render};");
  const ui=create(document,{innerWidth:390,matchMedia:()=>({matches:!motion})},
   callback=>queueMicrotask(callback),
-  cardById,localStart,chooseInitialDealer,playCard,chooseTarget,drawNextCard,decide,scoreCards,
+  cardById,localStart,()=>({dealer:0,monthBySeat:[1,12]}),playCard,chooseTarget,drawNextCard,decide,scoreCards,
   capturePreview,matchingFieldCards,yakuProgress);
  return {ui,$,story,animations};
 }
