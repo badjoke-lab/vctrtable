@@ -295,7 +295,9 @@ function render() {
  renderLabels();
  $("setup").hidden=!!game;$("game").hidden=!game;
  if(!game)return;
- $("field").style.setProperty?.("--field-rows",game.field.length>12?"4":"3");
+ const fieldColumns=window.innerWidth>=700?6:4;
+ $("field").style.setProperty?.("--field-rows",String(Math.max(fieldColumns===6?2:3,
+  Math.ceil(game.field.length/fieldColumns))));
  renderIntro();
  settleOnce();
  $("oppScore").textContent=format(scores[1]);$("yourScore").textContent=format(scores[0]);
@@ -482,12 +484,13 @@ function rect(zone,id=null,offset=0){
   // never on an unrelated field card.
   const parent=$("field"),grid=parent.getBoundingClientRect();
   const n=parent.children.length;
-  const rows=n>=12?4:3;
-  const cellW=grid.width/4,cellH=grid.height/rows;
+  const cols=window.innerWidth>=700?6:4;
+  const rows=Math.max(cols===6?2:3,Math.ceil((n+1)/cols));
+  const cellW=grid.width/cols,cellH=grid.height/rows;
   const w=Math.max(10,Math.min(cellW-5,(cellH-5)*976/1600));
   const h=w*1600/976;
-  return {left:grid.left+(n%4)*cellW+(cellW-w)/2,
-   top:grid.top+Math.floor(n/4)*cellH+(cellH-h)/2,
+  return {left:grid.left+(n%cols)*cellW+(cellW-w)/2,
+   top:grid.top+Math.floor(n/cols)*cellH+(cellH-h)/2,
    width:w,height:h};
  }
  if(zone==="yourCaptured"||zone==="opponentCaptured"){
