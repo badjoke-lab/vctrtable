@@ -252,7 +252,11 @@ function renderIntro(){
   lang==="ja"?"前局の結果で親が決まりました。":
     "The previous round decided the first player.";
  const bonus=game.endedReason==="initial-bonus"?endReason():"";
- $("roundIntroNote").textContent=(bonus?bonus+" ":"")+drawText;
+ const normalRule=lang==="ja"?
+  "1局は役ができて「あがり」すると手札が残っていても終了します。12局の合計点で勝負します。":
+  "A round can finish with cards still in hand when someone scores and stops. The match is decided after all rounds.";
+ $("roundIntroNote").textContent=(bonus?bonus+" ":"")+drawText+
+  (game.phase==="ended"?"":" "+normalRule);
  $("beginRound").textContent=game.phase==="ended"?
   (lang==="ja"?"結果を見る":"View round result"):
   (lang==="ja"?"配札して開始":"Deal & start");
