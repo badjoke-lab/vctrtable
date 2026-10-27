@@ -94,9 +94,10 @@ let revealedDraw=null,playbackPhase=null,playbackMessage="";
 let introOpen=false,firstParentDraw=null,roleFlashActive=false;
 let yakuSeen=[{points:0,yaku:[]},{points:0,yaku:[]}];
 const tx = key => M[lang][key] || key;
-const yakuText = who => {
+const yakuText = (who,{full=false}={}) => {
   const y=scoreCards(game.captured[who]);
-  return y.yaku.length ? y.yaku.map(v=>yName(v.key)+" "+v.points).join(" · "):tx("empty");
+  return y.yaku.length ? y.yaku.map(v=>
+   (full?yFullName(v.key):yName(v.key))+" "+v.points).join(" · "):tx("empty");
 };
 const format = n => n.toLocaleString(lang==="ja"?"ja-JP":"en-US");
 function makeCard(id,{faceDown=false,compact=false,click=null,match=false,target=false,chosen=false,selectedCard=false,inspectable=false}={}) {
@@ -490,14 +491,14 @@ function render() {
  $("status").textContent=status;
  updatePlaybackUI();
  if(game.phase==="decision")
-  $("decisionSummary").textContent=yakuText(game.active)+" · "+tx("score")+": "+
+  $("decisionSummary").textContent=yakuText(game.active,{full:true})+" · "+tx("score")+": "+
    scoreCards(game.captured[game.active]).points+" "+tx("points")+". "+tx("decision");
  if(game.phase==="ended"){
   const who=game.winner;
   $("resultTitle").textContent=round===matchTotal?tx("matchOver"):tx("resultTitle");
   $("resultReason").textContent=endReason();
   $("resultSummary").textContent=(who===null?tx("draw"):who===0?tx("youWin"):tx("theyWin"))+
-   " · "+game.points+" "+tx("points")+(who===null?"":" · "+yakuText(who))+
+   " · "+game.points+" "+tx("points")+(who===null?"":" · "+yakuText(who,{full:true}))+
    (round===matchTotal?" · "+tx("score")+": "+format(scores[0])+" / "+format(scores[1]):"");
   $("next").hidden=round>=matchTotal;
  }
