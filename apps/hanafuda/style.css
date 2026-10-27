@@ -222,3 +222,49 @@ footer,.art-credit{font-size:11px;color:#9eb5a8;line-height:1.5;margin-top:20px}
 /* Before a card has physically arrived from the deck, the reveal panel shows
    its label but does not display an impossible duplicate card back. */
 .draw-reveal.awaiting .draw-reveal-face img{visibility:hidden}
+
+/* Round introduction, completed yaku, settlement must never be hidden below
+   the player's hand/expanded guide. These are short centered overlays. */
+.round-overlay,.decision,.result,.yaku-flash{
+ position:fixed;inset:0;z-index:250;display:flex;align-items:center;
+ justify-content:center;overflow-y:auto;padding:20px 12px;
+ background:#07140fdc;border:0;border-radius:0;margin:0;
+ overscroll-behavior:contain;
+}
+.round-overlay{z-index:260}
+.yaku-flash{z-index:280;pointer-events:none;background:#07140fb5}
+.round-overlay .overlay-content,
+.decision .overlay-content,
+.result .overlay-content,
+.yaku-flash .overlay-content{
+ width:min(100%,510px);max-height:calc(100dvh - 36px);overflow-y:auto;
+ background:linear-gradient(140deg,#234635,#172e24);
+ border:2px solid #e4c582;border-radius:16px;
+ padding:clamp(18px,4vw,28px);
+ box-shadow:0 12px 45px #000c;text-align:center;
+}
+.yaku-flash .overlay-content{border-color:#9cf5a2;
+ box-shadow:0 0 45px #77ff8859,0 15px 45px #000c}
+.overlay-eyebrow{color:#f6d79a;font-size:13px;font-weight:800;
+ letter-spacing:.07em;text-transform:uppercase}
+.round-overlay h2,.decision h2,.result h2,.yaku-flash h2{
+ font-size:clamp(24px,6vw,32px);margin:13px 0;line-height:1.24;color:#fff5d5
+}
+.round-overlay p,.decision p,.result p,.yaku-flash p{
+ font-size:clamp(14px,3.5vw,17px);line-height:1.55;margin:14px 0;color:#e6eee5
+}
+#roundIntroParent{font-weight:800;color:#ffe1a2;font-size:19px}
+#roundIntroNote,#resultReason{border-left:3px solid #f2d27e;
+ background:#31463b;padding:10px 12px;text-align:left;border-radius:7px}
+#beginRound{width:100%;font-size:17px;margin-top:16px;min-height:52px}
+.decision-actions,.result-actions{display:flex;flex-wrap:wrap;
+ gap:9px;margin-top:20px}
+.decision-actions button,.result-actions button{flex:1;min-width:170px}
+.result button+button{margin-left:0}
+#decisionSummary{font-weight:700}
+@media(max-width:600px){
+ .round-overlay,.decision,.result,.yaku-flash{padding:12px 9px}
+ .round-overlay .overlay-content,.decision .overlay-content,
+ .result .overlay-content,.yaku-flash .overlay-content{padding:19px 15px}
+ .decision-actions button,.result-actions button{min-width:130px}
+}
