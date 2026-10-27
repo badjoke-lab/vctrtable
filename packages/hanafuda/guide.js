@@ -61,3 +61,32 @@ export function yakuProgress(captured) {
   return b.have-a.have;
  });
 }
+
+/**
+ * Public-capture threat guide. Only the local player's own private hand is
+ * used. The opponent's hidden hand and the deck must never be inspected.
+ */
+export function publicYakuOutlook(theirCaptured,yourCaptured,yourHand=[]) {
+ const mine=new Set(yourCaptured),inHand=new Set(yourHand);
+ const counts=(ids,kind)=>ids.reduce((n,id)=>{
+  const card=assertCard(id);
+  return n+Number(card.type===kind||(kind==="k"&&id==="9-1"));
+ },0);
+ const all=Array.from({length:12},(_,m)=>
+  Array.from({length:4},(_,i)=>(m+1)+"-"+(i+1))).flat();
+ return yakuProgress(theirCaptured).map(p=>{
+  const missing=p.missing||[];
+  const blockedIds=missing.filter(id=>mine.has(id));
+  const heldIds=missing.filter(id=>inHand.has(id));
+  let impossible=blockedIds.length>0;
+  let possibleTotal=null;
+  if(["tane","tan","kasu"].includes(p.key)) {
+   const kind=p.key==="tane"?"a":p.key==="tan"?"t":"k";
+   possibleTotal=counts(all,kind)-counts(yourCaptured,kind);
+   impossible=possibleTotal<p.need;
+  }
+  return {...p,blockedIds,heldIds,impossible,possibleTotal,
+   completed:p.have>=p.need,
+   oneAway:p.need-p.have===1&&!impossible};
+ });
+}
