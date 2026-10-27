@@ -1,4 +1,4 @@
-import {capturePreview,matchingFieldCards,yakuProgress} from "../../packages/hanafuda/guide.js";
+import {capturePreview,matchingFieldCards,yakuProgress,publicYakuOutlook} from "../../packages/hanafuda/guide.js";
 import {cardById,startRound,chooseInitialDealer,playCard,chooseTarget,drawNextCard,decide,scoreCards} from "../../packages/hanafuda/koikoi.js";
 // Entire game, including hidden opponent cards, is intentionally local QA only.
 // Nothing here calls webxdc.sendUpdate or uses a real Vector multiplayer channel.
@@ -65,23 +65,36 @@ const M={
   artistNote:"花札画像：Louie Mantia / すけじょ、CC BY-SA 4.0。"
  }
 };
+// Japanese is the canonical identity in both languages. Full English descriptions
+// always show Japanese > Hepburn pronunciation > English meaning.
 const Y={
- goko:["Five Bright","五光"],shiko:["Four Bright","四光"],
- "ame-shiko":["Rain Four Bright","雨四光"],sanko:["Three Bright","三光"],
- inoshikacho:["Boar-Deer-Butterfly","猪鹿蝶"],akatan:["Red Ribbons","赤短"],
- aotan:["Blue Ribbons","青短"],hanami:["Flower Viewing","花見で一杯"],
- tsukimi:["Moon Viewing","月見で一杯"],tane:["Seeds","タネ"],tan:["Ribbons","タン"],kasu:["Plain Cards","カス"]
+ goko:["五光","Gokō","Five Brights"],
+ shiko:["四光","Shikō","Four Brights"],
+ "ame-shiko":["雨四光","Ame-shikō","Rain Four Brights"],
+ sanko:["三光","Sankō","Three Brights"],
+ inoshikacho:["猪鹿蝶","Inoshikachō","Boar, Deer & Butterfly"],
+ akatan:["赤短","Akatan","Red Poetry Ribbons"],
+ aotan:["青短","Aotan","Blue Ribbons"],
+ hanami:["花見で一杯","Hanami de Ippai","Sake Under the Blossoms"],
+ tsukimi:["月見で一杯","Tsukimi de Ippai","Sake Under the Moon"],
+ tane:["タネ","Tane","Seed Cards"],
+ tan:["タン","Tan","Ribbon Cards"],
+ kasu:["カス","Kasu","Plain Cards"]
 };
+const yName=key=>Y[key]?.[0]||key;
+const yFullName=key=>lang==="ja"?yName(key):(
+  Y[key]?Y[key][0]+" ("+Y[key][1]+" — "+Y[key][2]+")":key);
 const TR={h:"bright",a:"animal",t:"ribbon",k:"plain"};
 let lang="en",matchTotal=12,round=0,scores=[0,0],dealer=0,game=null;
-let selected=null,selectedTarget=null,locked=false,guideOpen=false;
+let selected=null,selectedTarget=null,locked=false,guideOpen=false,hintsOn=false;
+let inspectingCard=null,inspectOrigin=null,longPressHandled=false,pressTimer=null;
 let revealedDraw=null,playbackPhase=null,playbackMessage="";
 let introOpen=false,firstParentDraw=null,roleFlashActive=false;
 let yakuSeen=[{points:0,yaku:[]},{points:0,yaku:[]}];
 const tx = key => M[lang][key] || key;
 const yakuText = who => {
   const y=scoreCards(game.captured[who]);
-  return y.yaku.length ? y.yaku.map(v=>`${Y[v.key][lang==="ja"?1:0]} ${v.points}`).join(" · "):tx("empty");
+  return y.yaku.length ? y.yaku.map(v=>yName(v.key)+" "+v.points).join(" · "):tx("empty");
 };
 const format = n => n.toLocaleString(lang==="ja"?"ja-JP":"en-US");
 function makeCard(id,{faceDown=false,compact=false,click=null,match=false,target=false,chosen=false,selectedCard=false}={}) {
@@ -145,7 +158,7 @@ const Y_DESC={
  tan:["Capture 5 or more Ribbon cards.","短冊を5枚以上集めます。"],
  kasu:["Capture 10 or more Plain cards. The sake cup counts too.","カス札を10枚以上集めます。盃もカスに数えます。"]
 };
-const yName=key=>Y[key]?.[lang==="ja"?1:0]||key;
+
 const cardName=id=>{
  const card=cardById(id);
  return (lang==="ja"?card.monthJa:card.monthEn)+" / "+tx(TR[card.type]);
@@ -178,7 +191,7 @@ function showGuide(){
  const ex=$("guideExamples");ex.replaceChildren();
  for(const [key,ids] of SETS){
   const item=document.createElement("div");item.className="yaku-example";
-  const title=document.createElement("strong");title.textContent=yName(key);
+  const title=document.createElement("strong");title.textContent=yFullName(key);
   const pictures=document.createElement("div");pictures.className="yaku-example-cards";
   for(const id of ids){
    const img=document.createElement("img");img.src="cards/"+id+".svg";
@@ -201,7 +214,7 @@ function selectionText(p){
  if(p.ready){
   explanation+=" "+(p.addedPoints>0?
    tx("gain")+": +"+p.addedPoints+" "+tx("points")+
-    (p.newYaku.length?" ("+p.newYaku.map(y=>yName(y.key)).join(" · ")+")":""):
+    (p.newYaku.length?" ("+p.newYaku.map(y=>yFullName(y.key)).join(" · ")+")":""):
    tx("noGain"));
   if(p.taken.length){
    const before=new Map(yakuProgress(game.captured[0]).map(v=>[v.key,v]));
@@ -274,7 +287,7 @@ async function announceYaku(seat,{beforeDraw=false}={}){
  if(!improved)return;
  const previous=new Map(before.yaku.map(y=>[y.key,y.points]));
  const changed=now.yaku.filter(y=>y.points>(previous.get(y.key)||0));
- const names=changed.map(y=>yName(y.key)).join(" · ");
+ const names=changed.map(y=>yFullName(y.key)).join(" · ");
  roleFlashActive=true;
  $("yakuFlashEyebrow").textContent=lang==="ja"?"役成立！":"Scoring set completed!";
  $("yakuFlashTitle").textContent=(seat===0?tx("youLabel"):tx("oppLabel"))+
