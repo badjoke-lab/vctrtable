@@ -142,7 +142,7 @@ function fill(id,cards,opts) {
 
 function relatedYaku(id){
  const card=cardById(id),keys=new Set();
- for(const [key,ids] of SETS.slice(0,6))if(ids.includes(id))keys.add(key);
+ for(const [key,ids] of SETS)if(ids.includes(id))keys.add(key);
  if(card.type==="h")keys.add("goko");
  if(card.type==="a")keys.add("tane");
  if(card.type==="t")keys.add("tan");
@@ -193,6 +193,9 @@ const SETS=[
  ["aotan",["6-2","9-2","10-2"]],
  ["hanami",["3-1","9-1"]],
  ["tsukimi",["8-1","9-1"]],
+ ["sanko",["1-1","3-1","8-1"]],
+ ["shiko",["1-1","3-1","8-1","12-1"]],
+ ["ame-shiko",["1-1","3-1","8-1","11-1"]],
  ["goko",["1-1","3-1","8-1","11-1","12-1"]],
  ["tane",["2-1","4-1","5-1","6-1","7-1"]],
  ["tan",["1-2","2-2","3-2","4-2","5-2"]],
@@ -204,6 +207,9 @@ const Y_DESC={
  aotan:["Collect blue ribbons from June, September and October.","6月・9月・10月の青い短冊を揃えます。"],
  hanami:["Capture the cherry-blossom curtain and sake cup.","桜の幕と菊の盃を揃えます。"],
  tsukimi:["Capture the August moon and sake cup.","8月の月と菊の盃を揃えます。"],
+ sanko:["Three Bright cards, excluding the November rain card.","柳に小野道風（雨札）を除いた光札3枚で成立。"],
+ shiko:["Four Bright cards other than the November rain card.","雨札を含まない4枚の光札で成立。"],
+ "ame-shiko":["The November rain card plus three other Bright cards.","雨札とそれ以外の光札3枚で成立。"],
  goko:["Collect all 5 Bright cards; smaller sets also score.","光札5枚を揃えます。3光・4光にも別の役があります。"],
  tane:["Capture 5 or more Seed cards.","タネ札を5枚以上集めます。"],
  tan:["Capture 5 or more Ribbon cards.","短冊を5枚以上集めます。"],
@@ -386,7 +392,9 @@ function renderIntro(){
   "1局は役ができて「あがり」すると手札が残っていても終了します。12局の合計点で勝負します。":
   "A round can finish with cards still in hand when someone scores and stops. The match is decided after all rounds.";
  $("roundIntroNote").textContent=(bonus?bonus+" ":"")+drawText+
-  (game.phase==="ended"?"":" "+normalRule);
+  (game.phase==="ended"?"":" "+normalRule+" "+(lang==="ja"?
+   "手札は長押し、取り札・場札はタップで拡大できます。":
+   "Long-press a hand card or tap a captured/field card to inspect it."));
  $("beginRound").textContent=game.phase==="ended"?
   (lang==="ja"?"結果を見る":"View round result"):
   (lang==="ja"?"配札して開始":"Deal & start");
