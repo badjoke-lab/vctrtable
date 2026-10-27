@@ -621,3 +621,9 @@ body.in-game .decision,body.in-game .result,body.in-game .yaku-flash{
  body.in-game #status{height:18px;line-height:12px;padding:2px 5px}
  body.in-game .action-dock{height:55px;max-height:55px}
 }
+
+/* Desktop table has enough width for six slots. This leaves the center field
+   larger without adding vertical rows to the rest of the game. */
+@media(min-width:700px){
+ body.in-game #field{grid-template-columns:repeat(6,minmax(0,1fr))}
+}
