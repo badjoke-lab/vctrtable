@@ -25,6 +25,7 @@ const M={
   selectionTitle:"Selected card",confirm:"Play this card",cancel:"Cancel / choose another",
   guideTitle:"Build scoring sets (Yaku)",guideIntro:"Match cards by month and collect combinations.",
   guideToggle:"Show all sets",guideClose:"Hide guide",
+  hintsEnabled:"Hints: On",hintsDisabled:"Hints: Off",inspectTitle:"Card details",inspectClose:"Close",
   guideHelp:"Play one hand card; the deck then draws automatically. Matched pairs go to your captured cards, not your hand.",
   noMatch:"No same-month card: this card stays on the field.",
   oneMatch:"One matching field card: capture both.",
@@ -55,6 +56,7 @@ const M={
   selectionTitle:"選択中の札",confirm:"この札を出す",cancel:"キャンセル・選び直す",
   guideTitle:"役の集め方",guideIntro:"同じ月を合わせ、取り札を集めて役を作ります。",
   guideToggle:"役の一覧を見る",guideClose:"役の一覧を閉じる",
+  hintsEnabled:"ヒント：オン",hintsDisabled:"ヒント：オフ",inspectTitle:"札の詳しい情報",inspectClose:"閉じる",
   guideHelp:"手札を1枚出すと、続けて山札を1枚めくります。取った札は手札ではなく「取り札」に入ります。",
   noMatch:"一致する月がありません。この札は場に残ります。",
   oneMatch:"同じ月の札が1枚あります。2枚とも取れます。",
@@ -97,7 +99,7 @@ const yakuText = who => {
   return y.yaku.length ? y.yaku.map(v=>yName(v.key)+" "+v.points).join(" · "):tx("empty");
 };
 const format = n => n.toLocaleString(lang==="ja"?"ja-JP":"en-US");
-function makeCard(id,{faceDown=false,compact=false,click=null,match=false,target=false,chosen=false,selectedCard=false}={}) {
+function makeCard(id,{faceDown=false,compact=false,click=null,match=false,target=false,chosen=false,selectedCard=false,inspectable=false}={}) {
   const c=faceDown?null:cardById(id);
   const e=document.createElement("button");
   e.type="button";
@@ -110,8 +112,22 @@ function makeCard(id,{faceDown=false,compact=false,click=null,match=false,target
   const label=c?(lang==="ja"?c.monthJa:c.monthEn)+" / "+tx(TR[c.type]):
     (lang==="ja"?"伏せ札":"Face-down card");
   e.setAttribute("aria-label",label);e.title=label;
-  if(click)e.addEventListener("click",click);
+  if(click)e.addEventListener("click",()=>{
+    if(longPressHandled){longPressHandled=false;return;}
+    click();
+  });
+  else if(inspectable)e.addEventListener("click",()=>openInspect(id));
   else e.disabled=true;
+  if(c&&inspectable){
+    e.addEventListener("pointerdown",ev=>{
+      if(ev.pointerType==="mouse")return;
+      if(pressTimer)clearTimeout(pressTimer);
+      pressTimer=setTimeout(()=>{pressTimer=null;longPressHandled=true;openInspect(id);},500);
+    });
+    const stop=()=>{if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}};
+    for(const type of ["pointerup","pointerleave","pointercancel"])e.addEventListener(type,stop);
+    e.addEventListener("contextmenu",ev=>ev.preventDefault?.());
+  }
   if(compact)e.classList.add("compact");
   return e;
 }
@@ -122,6 +138,41 @@ function fill(id,cards,opts) {
   // Re-rendering the whole hand must not jump a horizontally scrolled phone.
   if(Number.isFinite(scrollX))box.scrollLeft=scrollX;
   if(Number.isFinite(scrollY)&&id!=="field")box.scrollTop=scrollY;
+}
+
+function relatedYaku(id){
+ const card=cardById(id),keys=new Set();
+ for(const [key,ids] of SETS.slice(0,6))if(ids.includes(id))keys.add(key);
+ if(card.type==="h")keys.add("goko");
+ if(card.type==="a")keys.add("tane");
+ if(card.type==="t")keys.add("tan");
+ if(card.type==="k"||id==="9-1")keys.add("kasu");
+ return [...keys];
+}
+function openInspect(id){
+ if(!game||!cardById(id)||locked)return;
+ inspectingCard=id;
+ $("cardInspectImage").src="cards/"+id+".svg";
+ $("cardInspectImage").alt=cardName(id);
+ $("cardInspectTitle").textContent=tx("inspectTitle");
+ $("cardInspectClose").textContent=tx("inspectClose");
+ $("cardInspectDescription").textContent=cardName(id)+
+  (lang==="ja"?"。この札を含む役を確認できます。":
+  ". This card can contribute to the scoring sets listed below.");
+ const list=$("cardInspectYaku");list.replaceChildren();
+ for(const key of relatedYaku(id)){
+  const p=document.createElement("p");p.textContent=yFullName(key);list.append(p);
+ }
+ if(!list.children.length){
+  const p=document.createElement("p");p.textContent=lang==="ja"?
+   "同じ月の札と合わせて取り札にします。":
+   "Match a card from the same month and add the pair to your captures.";
+  list.append(p);
+ }
+ $("cardInspect").hidden=false;$("cardInspectClose").focus?.();
+}
+function closeInspect(){
+ inspectingCard=null;longPressHandled=false;$("cardInspect").hidden=true;
 }
 function renderLabels() {
   document.documentElement.lang=lang;
@@ -761,10 +812,18 @@ $("guideToggle").addEventListener("click",()=>{
  guideOpen=!guideOpen;render();
  if(guideOpen)$("guideClose").focus?.();
 });
+$("hintsToggle").addEventListener("click",()=>{hintsOn=!hintsOn;render();});
+$("cardInspectClose").addEventListener("click",closeInspect);
+document.addEventListener?.("keydown",event=>{
+ if(event.key==="Escape"){
+  if(inspectingCard){closeInspect();return;}
+  if(guideOpen){guideOpen=false;render();}
+ }
+});
 $("guideClose").addEventListener("click",()=>{
  guideOpen=false;render();$("guideToggle").focus?.();
 });
-$("lang").addEventListener("change",()=>{lang=$("lang").value;render();});
+$("lang").addEventListener("change",()=>{lang=$("lang").value;render();if(inspectingCard)openInspect(inspectingCard);});
 function newRound(){
  round++;
  game=startRound({dealer});
