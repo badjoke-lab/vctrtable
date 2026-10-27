@@ -127,6 +127,10 @@ try{
    "document.getElementById('selection').hidden=false;"+
    "document.getElementById('turnPrompt').hidden=true;})()");
   const during=await evaluate(expr);
+  const buttons=await evaluate("(()=>{const rect=id=>{const r=document.getElementById(id).getBoundingClientRect();return {w:r.width,h:r.height}};return {play:rect('confirm'),cancel:rect('cancel')}})()");
+  if(width<=600&&(buttons.play.w<95||buttons.cancel.w<95||
+    buttons.play.h<38||buttons.cancel.h<38))
+   throw Error(name+": small touch targets "+JSON.stringify(buttons));
   const drawOverlap=await evaluate("(()=>{"+
    "const draw=document.getElementById('drawReveal').getBoundingClientRect();"+
    "const field=document.getElementById('field').getBoundingClientRect();"+
