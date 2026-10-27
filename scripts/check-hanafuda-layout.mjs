@@ -80,12 +80,12 @@ await run("Page.enable");
 await run("Runtime.enable");
 async function evaluate(expression){
  const response=await run("Runtime.evaluate",{expression,returnByValue:true,awaitPromise:true});
- if(response.exceptionDetails)throw Error(response.exceptionDetails.text);
+ if(response.exceptionDetails)throw Error(response.exceptionDetails.exception?.description||response.exceptionDetails.text);
  return response.result?.value;
 }
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const expr="(()=>{const ids=['board','field','yourHand','actionDock','status','yourCaptured','guide','scoreboard'];"+
- "const rect=id=>{const r=document.getElementById(id).getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height,bottom:r.bottom};};"+
+ "const rect=id=>{const el=document.getElementById(id)||document.querySelector('.'+id);if(!el)throw Error('Missing region '+id);const r=el.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height,bottom:r.bottom};};"+
  "const sections=Object.fromEntries(ids.map(id=>[id,rect(id)]));"+
  "const cards=[...document.querySelectorAll('#field .card')].map(e=>{let r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height,bottom:r.bottom};});"+
  "return {vw:innerWidth,vh:innerHeight,scrollH:document.documentElement.scrollHeight,sections,cards,body:document.body.className};})()";
