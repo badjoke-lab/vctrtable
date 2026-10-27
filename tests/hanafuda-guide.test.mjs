@@ -70,3 +70,20 @@ test("Type-based yaku can be blocked without inventing hidden information",()=>{
  assert.equal(entry.possibleTotal,4);
  assert.equal(entry.impossible,true);
 });
+
+test("Bright-family progress distinguishes three, four and rain-four",()=>{
+ const own=["1-1","3-1","11-1"];
+ const byKey=Object.fromEntries(yakuProgress(own).map(p=>[p.key,p]));
+ assert.equal(byKey.sanko.have,2,"Rain card must not count toward Three Bright");
+ assert.equal(byKey.shiko.have,2,"Four Bright excludes rain");
+ assert.equal(byKey["ame-shiko"].have,3,"Rain plus two ordinary bright cards");
+ assert.deepEqual(byKey["ame-shiko"].missing,[]);
+});
+test("Rain Four cannot be completed if only two non-rain brights remain accessible",()=>{
+ const opponent=["11-1","1-1","3-1"];
+ const own=["8-1","12-1"];
+ const p=publicYakuOutlook(opponent,own).find(x=>x.key==="ame-shiko");
+ assert.equal(p.have,3);
+ assert.equal(p.oneAway,false);
+ assert.equal(p.impossible,true);
+});
