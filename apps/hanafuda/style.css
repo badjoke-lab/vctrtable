@@ -888,7 +888,7 @@ body.in-game #yourHand .card.selected-card{z-index:3}
  body.in-game #yourHand{height:80px}
  body.in-game #yourHand .card{height:72px}
 }
-@media(max-height:440px){
+@media(max-height:440px) and (max-width:699px){
  body.in-game .board{grid-template-rows:9px 19px 16px 16px minmax(0,1fr) 9px 20px 9px 43px}
  body.in-game #yourHand{height:43px}
  body.in-game #yourHand .card{height:37px}
