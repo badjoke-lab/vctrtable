@@ -114,6 +114,11 @@ try{
   if(name==="phone-landscape"&&before.cards[0]?.w<35)
    throw Error(name+": landscape field cards are unreadably narrow: "+before.cards[0]?.w);
   if(name==="phone-landscape"){
+   const captureHead=await evaluate("(()=>{return {opp:getComputedStyle(document.querySelector('.opp-capture-head')).display,own:getComputedStyle(document.querySelector('.own-capture-head')).display};})()");
+   if(captureHead.opp!=="none"||captureHead.own!=="none")
+    throw Error(name+": capture headings overlap the three-column layout: "+JSON.stringify(captureHead));
+  }
+  if(name==="phone-landscape"){
    const handWidth=await evaluate("document.querySelector('#yourHand .card').getBoundingClientRect().width");
    if(handWidth<28)throw Error(name+": landscape hand cards are too narrow: "+handWidth);
   }
