@@ -72,13 +72,27 @@ export function shuffleCards(rng=Math.random) {
   }
   return ids;
 }
-function initialBonus(hand) {
+/** Official first-parent selection by comparing the two revealed months.
+ * Tied month: draw again; returned cards are reshuffled with the deck. */
+export function chooseInitialDealer(rng=Math.random) {
+  const shuffled=shuffleCards(rng);
+  for(let i=0;i<shuffled.length-1;i+=2) {
+    const your=cardById(shuffled[i]),opp=cardById(shuffled[i+1]);
+    if(your.month===opp.month)continue;
+    return {dealer:your.month<opp.month?0:1,
+      monthBySeat:[your.month,opp.month]};
+  }
+  throw new Error("Cannot determine parent from shuffled deck");
+}
+export function initialBonusKind(hand) {
   const counts=new Map();
   for (const id of hand) {
     const m=cardById(id).month;
     counts.set(m,(counts.get(m)||0)+1);
   }
-  return [...counts.values()].includes(4) || [...counts.values()].filter(n=>n===2).length===4;
+  if ([...counts.values()].includes(4)) return "teshi";
+  if ([...counts.values()].filter(n=>n===2).length===4) return "kuttsuki";
+  return null;
 }
 export function startRound({dealer=0,rng=Math.random}={}) {
   assert([0,1].includes(dealer),"Bad dealer");
@@ -91,9 +105,10 @@ export function startRound({dealer=0,rng=Math.random}={}) {
     const s={hands,field,deck:shuffled.slice(24),captured:[[],[]],active:dealer,
       dealer,phase:"turn",pending:null,koiedBy:null,offered:[0,0],winner:null,
       points:0,turns:0,endedReason:null,log:[]};
-    const bonus=[initialBonus(hands[0]),initialBonus(hands[1])];
+    const bonus=[initialBonusKind(hands[0]),initialBonusKind(hands[1])];
     if (bonus.some(Boolean)) {
       const winner=bonus[dealer] ? dealer:1-dealer;
+      s.initialBonus={winner,kind:bonus[winner]};
       finish(s,winner,6,"initial-bonus");
     }
     return s;
@@ -128,10 +143,18 @@ function draw(s) {
 function completeTurn(s) {
   s.turns++;
   const score=scoreCards(s.captured[s.active]).points;
-  if(s.koiedBy!==null && s.koiedBy!==s.active && score>0) {
-    settle(s,s.active,"koi-counter");return;
+  if(s.koiedBy!==null) {
+    if(s.koiedBy!==s.active && score>0) {
+      settle(s,s.active,"koi-counter");return;
+    }
+    // After a Koi-Koi declaration, a NEW or improved scoring combination
+    // ends the round: no second Stop/Koi prompt for the declarer.
+    if(s.koiedBy===s.active && score>s.offered[s.active]) {
+      settle(s,s.active,"koi-improvement");return;
+    }
+  } else if(score>0) {
+    s.phase="decision";return;
   }
-  if(score>s.offered[s.active]) {s.phase="decision";return;}
   if(s.hands[0].length===0 && s.hands[1].length===0) {finish(s,null,0,"exhausted");return;}
   s.active=1-s.active;s.phase="turn";
 }
