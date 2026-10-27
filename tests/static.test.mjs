@@ -6,6 +6,24 @@ const scripts=['apps/poker/table-lobby.js','apps/poker/main.js','apps/poker/qa.j
 for(const f of scripts)test('JavaScript syntax: '+f,()=>{
  assert.doesNotThrow(()=>execFileSync(process.execPath,['--check',f],{encoding:'utf8'}));
 });
+test('transport diagnostics are isolated from poker gameplay and packaged',()=>{
+ const build=readFileSync('scripts/build.mjs','utf8');
+ const html=readFileSync('apps/poker/diagnostics.html','utf8');
+ const ui=readFileSync('apps/poker/diagnostics.js','utf8');
+ const protocol=readFileSync('packages/poker/transport-probe.js','utf8');
+ const lobby=readFileSync('apps/poker/lobby.html','utf8');
+ for(const file of ['diagnostics.html','diagnostics.js','transport-probe.js'])assert.ok(build.includes(file));
+ for(const id of ['probe-send','probe-ack','probe-outbound','probe-inbound','probe-roundtrip'])assert.ok(html.includes('id="'+id+'"'));
+ assert.ok(lobby.includes('href="diagnostics.html"'));
+ for(const src of [ui,protocol]){
+  assert.ok(!src.includes('localStorage.'),'Diagnostic must not store any private data');
+  assert.ok(!src.includes('privateState('),'Diagnostic cannot access dealer private state');
+  assert.ok(!src.includes('sealForRecipient'),'Diagnostic cannot touch cards');
+ }
+ assert.ok(ui.includes('setUpdateListener('));
+ assert.ok(ui.includes('sendUpdate('));
+});
+
 test('QA UI links bundled modules and save controls',()=>{
  const build=readFileSync('scripts/build.mjs','utf8'),html=readFileSync('apps/poker/qa.html','utf8');
  for(const f of ['qa.js','session.js','engine.js','hand.js'])assert.ok(build.includes(f),'Missing bundled file '+f);

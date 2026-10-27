@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark"><title>vctrtable — Vector transport diagnostics</title>
+<link rel="stylesheet" href="style.css"><script src="webxdc.js"></script>
+<script type="module" src="diagnostics.js"></script></head>
+<body><main>
+<header><div><small>VCTRTABLE / DEVELOPMENT TOOLS</small><h1>Vector transport check / 通信診断</h1></div><a href="lobby.html">← Lobby / ロビー</a></header>
+<div class="warning">Public, voluntary test only. This DOES NOT verify Vector identities, authenticate a dealer, or transport private cards. / 共有通信の動作確認のみです。Vectorの本人認証・手札の秘密配送は検証しません。</div>
+<section><h2>1. Host capabilities / 接続機能</h2>
+<p id="probe-capability" role="status">Checking…</p>
+<p id="probe-limits"></p>
+<p>Run on two independent Vector accounts inside the SAME shared Poker XDC message. The normal Poker game is not affected. / 同じ共有Poker XDCを別々のVectorアカウントで開いてください。通常のゲームには影響しません。</p></section>
+<section><h2>2. Shared update round trip / 共有更新の往復</h2>
+<p>Device A: press Send test. Device B: when a request appears, press Acknowledge. A should show an acknowledgement and an observed round-trip. / A側で送信し、B側で受信後に承認を押してください。A側に応答が届けば往復成功です。</p>
+<div class="table-actions">
+<button id="probe-send" type="button" disabled>Send test / テスト送信</button>
+<button id="probe-ack" type="button" class="secondary" disabled>Acknowledge / 応答</button>
+</div>
+<p id="probe-outbound" role="status" aria-live="polite">No diagnostic sent / 未送信</p>
+<p id="probe-inbound" role="status" aria-live="polite">No remote request seen / 他端末の受信なし</p>
+<p id="probe-roundtrip" role="status" aria-live="polite">No remote acknowledgement / 応答なし</p>
+</section>
+<section><h2>3. Interpretation / 判定</h2>
+<p>Receiving the acknowledgement proves that a public WebXDC update made a round trip in this XDC instance. It does not prove the peer's actual Vector account or that an encrypted DM can reach the Mini App. The elapsed time is measured only with Device A's own clock, not with Device B's clock.</p>
+<p>応答の受信は共有通信の往復が成立したことだけを意味します。相手のVectorアカウント本人確認や、Botの個別DMの自動受信を証明しません。経過時間はA側の時計だけで計測します。</p>
+</section>
+<footer>Developer diagnostic. No private hands, passwords, NSEC, keys, wallet data or room transcripts are transmitted. / 開発用診断。秘密データは送信しません。</footer>
+</main></body></html>
