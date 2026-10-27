@@ -103,8 +103,12 @@ function makeCard(id,{faceDown=false,compact=false,click=null,match=false,target
   return e;
 }
 function fill(id,cards,opts) {
-  const box=$(id);box.replaceChildren();
+  const box=$(id),scrollX=box.scrollLeft,scrollY=box.scrollTop;
+  box.replaceChildren();
   cards.forEach(cardId=>box.append(makeCard(cardId,opts(cardId))));
+  // Re-rendering the whole hand must not jump a horizontally scrolled phone.
+  if(Number.isFinite(scrollX))box.scrollLeft=scrollX;
+  if(Number.isFinite(scrollY)&&id!=="field")box.scrollTop=scrollY;
 }
 function renderLabels() {
   document.documentElement.lang=lang;
@@ -285,9 +289,11 @@ async function announceYaku(seat,{beforeDraw=false}={}){
  roleFlashActive=false;$("yakuFlash").hidden=true;
 }
 function render() {
+ document.body.className=game?"in-game":"";
  renderLabels();
  $("setup").hidden=!!game;$("game").hidden=!game;
  if(!game)return;
+ $("field").style.setProperty?.("--field-rows",game.field.length>12?"4":"3");
  renderIntro();
  settleOnce();
  $("oppScore").textContent=format(scores[1]);$("yourScore").textContent=format(scores[0]);
@@ -316,6 +322,10 @@ function render() {
  fill("yourCaptured",game.captured[0],()=>({compact:true}));
  $("oppYaku").textContent=yakuText(1);$("yourYaku").textContent=yakuText(0);
  $("selection").hidden=!selected||game.phase!=="turn"||game.active!==0;
+ $("turnPrompt").hidden=!$("selection").hidden;
+ $("turnPrompt").textContent=lang==="ja"?
+  (game.active===0&&game.phase==="turn"?"手札を選んでください。":"盤面を確認してください。"):
+  (game.active===0&&game.phase==="turn"?"Select a hand card to preview a move.":"Follow the cards on the table.");
  if(selected&&game.phase==="turn"&&game.active===0){
   $("selectedCardDetail").textContent=cardName(selected);
   $("selectedPreview").textContent=selectionText(p);
@@ -722,6 +732,10 @@ async function chooseDrawTarget(id){
 }
 $("guideToggle").addEventListener("click",()=>{
  guideOpen=!guideOpen;render();
+ if(guideOpen)$("guideClose").focus?.();
+});
+$("guideClose").addEventListener("click",()=>{
+ guideOpen=false;render();$("guideToggle").focus?.();
 });
 $("lang").addEventListener("change",()=>{lang=$("lang").value;render();});
 function newRound(){
