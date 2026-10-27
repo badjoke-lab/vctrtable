@@ -346,3 +346,47 @@ test("Inspect never exposes the opponent's actual hidden hand",async()=>{
  assert.ok($("opponentHand").children.every(e=>e.dataset.cardId===undefined));
  assert.ok($("opponentHand").children.every(e=>!e.listeners.click));
 });
+
+test("Touch scroll cancels a pending long-press and does not change selection",async()=>{
+ const {ui,$}=makeUi();
+ $("start").listeners.click();$("beginRound").listeners.click();await flush();
+ const snapshot=JSON.stringify(ui.state().game);
+ const card=$("yourHand").children[0];
+ card.listeners.pointerdown({pointerType:"touch",pointerId:3,clientX:10,clientY:10});
+ card.listeners.pointermove({pointerType:"touch",pointerId:3,clientX:50,clientY:10});
+ await flush();
+ assert.equal($("cardInspect").hidden,true,"a swipe is not a card long-press");
+ card.listeners.pointerup({pointerType:"touch",pointerId:3});
+ card.listeners.click({preventDefault(){}});
+ assert.equal(ui.state().selected,null,"a swipe cannot select a card");
+ assert.equal(JSON.stringify(ui.state().game),snapshot);
+});
+test("Long press does not also select card on touch release, but later tap works",async()=>{
+ const {ui,$}=makeUi();
+ $("start").listeners.click();$("beginRound").listeners.click();await flush();
+ const snapshot=JSON.stringify(ui.state().game);
+ const card=$("yourHand").children[0],id=card.dataset.cardId;
+ card.listeners.pointerdown({pointerType:"touch",pointerId:9,clientX:8,clientY:8});
+ await flush();
+ assert.equal($("cardInspect").hidden,false);
+ card.listeners.pointerup({pointerType:"touch",pointerId:9});
+ $("cardInspectClose").listeners.click();
+ card.listeners.click({preventDefault(){}});
+ assert.equal(ui.state().selected,null,"release click must be suppressed after inspection");
+ assert.equal(JSON.stringify(ui.state().game),snapshot);
+ card.listeners.pointerdown({pointerType:"touch",pointerId:10,clientX:8,clientY:8});
+ card.listeners.pointerup({pointerType:"touch",pointerId:10});
+ card.listeners.click({preventDefault(){}});
+ assert.equal(ui.state().selected,id,"new short tap should select normally");
+ assert.equal(JSON.stringify(ui.state().game),snapshot);
+});
+test("Pointer cancellation leaves no delayed inspection or click after cancelled gesture",async()=>{
+ const {ui,$}=makeUi();
+ $("start").listeners.click();$("beginRound").listeners.click();await flush();
+ const card=$("yourHand").children[0];
+ card.listeners.pointerdown({pointerType:"touch",pointerId:12,clientX:10,clientY:10});
+ card.listeners.pointercancel({pointerType:"touch",pointerId:12});
+ await flush();
+ assert.equal($("cardInspect").hidden,true);
+ assert.equal(ui.state().selected,null);
+});
