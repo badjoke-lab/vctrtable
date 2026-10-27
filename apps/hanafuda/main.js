@@ -731,12 +731,26 @@ function newRound(){
  render();
  $("beginRound").focus?.();
 }
-$("beginRound").addEventListener("click",()=>{
+async function enterRound(){
  if(!introOpen||locked||!game)return;
  introOpen=false;firstParentDraw=null;
  if(game.phase==="ended"){render();$("next").focus?.();return;}
- void withAction(async()=>{await runBot();});
-});
+ locked=true;
+ playbackPhase="opening";
+ playbackMessage=lang==="ja"?"場札・手札を配っています。":"Dealing field cards and both hands.";
+ render();
+ for(const [id,cls] of [["field","field"],["yourHand","your-hand"],
+  ["opponentHand","opponent-hand"]])$(id).className=cls+" dealing";
+ try{await beatPause(850);}
+ finally{
+  for(const [id,cls] of [["field","field"],["yourHand","your-hand"],
+   ["opponentHand","opponent-hand"]])$(id).className=cls;
+  playbackPhase=null;playbackMessage="";locked=false;
+  render();
+ }
+ await withAction(async()=>{await runBot();});
+}
+$("beginRound").addEventListener("click",()=>{void enterRound();});
 $("start").addEventListener("click",()=>{
  if(locked)return;
  matchTotal=Number($("rounds").value);scores=[0,0];round=0;
