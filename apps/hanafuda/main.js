@@ -1,5 +1,6 @@
 import {capturePreview,matchingFieldCards,yakuProgress,publicYakuOutlook} from "../../packages/hanafuda/guide.js";
 import {cardById,startRound,chooseInitialDealer,playCard,chooseTarget,drawNextCard,decide,scoreCards} from "../../packages/hanafuda/koikoi.js";
+import {chooseBotMove,chooseBotDecision} from "../../packages/hanafuda/bot.js";
 // Entire game, including hidden opponent cards, is intentionally local QA only.
 // Nothing here calls webxdc.sendUpdate or uses a real Vector multiplayer channel.
 const $ = id => document.getElementById(id);
@@ -873,14 +874,18 @@ async function actionSequence(seat,id,target=null){
 async function runBot(){
  for(let n=0;n<10&&game&&game.active===1&&game.phase!=="ended";n++){
   if(game.phase==="turn"){
-   const value=id=>game.field.filter(f=>cardById(f).month===cardById(id).month)
-    .reduce((sum,f)=>sum+({h:20,a:8,t:5,k:1})[cardById(f).type],0);
-   const id=game.hands[1].slice().sort((a,b)=>value(b)-value(a))[0];
-   const matches=matchingFieldCards(game.field,id);
-   await actionSequence(1,id,matches.length===2?bestTarget(matches):null);
+   const chosen=chooseBotMove({
+    hand:game.hands[1],field:game.field,captured:game.captured[1],
+    opponentCaptured:game.captured[0]
+   });
+   await actionSequence(1,chosen.cardId,chosen.targetId);
   }else if(game.phase==="decision"){
-   const points=scoreCards(game.captured[1]).points;
-   decide(game,points<5&&game.koiedBy===null&&game.hands[1].length>=4?"koi":"stop");
+   const choice=chooseBotDecision({
+    points:scoreCards(game.captured[1]).points,
+    hand:game.hands[1],captured:game.captured[1],
+    opponentCaptured:game.captured[0]
+   });
+   decide(game,choice);
   }else if(game.phase==="choose"){
    const id=bestTarget(game.pending.choices);
    if(game.pending.step==="draw")await resolveDrawChoice(1,id);
