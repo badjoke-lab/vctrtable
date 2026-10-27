@@ -41,9 +41,9 @@
     <div><small id="youLabel">You</small><strong id="yourScore">0</strong></div>
   </div>
   <div class="board">
-    <div class="zone-head"><strong id="oppHandLabel">Opponent's hand</strong><span id="oppCount"></span></div>
+    <div class="zone-head opp-hand-head"><strong id="oppHandLabel">Opponent's hand</strong><span id="oppCount"></span></div>
     <div id="opponentHand" class="opponent-hand"></div>
-    <div class="zone-head"><strong id="oppTakenLabel">Opponent's captured cards</strong><span id="oppYaku"></span></div>
+    <div class="zone-head opp-capture-head"><strong id="oppTakenLabel">Opponent's captured cards</strong><span id="oppYaku"></span></div>
     <div id="opponentCaptured" class="captured"></div>
     <div class="turn-timeline" id="turnTimeline" aria-live="off">
       <span id="handStep" class="timeline-step">1 · Hand / 手札</span>
@@ -70,9 +70,9 @@
         <p id="drawRevealDescription"></p>
       </div>
     </div>
-    <div class="zone-head"><strong id="yourTakenLabel">Your captured cards</strong><span id="yourYaku"></span></div>
+    <div class="zone-head own-capture-head"><strong id="yourTakenLabel">Your captured cards</strong><span id="yourYaku"></span></div>
     <div id="yourCaptured" class="captured"></div>
-    <div class="zone-head"><strong id="yourHandLabel">Your hand</strong><span id="yourCount"></span></div>
+    <div class="zone-head own-hand-head"><strong id="yourHandLabel">Your hand</strong><span id="yourCount"></span></div>
     <div id="yourHand" class="your-hand"></div>
   </div>
   <p class="status" id="status" role="status" aria-live="polite">Choose a card from your hand.</p>
