@@ -81,7 +81,7 @@ const Y={
 };
 let lang="en",mode=null,identity=null,peer=null,key=null,channel=null;
 let room=null,me=null,approved=false,peerApproved=false,connected=false;
-let hostMatch=null,visible=null,revision=-1,hostSeq=0,guestSeq=0,lastGuestSeq=0;
+let hostMatch=null,visible=null,revision=-1,hostSeq=0,lastHostSeq=0,guestSeq=0,lastGuestSeq=0;
 let outstanding=null,selected=null,target=null,hints=false,offeredCode="",lastSeen=Date.now();
 let updating=false,interval=null,sessionLost=false;
 const tx=k=>STR[lang][k]||k;
@@ -143,7 +143,10 @@ function wire(){
    sendPlain({v:1,kind:"offer",room,from:me,pub:identity.publicKey});
    if(connected)void sendSecure({kind:"ping",n:Date.now()}).catch(()=>{});
   }else if(mode==="guest"){
-   if(peer&&!connected)sendPlain({v:1,kind:"join",room,from:me,pub:identity.publicKey});
+   if(peer&&!connected){
+    sendPlain({v:1,kind:"join",room,from:me,pub:identity.publicKey});
+    if(approved&&key)void sendSecure({kind:"ready"}).catch(()=>{});
+   }
    if(connected){
     if(outstanding)void sendSecure(outstanding).catch(()=>{});
     else void sendSecure({kind:"ping",n:Date.now()}).catch(()=>{});
@@ -225,6 +228,7 @@ async function onHostMessage(data){
    lastGuestSeq=seq;
    await shareState();
   }catch(e){
+   lastGuestSeq=seq;
    await sendSecure({kind:"rejected",seq,reason:e.message});
    await shareState();
   }
@@ -232,14 +236,17 @@ async function onHostMessage(data){
 }
 async function onGuestMessage(data){
  if(data?.kind==="connected"){
+  const first=!connected;
   connected=true;$("pairing").hidden=true;
   showStatus(tx("connected"));
-  await sendSecure({kind:"sync"});
+  if(first)await sendSecure({kind:"sync"});
  }else if(data?.kind==="snapshot"){
   if(!connected||!data.data||data.data.seat!==1||
-     data.data.protocol!==1||data.revision<data.data.revision)return;
-  if(data.data.revision<revision)return; // late packet
-  if(data.ack>=guestSeq)outstanding=null;
+     data.data.protocol!==1||data.revision!==data.data.revision||
+     !Number.isSafeInteger(data.seq))return;
+  if(data.seq<=lastHostSeq||data.data.revision<revision)return;
+  lastHostSeq=data.seq;
+  if(outstanding&&data.ack>=outstanding.seq)outstanding=null;
   visible=data.data;revision=data.data.revision;
   selected=null;target=null;render();
   $("lobby").hidden=true;$("match").hidden=false;
