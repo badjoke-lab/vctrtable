@@ -88,7 +88,7 @@ function draw(){
  $("pvp-turn").textContent=game.status==="complete"?"Hand complete":
   (turn?"YOUR TURN":"Waiting for "+(game.players[game.turn]?.name||"other player"))+
   (clock?.paused?" · CLOCK PAUSED":secondsLeft===null?"": " · host clock ~"+secondsLeft+"s");
- const blocked=!turn||pending||r.paused||!unanimous(r)||(host&&game.status==="betting"&&!hostSession);
+ const blocked=!turn||pending||Boolean(actionOutbox.packet)||r.paused||!unanimous(r)||(host&&game.status==="betting"&&!hostSession);
  for(const name of ["fold","check","call","raise"])
   $("pvp-"+name).disabled=blocked||(name==="check"&&!L?.canCheck)||
    (name==="call"&&!L?.canCall)||(name==="raise"&&!L?.canRaise);
