@@ -9,6 +9,7 @@ import {makeHostSession,makeStateEvent,readMyHand,makeSignedAction,
  acceptSignedAction,nextHostHand,publicGameState} from "./pvp-game.js";
 import {serializeSession,restoreSession,sessionAction} from "./session.js";
 import {reconcileTurnClock,timeoutAction} from "./pvp-turn-clock.js";
+import {SeatActionOutbox} from "./pvp-action-outbox.js";
 import {saveHostCheckpoint,loadHostCheckpoint} from "./pvp-host-checkpoint.js";
 import {makeCard} from "./cards.js";
 const $=id=>document.getElementById(id),api=window.webxdc;
@@ -17,7 +18,8 @@ const live=Boolean(api?.selfAddr&&typeof api.sendUpdate==="function"&&
 const me=live?api.selfAddr:"",updates=new Map(),peers=new Map(),seen=new Set();
 let keys=null,hostSession=null,game=null,hole=null,seq=0,turnClock=null,queue=Promise.resolve();
 let keySent=false,pending=false,errorMessage="",hostRecovered=false,hostProposalId=null;
-let activeTableId=null;
+let activeTableId=null,outboundInFlight=false;
+const actionOutbox=new SeatActionOutbox();
 function room(){
  return deriveSharedTable([...updates.values()].map(x=>({event:x.payload,serial:x.serial}))
  .filter(x=>validPublicEvent(x.event)||validTableEvent(x.event)));
@@ -43,6 +45,20 @@ function draw(){
  $("pvp-key-status").textContent=!keys?"Generating local private keys…":
  keys.persistent?(hostRecovered?"Host private hand restored from encrypted local journal.":"Nonextractable private keys retained on this device.") :
  "WARNING: private keys could not be saved; do not reload during a game.";
+ // Display a manual replay option only for the still-current signed turn.
+ // Resending never generates another action nonce or a second bet.
+ const retryAllowed=actionOutbox.canRetry({
+  tableId:r.table?.id,revision:game?.seq,playerId:me,
+  turnId:game?.legal?.playerId,paused:r.paused
+ });
+ const retryWait=actionOutbox.sentAt!==null&&Date.now()-actionOutbox.sentAt<5000;
+ $("pvp-retry").hidden=!retryAllowed;
+ $("pvp-retry").disabled=!retryAllowed||outboundInFlight||
+  (retryWait&&!actionOutbox.failure);
+ $("pvp-delivery").textContent=retryAllowed?
+  actionOutbox.failure?
+   "Local send error. Resend EXACT signed action; no second bet. / 送信失敗。元の操作を再送できます。":
+   "Awaiting updated host state. If delayed, resend the SAME signed action. / 状態更新待ち。遅延時は同じ署名済み操作を再送します。":"";
  const allKeys=r.table&&[...r.seats.keys()].every(id=>peers.has(id));
  const completed=game?.status==="complete";
  $("pvp-start").disabled=!live||!keys||!unanimous(r)||!allKeys||!host||
@@ -88,7 +104,7 @@ function draw(){
   r.paused?"Paused unanimously; betting controls locked.":"";
 }
 function fail(err){errorMessage=err?.message||String(err);pending=false;draw();}
-const send=e=>{if(!live)throw Error("WebXDC not connected");api.sendUpdate({payload:e,info:""},"");};
+const send=e=>{if(!live)throw Error("WebXDC not connected");return Promise.resolve(api.sendUpdate({payload:e,info:""},""));};
 async function enroll(){
  const r=room();
  if(!r.table||!r.seats.has(me)||keySent||!keys)return;
@@ -99,7 +115,7 @@ async function enroll(){
   keySent=true;return;
  }
  keySent=true;
- try{send(await signPacket(keys,{v:1,app:"vctrtable-pvp",kind:"seat-key",
+ try{await send(await signPacket(keys,{v:1,app:"vctrtable-pvp",kind:"seat-key",
   id:newNonce(),by:me,tableId:r.table.id,keys:pub}));}
  catch(err){keySent=false;throw err;}
 }
@@ -130,6 +146,7 @@ async function updateState(packet,r){
    hostRecovered=true;
   }
  }
+ actionOutbox.acknowledge(r.table.id,state.seq);
  seq=state.seq;game={...state,_room:r.table.id};hole=own;
  errorMessage="";pending=false;draw();
 }
@@ -147,7 +164,7 @@ async function accept(update){
   const nextTableId=r.table?.id??null;
   if(nextTableId!==activeTableId){
    activeTableId=nextTableId;
-   peers.clear();keySent=false;
+   peers.clear();keySent=false;actionOutbox.reset();outboundInFlight=false;
    game=null;hole=null;hostSession=null;turnClock=null;seq=0;
    hostProposalId=null;hostRecovered=false;pending=false;errorMessage="";
   }
@@ -220,7 +237,7 @@ async function publish(){
   roster:[...r.seats.keys()],proposalId:r.proposal.event.id,
   journal:serializeSession(hostSession),turnClock});
  // Host also renders its own state immediately; shared echo may arrive later.
- send(packet);
+ await send(packet);
  await updateState(packet,r);
 }
 async function hostTick(r=room()){
@@ -254,16 +271,38 @@ $("pvp-start").addEventListener("click",async()=>{
   pending=true;draw();nextHostHand(hostSession);await publish();
  }catch(err){fail(err);}
 });
+async function transmitOwnAction(){
+ if(outboundInFlight)return;
+ outboundInFlight=true;pending=true;errorMessage="";draw();
+ try{
+  await actionOutbox.transmit(send);
+ }catch(err){
+  // A rejected WebXDC promise is not a confirmed dealer action.
+  // Keep the original signed packet for explicit retry.
+  errorMessage="Local action send failed: "+(err?.message||String(err));
+  pending=false;
+ }finally{outboundInFlight=false;draw();}
+}
 async function playerAction(action){
  try{
   const r=room(),L=game?.legal;
-  if(!unanimous(r)||r.paused||!L||L.playerId!==me||pending)throw Error("Not your turn");
+  if(!unanimous(r)||r.paused||!L||L.playerId!==me||pending||
+     actionOutbox.packet)throw Error("Not your turn, or previous action still pending");
   const target=action==="raise"?Number($("pvp-raise-amount").value):undefined;
   const packet=await makeSignedAction(keys,{me,tableId:r.table.id,
    revision:game.seq,action,target});
-  pending=true;draw();send(packet);
+  actionOutbox.prepare(packet);
+  await transmitOwnAction();
  }catch(err){fail(err);}
 }
+$("pvp-retry").addEventListener("click",async()=>{
+ const r=room();
+ if(!actionOutbox.canRetry({
+  tableId:r.table?.id,revision:game?.seq,playerId:me,
+  turnId:game?.legal?.playerId,paused:r.paused
+ }))return;
+ await transmitOwnAction();
+});
 for(const action of ["fold","check","call","raise"])
  $("pvp-"+action).addEventListener("click",()=>playerAction(action));
 if(live){
