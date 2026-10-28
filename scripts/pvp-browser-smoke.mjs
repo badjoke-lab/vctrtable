@@ -186,7 +186,10 @@ try{
  await firstAction.page.locator("#pvp-"+firstAction.action).click();await cycles(4);
  assert.equal(privateStatePackets,beforeDrop,"Dropped action unexpectedly reached the host");
  await firstAction.page.evaluate(()=>window.__sim.advanceTime(6100));
- await cycles(2);
+ // The game refreshes action availability on its one-second UI tick,
+ // so wait for the button state rather than checking after ~180ms.
+ await firstAction.page.waitForFunction(()=>
+  !document.getElementById("pvp-retry").disabled,{timeout:5000});
  assert.equal(await firstAction.page.locator("#pvp-retry").isEnabled(),true,
   "Silent transport drop did not expose a replay of the same action");
  await firstAction.page.locator("#pvp-retry").click();await cycles(6);
