@@ -9,6 +9,7 @@ on:
       - "scripts/build-hanafuda.mjs"
       - "scripts/hanafuda-card-assets.mjs"
       - "scripts/check-hanafuda-layout.mjs"
+      - "scripts/check-hanafuda-pvp.mjs"
       - "tests/hanafuda*.test.mjs"
       - "package.json"
       - ".github/workflows/hanafuda-pve-pvp-qa.yml"
@@ -68,6 +69,8 @@ jobs:
           fi
       - name: Check PC and phone viewport geometry in real Chrome
         run: node scripts/check-hanafuda-layout.mjs
+      - name: Simulate two WebXDC peers in Chromium
+        run: node scripts/check-hanafuda-pvp.mjs
       - name: Save Hanafuda viewport screenshots
         if: always()
         uses: actions/upload-artifact@v4
