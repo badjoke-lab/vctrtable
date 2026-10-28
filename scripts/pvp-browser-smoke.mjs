@@ -38,9 +38,22 @@ try{
    const nativeNow=Date.now.bind(Date);
    let offset=0;
    Date.now=()=>nativeNow()+offset;
-   window.__sim={out,receive:null,advanceTime(ms){offset+=ms;}};
+   window.__sim={out,receive:null,rejectNextAction:false,dropNextAction:false,
+    advanceTime(ms){offset+=ms;}};
    window.webxdc={selfAddr:name,selfName:name,
-    sendUpdate(payload){out.push(payload);},
+    sendUpdate(payload){
+     if(payload?.payload?.kind==="action"){
+      if(window.__sim.rejectNextAction){
+       window.__sim.rejectNextAction=false;
+       return Promise.reject(Error("Simulated sendUpdate rejection"));
+      }
+      if(window.__sim.dropNextAction){
+       window.__sim.dropNextAction=false;
+       return Promise.resolve(); // Accepted by API, lost before messenger delivery.
+      }
+     }
+     out.push(payload);return Promise.resolve();
+    },
     setUpdateListener(fn){window.__sim.receive=fn;return Promise.resolve();},
     sendToChat(){return Promise.resolve();}
    };
@@ -134,7 +147,14 @@ try{
  // The active player's signed Fold must settle the hand on both devices.
  const actor=await host.locator("#pvp-fold").isEnabled()?host:guest;
  guestDisconnected=true;
- await actor.locator("#pvp-fold").click();await cycles();
+ await actor.evaluate(()=>{window.__sim.rejectNextAction=true;});
+ await actor.locator("#pvp-fold").click();await cycles(4);
+ assert.notEqual(await host.locator("#pvp-turn").textContent(),"Hand complete",
+  "Locally rejected action was incorrectly executed by the host");
+ assert.match(await actor.locator("#pvp-status").textContent(),/Local action send failed/);
+ assert.equal(await actor.locator("#pvp-retry").isEnabled(),true,
+  "Rejected action left player unable to retry the same signed packet");
+ await actor.locator("#pvp-retry").click();await cycles();
  assert.equal(await host.locator("#pvp-turn").textContent(),"Hand complete");
  assert.notEqual(await guest.locator("#pvp-turn").textContent(),"Hand complete",
   "Disconnected player received supposedly dropped settlement updates");
@@ -152,7 +172,27 @@ try{
  // A second hand must play through all betting streets and a SHOWDOWN,
  // not merely prove that a fold settles and releases the table.
  await host.locator("#pvp-start").click();await cycles();
- let actionCount=0;
+ // Simulate a transport that resolves sendUpdate but silently drops the
+ // payload. The acting peer can manually resend the SAME signed packet
+ // after a short delay without creating another bet.
+ let firstAction=null;
+ for(const page of [host,guest]){
+  if(await page.locator("#pvp-check").isEnabled()){firstAction={page,action:"check"};break;}
+  if(await page.locator("#pvp-call").isEnabled()){firstAction={page,action:"call"};break;}
+ }
+ assert.ok(firstAction,"No legal first action for silent-drop test");
+ const beforeDrop=privateStatePackets;
+ await firstAction.page.evaluate(()=>{window.__sim.dropNextAction=true;});
+ await firstAction.page.locator("#pvp-"+firstAction.action).click();await cycles(4);
+ assert.equal(privateStatePackets,beforeDrop,"Dropped action unexpectedly reached the host");
+ await firstAction.page.evaluate(()=>window.__sim.advanceTime(6100));
+ await cycles(2);
+ assert.equal(await firstAction.page.locator("#pvp-retry").isEnabled(),true,
+  "Silent transport drop did not expose a replay of the same action");
+ await firstAction.page.locator("#pvp-retry").click();await cycles(6);
+ assert.equal(privateStatePackets,beforeDrop+1,
+  "Retry should result in exactly one committed host revision");
+ let actionCount=1;
  while((await host.locator("#pvp-turn").textContent())!=="Hand complete" && actionCount<25){
   let selected=null;
   for(const page of [host,guest]){
