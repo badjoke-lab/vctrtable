@@ -126,3 +126,37 @@ Limitations: all transport is simulated; no authenticated Vector identities,
 actual Vector relay delivery, real-device storage behavior, cross-device host
 migration or independently honest shuffling is established. Real Vector device
 testing and private trusted-dealer integration remain release blockers.
+
+## Recovering a lost or rejected betting update (PR #55)
+
+An action in the experimental WebXDC table now remains in a **volatile,
+single-command outbox** until a newer signed host state revision is received.
+The UI shows a *Resend exact action / 同じ操作を再送* button. The resend is
+available after a short delay, or immediately if the local WebXDC
+`sendUpdate` promise rejected. It reuses the identical cryptographically
+signed bytes of the original action (same nonce, revision and target) and
+does **not** create a new bet, nonce or command. A second new betting action
+is blocked while the first one is unresolved. Table rotation or a newer
+signed state clears this volatile outbox.
+
+This is an interactive recovery path, not an acknowledgement guarantee:
+`sendUpdate` resolving only means the local API accepted the request.
+The host is not authenticated as a Vector account; WebXDC shared delivery
+is not necessarily immediate or lossless. If the host actually accepted
+the action, the unchanged revision and duplicate nonce prevent its replay
+from charging chips twice. If an unrelated newer host revision arrives,
+the outbox clears, but that alone does **not** prove which action was
+applied. Reloading the XDC discards unsent volatile commands and replays
+signed host updates from WebXDC history.
+
+Host publishing now awaits the result of the `sendUpdate` call instead
+of immediately presenting an unconfirmed outgoing state as delivered.
+A **host-side crash or persistent send rejection after the encrypted
+journal was written but before an update was delivered** remains an
+unresolved fail-closed scenario: restoring an ahead-of-stream checkpoint
+cannot be considered successful without a matching signed shared state.
+Do not misrepresent this as full crash recovery.
+
+The packaged-XDC two-client Chromium test covers both an asynchronous
+API rejection and a local send call that resolves but is dropped before
+peer delivery. Those cases are simulations, **not real Vector relay tests**.
