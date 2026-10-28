@@ -15,7 +15,10 @@
   <h2 id="setupTitle">New match</h2>
   <p id="setupDescription">Play 2-player Koi-Koi against a simple local test opponent. Nobody else can join this QA game.</p>
   <label><span id="roundsLabel">Rounds</span><select id="rounds"><option value="3">3</option><option value="6">6</option><option value="12" selected>12</option></select></label>
-  <button id="start" class="primary">Start</button>
+  <div class="mode-choices">
+    <a href="./pvp.html" id="pvpLink" class="primary mode-link">Play with a friend · PvP</a>
+    <button id="start" class="secondary">Play against computer · PvE</button>
+  </div>
 </section>
 <section id="game" hidden>
   <section id="roundIntro" class="round-overlay" role="dialog" aria-modal="true" aria-labelledby="roundIntroTitle" hidden>

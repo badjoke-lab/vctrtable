@@ -973,3 +973,8 @@ body.in-game #yourHand .card.selected-card{z-index:3}
   white-space:normal;overflow-y:auto;line-height:1.45;font-size:12px
  }
 }
+
+.mode-choices{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
+.mode-choices>*{flex:1;min-width:190px;display:flex;align-items:center;justify-content:center;min-height:51px;text-align:center}
+.mode-link{text-decoration:none;cursor:pointer}
+@media(max-width:520px){.mode-choices{flex-direction:column}.mode-choices>*{min-width:0}}

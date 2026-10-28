@@ -21,6 +21,19 @@ try{
   fs.copyFileSync(path.join(root,"packages","hanafuda","koikoi.js"),path.join(temp,"koikoi.js"));
   fs.copyFileSync(path.join(root,"packages","hanafuda","guide.js"),path.join(temp,"guide.js"));
   fs.copyFileSync(path.join(root,"packages","hanafuda","bot.js"),path.join(temp,"bot.js"));
+  // PvE and PvP are distinct entrypoints in the SAME XDC. Realtime and
+  // crypto modules are bundled offline; webxdc.js is supplied by Vector.
+  for(const file of ["pvp.html","pvp.css"])
+    fs.copyFileSync(path.join(app,file),path.join(temp,file));
+  let pvp=fs.readFileSync(path.join(app,"pvp.js"),"utf8");
+  for(const file of ["koikoi.js","guide.js","pvp-core.js","pvp-crypto.js"]){
+    const source='"../../packages/hanafuda/'+file+'"';
+    if(!pvp.includes(source))throw new Error("Missing PvP module import "+file);
+    pvp=pvp.replace(source,'"./'+file+'"');
+  }
+  fs.writeFileSync(path.join(temp,"pvp.js"),pvp);
+  for(const file of ["pvp-core.js","pvp-crypto.js"])
+    fs.copyFileSync(path.join(root,"packages","hanafuda",file),path.join(temp,file));
   await downloadHanafudaAssets(temp);
   const dist=path.join(root,"dist");fs.mkdirSync(dist,{recursive:true});
   const output=path.join(dist,"hanafuda.xdc");fs.rmSync(output,{force:true});

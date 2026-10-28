@@ -8,8 +8,8 @@ const M={
  en:{
   title:"Hanafuda · Koi-Koi",languageLabel:"Language",
   qaWarning:"LOCAL QA · scripted opponent · NOT Vector PvP · traditional SVG card artwork",
-  setupTitle:"New match",setupDescription:"Play 2-player Koi-Koi against a simple local test opponent. Nobody else can join this QA game.",
-  roundsLabel:"Rounds",start:"Start",oppLabel:"Opponent",youLabel:"You",
+  setupTitle:"Choose a mode",setupDescription:"Play Koi-Koi against the computer or challenge a friend in the same Vector chat.",
+  roundsLabel:"Rounds",start:"Play against computer · PvE",pvpLink:"Play with a friend · PvP",oppLabel:"Opponent",youLabel:"You",
   oppHandLabel:"Opponent's hand",oppTakenLabel:"Opponent's captured cards",
   yourTakenLabel:"Your captured cards",yourHandLabel:"Your hand",fieldLabel:"Field",
   deckLabel:"Draw pile",decisionTitle:"You made a yaku!",
@@ -39,8 +39,8 @@ const M={
  ja:{
   title:"花札・こいこい",languageLabel:"言語",
   qaWarning:"ローカルQA版・相手はテスト用自動操作・Vector対人戦ではありません・花札48枚の絵柄",
-  setupTitle:"新しい対局",setupDescription:"1端末で2人用「こいこい」を試す画面です。相手は簡単なテスト用プログラムで、他のVector利用者とは接続しません。",
-  roundsLabel:"対局数",start:"対局開始",oppLabel:"相手",youLabel:"あなた",
+  setupTitle:"遊び方を選ぶ",setupDescription:"コンピューターと対局するか、同じVectorチャットで友人と2人対戦できます。",
+  roundsLabel:"対局数",start:"コンピューターと対戦 · PvE",pvpLink:"友人と対戦 · PvP",oppLabel:"相手",youLabel:"あなた",
   oppHandLabel:"相手の手札",oppTakenLabel:"相手の取り札",
   yourTakenLabel:"あなたの取り札",yourHandLabel:"あなたの手札",fieldLabel:"場札",
   deckLabel:"山札",decisionTitle:"役ができました",
@@ -210,7 +210,7 @@ function closeInspect(){
 function renderLabels() {
   document.documentElement.lang=lang;
   for(const id of ["title","languageLabel","qaWarning","setupTitle","setupDescription",
-    "roundsLabel","start","oppLabel","youLabel","oppHandLabel","oppTakenLabel",
+    "roundsLabel","start","pvpLink","oppLabel","youLabel","oppHandLabel","oppTakenLabel",
     "yourTakenLabel","yourHandLabel","fieldLabel","deckLabel","decisionTitle",
     "stop","koi","resultTitle","next","new","footer","selectionTitle","confirm",
     "cancel","guideTitle","guideIntro","guideHelp"])$(id).textContent=tx(id);

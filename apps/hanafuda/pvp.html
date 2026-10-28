@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>vctrtable — Koi-Koi | Friends</title>
+<link rel="stylesheet" href="./pvp.css">
+<script src="webxdc.js"></script>
+<script type="module" src="./pvp.js"></script>
+</head><body>
+<main class="app">
+ <header class="top">
+  <div><div class="eyebrow">VCTRTABLE / HANAFUDA</div><h1>花札・こいこい</h1></div>
+  <a id="soloLink" href="./index.html">Solo / PvE</a>
+  <label id="languageControl"><select id="lang"><option value="en">English</option><option value="ja">日本語</option></select></label>
+ </header>
+ <section id="lobby" class="panel">
+  <h2 id="lobbyTitle">Play a friend · PvP</h2>
+  <p id="hostingWarning">Friendly-host mode. The hosting player controls the shuffle and can technically see the whole deck. Use only with people you trust. A 6-digit pairing code helps detect a wrong peer, but this is not verified competitive dealing.</p>
+  <p id="supportStatus" role="status">Checking Vector multiplayer support…</p>
+  <div class="actions">
+   <button id="host" class="primary">Create table</button>
+   <button id="join" class="secondary">Join friend's table</button>
+  </div>
+  <label id="roundSettings"><span id="roundsLabel">Rounds</span>
+   <select id="rounds"><option value="3">3</option><option value="6">6</option><option value="12" selected>12</option></select>
+  </label>
+  <p id="connectionStatus"></p>
+  <div id="pairing" hidden class="pairing">
+   <p id="pairingText">Compare this code with your friend:</p>
+   <strong id="pairingCode">000000</strong>
+   <button id="approve" class="primary">Codes match · Connect</button>
+  </div>
+  <button id="startMatch" class="primary" hidden>Start two-player match</button>
+  <p id="instructions">Both players must open the SAME Mini App message in a Vector chat. This will not connect two unrelated Notes.</p>
+ </section>
+ <section id="match" hidden>
+  <div class="scoreboard">
+    <div><small id="oppLabel">Opponent</small><strong id="oppScore">0</strong></div>
+    <div class="center"><span id="roundLabel">Round 1 / 12</span><b id="dealerLabel"></b></div>
+    <div><small id="youLabel">You</small><strong id="yourScore">0</strong></div>
+  </div>
+  <div class="board">
+    <div class="zone-title" id="opponentHandLabel">Opponent's hand</div>
+    <div id="opponentHand" class="opponent-hand"></div>
+    <div class="zone-title" id="oppCapturedLabel">Opponent's captures</div>
+    <div id="opponentCaptured" class="captures"></div>
+    <div class="zone-title" id="fieldLabel">Field · Match cards by month</div>
+    <div id="field" class="field"></div>
+    <div class="deck">
+      <img src="cards/back.svg" alt="" />
+      <strong id="deckCount">24</strong><small id="drawPileLabel">Draw pile</small>
+    </div>
+    <div class="zone-title" id="yourCapturedLabel">Your captures</div>
+    <div id="yourCaptured" class="captures"></div>
+    <div class="zone-title" id="yourHandLabel">Your hand</div>
+    <div id="yourHand" class="your-hand"></div>
+  </div>
+  <p id="gameStatus" role="status" class="game-status"></p>
+  <div id="controls" class="controls">
+    <p id="playHint">Tap a card to select it, then confirm.</p>
+    <div id="playActions" hidden class="actions">
+      <button id="confirm" class="primary" disabled>Play card</button>
+      <button id="cancel" class="secondary">Cancel</button>
+    </div>
+    <div id="decisionActions" hidden class="actions">
+      <button id="stop" class="primary">Stop & score</button>
+      <button id="koi" class="secondary">Koi-Koi</button>
+    </div>
+    <div id="roundActions" hidden class="actions">
+      <button id="nextRound" class="primary">Next round (host)</button>
+    </div>
+    <div id="drawPick" hidden>Choose a highlighted field card for the revealed draw.</div>
+  </div>
+  <div class="foot">
+   <button id="hints" class="secondary">Hints: Off</button>
+   <button id="guide" class="secondary">Yaku guide</button>
+   <button id="sync" class="secondary">Reconnect / Sync</button>
+   <a href="./index.html">PvE</a>
+  </div>
+ </section>
+ <dialog id="guideDialog">
+  <button id="closeGuide" class="secondary">Close</button>
+  <h2 id="guideTitle">Yaku / 役</h2>
+  <p id="guideNote">Public information only. The opponent's hand and deck are unknown.</p>
+  <div id="outlooks"></div>
+ </dialog>
+ <p class="credits">Card illustrations: Louie Mantia / dotty-dev, CC BY-SA 4.0 · <a href="https://github.com/dotty-dev/Hanafuda-Louie-Recolor" target="_blank" rel="noopener noreferrer">Credits</a></p>
+</main>
+</body></html>
