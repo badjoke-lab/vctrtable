@@ -11,6 +11,12 @@ A monorepo for standalone Vector/WebXDC table games. Poker (Texas Hold'em) comes
 No money wagering, chip purchases, transfers or cash-outs.
 
 
+## Hanafuda — PvE and experimental friendly-host PvP (Draft PR #56)
+
+The dual-mode Hanafuda QA artifact includes **computer PvE** (`index.html`) and **2-player friend PvP** (`pvp.html`) in the **same .xdc**. The original solo-mode UI, scoring, card art and computer opponent are preserved. Both players must open the **same Mini App message** in the same Vector chat. The PvP lobby uses WebXDC realtime, a mutually checked six-digit code, ephemeral ECDH and AES-GCM to encrypt recipient-scoped hand snapshots. PvP is **friendly trusted-host**: the host still knows both hands and the deck. This is not cheat-proof competitive play and match recovery does not survive closing the host.
+
+The dual-mode build is published to a **separate QA prerelease tag** after tests; the original `hanafuda-qa-latest` PvE artifact is not overwritten. See [PvE/PvP instructions and security limits](docs/HANAFUDA-PVP.md).
+
 ## Hanafuda — local QA prototype (separate Mini App)
 
 A second table game, **Hanafuda Koi-Koi**, now has its own 48-card rules engine, EN/JA single-device UI, scripted local opponent, scoring and tests. Its 48 illustrated cards and back are licensed CC BY-SA 4.0 from the pinned CC BY-SA GitHub art mirror and bundled inside the offline Mini App. This is **not Vector multiplayer**; none of its hidden game state is broadcast over WebXDC. Poker remains unchanged.
