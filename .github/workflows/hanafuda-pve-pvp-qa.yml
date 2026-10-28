@@ -58,7 +58,14 @@ jobs:
           unzip -t dist/hanafuda.xdc
           test "$(unzip -Z1 dist/hanafuda.xdc | grep '^cards/[0-9].*\.svg$' | wc -l)" -eq 48
           unzip -Z1 dist/hanafuda.xdc | grep -q '^cards/back.svg$'
-          unzip -Z1 dist/hanafuda.xdc | grep -q '^index.html
+          unzip -Z1 dist/hanafuda.xdc | grep -qx '^index.html$'
+          for file in pvp.html pvp.css pvp.js pvp-core.js pvp-crypto.js; do
+            unzip -Z1 dist/hanafuda.xdc | grep -qx "$file"
+          done
+          if unzip -Z1 dist/hanafuda.xdc | grep -q '^webxdc.js$'; then
+            echo "Host-supplied webxdc.js must not be bundled"
+            exit 1
+          fi
       - name: Check PC and phone viewport geometry in real Chrome
         run: node scripts/check-hanafuda-layout.mjs
       - name: Save Hanafuda viewport screenshots
