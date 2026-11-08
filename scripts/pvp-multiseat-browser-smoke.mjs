@@ -139,6 +139,50 @@ try{
    }
    assert.equal(new Set(all).size,playerCount*2,
     "Each seat must decrypt a distinct private 2-card hand");
+   // Validate rendered tabletop geometry for every seat rather than trusting
+   // CSS class names. Desktop host and mobile guest have different stages.
+   for(const c of clients){
+    const layout=await c.page.evaluate(()=>{
+     const rect=el=>{
+      const r=el.getBoundingClientRect();
+      return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,
+       width:r.width,height:r.height};
+     };
+     return {
+      width:innerWidth,scrollWidth:document.documentElement.scrollWidth,
+      felt:rect(document.querySelector(".pvp-felt")),
+      seats:[...document.querySelectorAll("#pvp-table-seats .pvp-seat:not(.is-self)")].map(rect),
+      board:[...document.querySelectorAll("#pvp-board > *")].map(rect),
+      hand:[...document.querySelectorAll("#pvp-hole img")].map(rect),
+      controls:rect(document.querySelector(".pvp-action-row"))
+     };
+    });
+    const intersects=(x,y)=>{
+     const ix=Math.min(x.right,y.right)-Math.max(x.left,y.left);
+     const iy=Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top);
+     return ix>5&&iy>5;
+    };
+    assert.ok(layout.scrollWidth<=layout.width+2,
+     "Poker table overflows viewport: "+JSON.stringify({playerCount,seat:c.name,layout}));
+    assert.equal(layout.seats.length,playerCount-1);
+    assert.equal(layout.hand.length,2);
+    assert.equal(layout.board.length,5);
+    for(const box of [...layout.seats,...layout.hand,...layout.board]){
+     assert.ok(box.left>=layout.felt.left-1&&box.right<=layout.felt.right+1,
+      "Table item clipped horizontally: "+JSON.stringify({playerCount,seat:c.name,layout,box}));
+    }
+    for(const box of layout.seats){
+     for(const hero of layout.hand)assert.equal(intersects(box,hero),false,
+      "Opponent obscures private hand: "+JSON.stringify({playerCount,seat:c.name,layout}));
+     for(const card of layout.board)assert.equal(intersects(box,card),false,
+      "Opponent obscures community-card slot: "+JSON.stringify({playerCount,seat:c.name,layout}));
+    }
+    if(playerCount===6&&(c.name===ids[0]||c.name===ids[1])){
+     const suffix=c.name===ids[0]?"desktop-1200":"mobile-360";
+     await c.page.screenshot({path:path.resolve("dist/poker-pvp-felt-"+suffix+".png"),
+      fullPage:true});
+    }
+   }
   }
   async function chooseAction(){
    for(const c of clients){
@@ -160,8 +204,10 @@ try{
   }
   try{
    for(const name of ids){
-    const ctx=await browser.newContext({viewport:{width:360,height:760},
-     isMobile:true,hasTouch:true});
+    const desktop=playerCount===6&&name===ids[0];
+    const ctx=await browser.newContext({viewport:desktop?
+     {width:1200,height:900}:{width:360,height:760},
+     isMobile:!desktop,hasTouch:!desktop});
     await ctx.addInitScript(who=>{
      const out=[];
      window.__sim={out,receive:null,incoming:[]};
