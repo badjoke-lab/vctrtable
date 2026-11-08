@@ -142,7 +142,7 @@ body{background:radial-gradient(ellipse at 48% -20%,#17302b 0%,#0b1518 50%,#070d
  .pvp-felt{height:clamp(405px,58svh,510px);border-width:5px;border-radius:42% / 28%}
  .pvp-felt::before{inset:6px}
  .pvp-felt-mark{font-size:100px}
- .pvp-seats .pvp-seat{width:clamp(76px,26vw,96px);min-height:56px;padding:5px 4px;gap:4px;border-radius:9px}
+ .pvp-seats .pvp-seat{width:clamp(76px,24.5vw,94px);min-height:56px;padding:5px 4px;gap:4px;border-radius:9px}
  .pvp-seat .pvp-avatar{height:26px;width:26px;flex-basis:26px;font-size:12px}
  .pvp-seat .pvp-seat-name{font-size:10px;max-width:55px}
  .pvp-seat .pvp-seat-stack{font-size:10px}
