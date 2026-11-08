@@ -76,7 +76,8 @@ function draw(){
  $("pvp-pot").textContent="Pot "+game.pot;
  const seats=$("pvp-table-seats");seats.replaceChildren();
  seats.dataset.opponents=String(game.players.length-1);
- const acting=game.players[game.turn]?.id;
+ const acting=game.status==="betting"?game.players[game.turn]?.id:null;
+ const dealer=game.players[game.button]?.id;
  let position=0;
  for(const p of game.players){
   const own=p.id===me;
@@ -92,7 +93,8 @@ function draw(){
   const stack=document.createElement("span");stack.className="pvp-seat-stack";
   stack.textContent=Number(p.stack).toLocaleString("en-US");
   const flag=document.createElement("span");flag.className="pvp-seat-flag";
-  flag.textContent=p.folded?"FOLDED":acting===p.id?"● TURN":"";
+  flag.textContent=p.folded?"FOLDED":
+   [dealer===p.id?"D":"",acting===p.id?"● TURN":""].filter(Boolean).join(" · ");
   details.append(name,stack,flag);item.append(avatar,details);
   item.setAttribute("aria-label",p.name+" · "+p.stack+
    (p.folded?" folded":"")+(acting===p.id?" acting":""));
@@ -100,6 +102,7 @@ function draw(){
  }
  const self=game.players.find(p=>p.id===me);
  $("pvp-hero-name").textContent=self?.name||"You";
+ document.querySelector(".pvp-hero-chip").textContent=dealer===me?"D":"●";
  $("pvp-hero-stack").textContent=self?Number(self.stack).toLocaleString("en-US"):"—";
  const board=$("pvp-board");board.replaceChildren();
  for(const card of game.board)board.append(makeCard(card));
