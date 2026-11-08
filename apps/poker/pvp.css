@@ -150,14 +150,14 @@ body{background:radial-gradient(ellipse at 48% -20%,#17302b 0%,#0b1518 50%,#070d
  .pvp-seat.seat-pos-1{left:18%;top:16%}
  .pvp-seat.seat-pos-2{left:50%;top:15%}
  .pvp-seat.seat-pos-3{left:82%;top:16%}
- .pvp-seat.seat-pos-4{left:13%;top:69%}
- .pvp-seat.seat-pos-5{left:87%;top:69%}
+ .pvp-seat.seat-pos-4{left:15%;top:75%}
+ .pvp-seat.seat-pos-5{left:85%;top:75%}
  .pvp-seats[data-opponents="2"] .seat-pos-1{left:28%}
  .pvp-seats[data-opponents="2"] .seat-pos-2{left:72%}
  .pvp-seats[data-opponents="4"] .seat-pos-1{left:28%}
  .pvp-seats[data-opponents="4"] .seat-pos-2{left:72%}
- .pvp-seats[data-opponents="4"] .seat-pos-3{left:13%;top:69%}
- .pvp-seats[data-opponents="4"] .seat-pos-4{left:87%;top:69%}
+ .pvp-seats[data-opponents="4"] .seat-pos-3{left:15%;top:75%}
+ .pvp-seats[data-opponents="4"] .seat-pos-4{left:85%;top:75%}
  .pvp-center{top:42%;gap:5px;width:99%}
  .pvp-pot-caption{font-size:9px}
  #pvp-pot{font-size:17px;padding:4px 14px}
