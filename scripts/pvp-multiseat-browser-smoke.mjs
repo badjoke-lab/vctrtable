@@ -205,8 +205,10 @@ try{
   try{
    for(const name of ids){
     const desktop=playerCount===6&&name===ids[0];
+    const mobileWidth=playerCount===3?320:
+     name===ids[playerCount-1]?430:360;
     const ctx=await browser.newContext({viewport:desktop?
-     {width:1200,height:900}:{width:360,height:760},
+     {width:1200,height:900}:{width:mobileWidth,height:mobileWidth===320?640:760},
      isMobile:!desktop,hasTouch:!desktop});
     await ctx.addInitScript(who=>{
      const out=[];
