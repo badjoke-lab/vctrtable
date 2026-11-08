@@ -160,3 +160,38 @@ Do not misrepresent this as full crash recovery.
 The packaged-XDC two-client Chromium test covers both an asynchronous
 API rejection and a local send call that resolves but is dropped before
 peer delivery. Those cases are simulations, **not real Vector relay tests**.
+
+## Table-first visual pass (PR #57, 2026-11-08)
+
+The experimental **multiplayer** screen `pvp.html` now places real game
+participants around a responsive oval felt. This replaces the previous
+linear roster-card-board-control sections, which obscured the relationship
+between position, board, personal hand and betting actions.
+
+- Each of the 2–6 player seats is positioned relative to the local viewer.
+  Other players occupy the top arc and side rails. The local player is
+  represented once in a prominent near-side hero area.
+- The total pot and five community-card positions share the central felt
+  lane, with visible empty card slots until streets are dealt.
+- The hero's two private PNG cards remain the existing validated 5:7 deck
+  art. The dealer marker, acting-seat highlight, folded status and chip
+  stacks are derived from the **actual signed host state**, not fabricated.
+- Fold, Check, Call and Raise have a dedicated action strip immediately
+  adjacent to the table. The agreed public timer and safe same-packet
+  action retry remain available. On narrow screens this strip is sticky;
+  on widescreen desktop it occupies a separate compact side panel.
+- Lobby/Ready and host Deal/Next remain available before and after a
+  hand. During betting, they collapse so the playing surface has priority.
+- The host-trusted/no-cash warning stays visible in the top badge with
+  detailed cautions one tap away. Nothing in the redesign improves the
+  dealer's ability to prove account identity or prevents host cheating.
+
+Visual regression coverage in `scripts/pvp-multiseat-browser-smoke.mjs`
+checks the rendered positions of every seat, board-card placeholder,
+private card, felt boundary and action strip, with mobile and desktop
+screenshots saved as CI artifacts. The layout **must not be called
+device-verified until that workflow completes successfully**.
+
+This PR touches only multiplayer presentation, tests and docs. Solo
+practice has its own layout and must receive a separately measured
+visual pass rather than broad edits to its existing CSS.
