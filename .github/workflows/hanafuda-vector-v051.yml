@@ -10,7 +10,6 @@ on:
       - "scripts/hanafuda-card-assets.mjs"
       - "scripts/check-hanafuda-layout.mjs"
       - "scripts/check-hanafuda-pvp.mjs"
-      - "scripts/check-hanafuda-pvp.mjs"
       - "tests/hanafuda*.test.mjs"
       - "package.json"
       - ".github/workflows/hanafuda-vector-v051.yml"
