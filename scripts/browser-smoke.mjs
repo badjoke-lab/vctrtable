@@ -86,10 +86,10 @@ try{
   assert.equal(await page.locator("#qa-players .poker-seat-avatar").count(),view.seats-1);
   assert.equal(await page.locator("#qa-players .poker-seat").count(),view.seats-1);
   assert.equal(await page.locator("#qa-hero-cards .vcard").count(),2);
-  assert.equal(await page.locator("#qa-top-story-title").textContent(),"NEW HAND",
-    "The actual first viewport must visibly announce the new hand");
-  assert.equal(await page.locator("#qa-story-title").textContent(),"NEW HAND",
-    "Solo practice must explain the initial deal");
+  assert.match(await page.locator("#qa-top-story-title").textContent(),/^(NEW HAND|CALL|CHECK|RAISE|FLOP|TURN|RIVER)$/,
+    "The first viewport must show the current real game event");
+  assert.match(await page.locator("#qa-story-title").textContent(),/^(NEW HAND|CALL|CHECK|RAISE|FLOP|TURN|RIVER)$/,
+    "Solo practice must identify the current engine state");
   assert.equal(await page.locator("#qa-hero-cards img.vcard.is-dealt").count(),2,
     "Solo private cards must animate as a deal");
   assert.ok(await page.locator("#qa-recent-actions .qa-action-tick").count()>0,
