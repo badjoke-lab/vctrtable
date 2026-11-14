@@ -48,7 +48,7 @@ test("Host resume works after each legal PvP action, including draw target choic
   }
   const save=JSON.parse(JSON.stringify(host.hostCheckpoint()));
   const hostView=host.snapshot(0),guestView=host.snapshot(1);
-  host=createAuthoritativeMatch({restore:save});
+  host=createAuthoritativeMatch({restore:save,rng:rng(1800+i)});
   assert.deepEqual(host.snapshot(0),hostView);
   assert.deepEqual(host.snapshot(1),guestView);
  }
@@ -71,7 +71,7 @@ test("Already settled rounds are not awarded a second time after restore",()=>{
  const scores=m.snapshot(0).scores,checkpoint=m.hostCheckpoint();
  assert.equal(checkpoint.settled,true);
  for(let i=0;i<5;i++){
-  m=createAuthoritativeMatch({restore:checkpoint});
+  m=createAuthoritativeMatch({restore:checkpoint,rng:rng(3300+i)});
   assert.deepEqual(m.snapshot(0).scores,scores);
  }
  m.nextRound();
