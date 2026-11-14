@@ -51,6 +51,8 @@ try{
  {
   const context=await browser.newContext({viewport:{width:360,height:740},
    isMobile:true,hasTouch:true,deviceScaleFactor:1,reducedMotion:"no-preference"});
+  // Disable the optional random bot raise in this deterministic visual test.
+  await context.addInitScript(()=>{Math.random=()=>0.5;});
   const page=await context.newPage();
   page.on("pageerror",error=>errors.push("solo-motion: "+error.message));
   await page.goto(base+"/",{waitUntil:"networkidle"});
@@ -87,6 +89,7 @@ try{
   {width:320,height:640,seats:6},{width:320,height:640,seats:2}
  ]){
   const ctx=await browser.newContext({viewport:{width:view.width,height:view.height},isMobile:true,hasTouch:true,deviceScaleFactor:1,reducedMotion:"reduce"});
+  await ctx.addInitScript(()=>{Math.random=()=>0.5;});
   const page=await ctx.newPage();
   const dialogs=[];
   page.on("pageerror",error=>errors.push(view.width+": "+error.message));
@@ -589,6 +592,7 @@ try{
  // containers and buttons must stay in normal top-to-bottom document flow.
  for(const view of [{width:960,height:800},{width:1440,height:900}]){
   const ctx=await browser.newContext({viewport:view,deviceScaleFactor:1});
+  await ctx.addInitScript(()=>{Math.random=()=>0.5;});
   const page=await ctx.newPage();
   page.on("pageerror",error=>errors.push("desktop-"+view.width+": "+error.message));
   await page.goto(base+"/",{waitUntil:"networkidle"});
