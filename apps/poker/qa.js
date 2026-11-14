@@ -16,7 +16,7 @@ const readMode=()=>{try{return localStorage.getItem(modeKey)==="inline"?"inline"
 let locale="en",session=null,table=null,seconds=30,paused=false,deadline=0,remaining=0,lastTurnKey="",storageNotice="",chatterHand=0,chatId=0,toastTimer=null,chatFocused=false,raiseOpen=false;
 let soloPrevious=null,soloVisualStamp="",soloSeenEvents=0,soloEvents=[],soloRestored=false;
 let soloPaintBoard="",soloPaintHand="";
-let soloBotTimer=null,soloBotVersion=0,soloCueSerial=0;
+let soloBotTimer=null,soloBotVersion=0;
 const motionReduced=()=>window.matchMedia?.("(prefers-reduced-motion: reduce)").matches||false;
 const botThinkMs=()=>motionReduced()?0:780;
 function cancelSoloBots(){soloBotVersion++;if(soloBotTimer!==null)clearTimeout(soloBotTimer);soloBotTimer=null;}
@@ -285,16 +285,8 @@ function render(){
   void top.offsetWidth;top.classList.add("is-changing");
   story.classList.remove("is-entering");
   void story.offsetWidth;story.classList.add("is-entering");
-  const felt=$("qa-felt-callout");
-  felt.hidden=false;
-  felt.dataset.kind=motion.type;
-  $("qa-felt-action").textContent=motion.title;
-  $("qa-felt-actor").textContent=motion.detail.split(" / ")[0];
-  soloCueSerial++;
-  felt.classList.remove("is-on");
-  void felt.offsetWidth;felt.classList.add("is-on");
-  // A deliberately persistent cue keeps individual scripted actions legible.
-  // Never conceal the latest information before its next engine update.
+  // Never put a floating notice over card faces. The stage headline
+  // announces the action and the acting seat pulses in place.
   if(motion.type==="chips")requestAnimationFrame(()=>flySoloChips(motion.changedSeats));
  }
  const recent=$("qa-recent-actions");recent.replaceChildren();
