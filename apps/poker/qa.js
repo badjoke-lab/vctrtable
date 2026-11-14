@@ -262,6 +262,14 @@ function render(){
  $("qa-street-label").hidden=end; // "Hand · Showdown" is already visible above the table; never mask the winning seat.
  $("qa-pot").textContent=t(end?"paidOut":"pot")+" "+fmt(pot);
  $("qa-pot").hidden=end; // The result below already names the winner and paid-out amount.
+ if(motion?.potBump&&!end){
+  const p=$("qa-pot");p.classList.remove("is-bumping");
+  void p.offsetWidth;p.classList.add("is-bumping");
+ }
+ if(motion?.type==="street"){
+  const l=$("qa-street-label");l.classList.remove("is-revealing");
+  void l.offsetWidth;l.classList.add("is-revealing");
+ }
  const names=["pos-top-left","pos-top","pos-top-right","pos-mid-left","pos-mid-right"];
  const layouts={
   1:["pos-top"],2:["pos-top-left","pos-top-right"],3:["pos-top-left","pos-top","pos-top-right"],
@@ -269,13 +277,17 @@ function render(){
  };
  const slots=layouts[h.players.length-1]||names;
  const seats=$("qa-players");seats.replaceChildren();
+ const highlighted=new Set(motion?.changedSeats||[]);
+ const latestAction=h.events.findLast(e=>e.kind==="action");
+ if(motion&&latestAction)highlighted.add(h.players[latestAction.seat]?.id);
  h.players.slice(1).forEach((p,i)=>{
   const id=i+1;
   const handName=showdown?.seats[id]?.handName??null;
   const revealed=Boolean(handName);
   const awarded=end&&h.awards[id]>0;
   const seat=elem("div",undefined,"poker-seat "+slots[i]+(h.turn===id?" active":"")+
-   (p.folded?" folded":"")+(p.stack===0&&p.inHand?" all-in":"")+(awarded?" winner":""));
+   (p.folded?" folded":"")+(p.stack===0&&p.inHand?" all-in":"")+
+   (awarded?" winner":"")+(motion&&highlighted.has(p.id)?" is-updated":""));
   if(revealed){
    seat.classList.add("inspectable");seat.tabIndex=0;seat.setAttribute("role","button");
    seat.setAttribute("aria-label",p.name+" — "+handName+" — "+p.hole.map(c=>c[0]+SUIT_SYMBOLS[c[1]]).join(", ")+
@@ -304,8 +316,17 @@ function render(){
   seat.append(paymentLine);
   seats.append(seat);
  });
- $("qa-board-cards").replaceChildren(...Array.from({length:5},(_,i)=>makeCard(h.board[i],{empty:!h.board[i]})));
- $("qa-hero-cards").replaceChildren(...h.players[0].hole.map(c=>makeCard(c)));
+ const board=Array.from({length:5},(_,i)=>{
+  const card=makeCard(h.board[i],{empty:!h.board[i]});
+  if(motion?.newBoardIndices.includes(i))card.classList.add("is-revealed");
+  return card;
+ });
+ $("qa-board-cards").replaceChildren(...board);
+ $("qa-hero-cards").replaceChildren(...h.players[0].hole.map(c=>{
+  const card=makeCard(c);
+  if(motion?.dealHand)card.classList.add("is-dealt");
+  return card;
+ }));
  // Independent compact strip for drawer / keyboard entry; never hidden
  // under the chat panel, and never relies on the full felt being visible.
  $("qa-hud-cards").replaceChildren(...h.players[0].hole.map(c=>makeCard(c,{small:true})));
@@ -317,7 +338,7 @@ function render(){
  document.querySelector(".qa-main").classList.toggle("qa-playing",!end);
   document.querySelector(".qa-main").classList.toggle("qa-showdown",end);
  const winners=h.players.filter((p,i)=>h.awards[i]>0).map(p=>p.name);
- $("qa-info").textContent=end?t("showdown")+" · "+winners.join(", ")+
+ $("qa-info-main").textContent=end?t("showdown")+" · "+winners.join(", ")+
   " · "+t("paidOut")+" "+fmt(h.awards.reduce((a,b)=>a+b,0)):
   paused?t("paused"):h.turn===0?t("turn")+" · "+t("toCall")+" "+fmt(L?.toCall??0):t("wait");
  const canAct=Boolean(L&&L.seat===0&&!paused);
