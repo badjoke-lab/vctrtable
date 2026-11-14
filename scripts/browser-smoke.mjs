@@ -50,7 +50,7 @@ try{
   {width:430,height:932,seats:6},{width:390,height:844,seats:6},{width:360,height:740,seats:6},
   {width:320,height:640,seats:6},{width:320,height:640,seats:2}
  ]){
-  const ctx=await browser.newContext({viewport:{width:view.width,height:view.height},isMobile:true,hasTouch:true,deviceScaleFactor:1});
+  const ctx=await browser.newContext({viewport:{width:view.width,height:view.height},isMobile:true,hasTouch:true,deviceScaleFactor:1,reducedMotion:"reduce"});
   const page=await ctx.newPage();
   const dialogs=[];
   page.on("pageerror",error=>errors.push(view.width+": "+error.message));
@@ -81,6 +81,9 @@ try{
    }));
    throw new Error("Session startup failed: "+JSON.stringify({view,dialogs,errors,invalid}));
   }
+  assert.equal(await page.locator("#qa-felt-callout").isVisible(),true,
+    "Game events must be visible on the actual playing field");
+  assert.equal(await page.locator("#qa-players .poker-seat-avatar").count(),view.seats-1);
   assert.equal(await page.locator("#qa-players .poker-seat").count(),view.seats-1);
   assert.equal(await page.locator("#qa-hero-cards .vcard").count(),2);
   assert.equal(await page.locator("#qa-top-story-title").textContent(),"NEW HAND",
@@ -340,6 +343,11 @@ try{
   while((await page.locator("#qa-street-label").textContent())!=="RIVER" &&
         !await page.locator("#qa-end").isVisible()){
     if(++riverSteps>20)throw Error("Could not reach river for card-overlap check");
+     await page.waitForFunction(()=>
+      !document.getElementById("qa-check").disabled ||
+      !document.getElementById("qa-call").disabled ||
+      !document.getElementById("qa-end").hidden,{timeout:20000});
+     if(await page.locator("#qa-end").isVisible())break;
     if(await page.locator("#qa-check").isEnabled())await page.locator("#qa-check").click();
     else if(await page.locator("#qa-call").isEnabled())await page.locator("#qa-call").click();
     else throw Error("No safe non-fold river progression");
@@ -376,6 +384,12 @@ try{
   // rather than only folding on preflop and missing showdown crashes.
   let turns=0;
   while(!await page.locator("#qa-end").isVisible()){
+   await page.waitForFunction(()=>
+    !document.getElementById("qa-check").disabled ||
+    !document.getElementById("qa-call").disabled ||
+    !document.getElementById("qa-fold").disabled ||
+    !document.getElementById("qa-end").hidden,{timeout:20000});
+   if(await page.locator("#qa-end").isVisible())break;
    if(++turns>55)throw new Error("Full hand stalled: "+JSON.stringify({view,errors,dialogs}));
    const check=page.locator("#qa-check"),call=page.locator("#qa-call");
    if(await check.isEnabled())await check.click();
@@ -539,6 +553,12 @@ try{
   await page.locator("#qa-table").waitFor({state:"visible"});
   let turns=0;
   while(!await page.locator("#qa-end").isVisible()){
+   await page.waitForFunction(()=>
+    !document.getElementById("qa-check").disabled ||
+    !document.getElementById("qa-call").disabled ||
+    !document.getElementById("qa-fold").disabled ||
+    !document.getElementById("qa-end").hidden,{timeout:20000});
+   if(await page.locator("#qa-end").isVisible())break;
    if(++turns>65)throw Error("Desktop showdown did not finish at "+view.width);
    if(await page.locator("#qa-check").isEnabled())await page.locator("#qa-check").click();
    else if(await page.locator("#qa-call").isEnabled())await page.locator("#qa-call").click();
