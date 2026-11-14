@@ -57,6 +57,17 @@ function flySoloChips(ids){
   }
  }
 }
+function visibleStoryDetail(detail){
+ const text=String(detail||"");
+ const separator=text.indexOf(" / ");
+ if(separator<0)return text;
+ const english=text.slice(0,separator),japanese=text.slice(separator+3);
+ if(locale!=="ja")return english;
+ // An engine action already contains the acting seat and action; retain
+ // that context when adding the Japanese confirmation.
+ if(japanese==="操作が確定")return english+" · "+japanese;
+ return japanese||english;
+}
 function soloEventText(e,h){
  const person=i=>h.players[i]?.name||"Seat "+(Number(i)+1);
  const ja=locale==="ja";
@@ -276,10 +287,10 @@ function render(){
   const story=$("qa-story");
   story.dataset.kind=motion.type;
   $("qa-story-title").textContent=motion.title;
-  $("qa-story-detail").textContent=motion.detail;
+  $("qa-story-detail").textContent=visibleStoryDetail(motion.detail);
   const top=$("qa-mode-banner");
   $("qa-top-story-title").textContent=motion.title;
-  $("qa-top-story-detail").textContent=motion.detail;
+  $("qa-top-story-detail").textContent=visibleStoryDetail(motion.detail);
   top.dataset.kind=motion.type;
   top.classList.remove("is-changing");
   void top.offsetWidth;top.classList.add("is-changing");
