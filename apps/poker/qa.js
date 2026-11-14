@@ -239,6 +239,12 @@ function render(){
   story.dataset.kind=motion.type;
   $("qa-story-title").textContent=motion.title;
   $("qa-story-detail").textContent=motion.detail;
+  const top=$("qa-mode-banner");
+  $("qa-top-story-title").textContent=motion.title;
+  $("qa-top-story-detail").textContent=motion.detail;
+  top.dataset.kind=motion.type;
+  top.classList.remove("is-changing");
+  void top.offsetWidth;top.classList.add("is-changing");
   story.classList.remove("is-entering");
   void story.offsetWidth;story.classList.add("is-entering");
  }
