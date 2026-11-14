@@ -83,7 +83,7 @@ let lang="en",mode=null,identity=null,peer=null,key=null,channel=null;
 let room=null,me=null,approved=false,peerApproved=false,connected=false;
 let hostMatch=null,visible=null,revision=-1,hostSeq=0,lastHostSeq=0,guestSeq=0,lastGuestSeq=0;
 let outstanding=null,selected=null,target=null,hints=false,offeredCode="",lastSeen=Date.now();
-let updating=false,interval=null,sessionLost=false;
+let updating=false,interval=null,sessionLost=false,needsResync=false;
 const tx=k=>STR[lang][k]||k;
 const yaku=key=>lang==="ja"?(Y[key]?.[0]||key):
  (Y[key]?Y[key][0]+" ("+Y[key][1]+" — "+Y[key][2]+")":key);
@@ -131,6 +131,7 @@ async function shareState(){
  selected=null;target=null;render();
 }
 function wire(){
+ if(channel||!mode)return;
  channel=window.webxdc.joinRealtimeChannel();
  channel.setListener(bytes=>{
   try{
@@ -138,6 +139,7 @@ function wire(){
    void received(packet).catch(e=>showStatus("Network: "+e.message));
   }catch(e){showStatus("Packet: "+e.message);}
  });
+ if(interval)clearInterval(interval);
  interval=setInterval(()=>{
   if(mode==="host"){
    sendPlain({v:1,kind:"offer",room,from:me,pub:identity.publicKey});
@@ -148,6 +150,7 @@ function wire(){
     if(approved&&key)void sendSecure({kind:"ready"}).catch(()=>{});
    }
    if(connected){
+    if(needsResync)void sendSecure({kind:"sync"}).catch(()=>{});
     if(outstanding)void sendSecure(outstanding).catch(()=>{});
     else void sendSecure({kind:"ping",n:Date.now()}).catch(()=>{});
    }
@@ -245,6 +248,7 @@ async function onGuestMessage(data){
      data.data.protocol!==1||data.revision!==data.data.revision||
      !Number.isSafeInteger(data.seq))return;
   if(data.seq<=lastHostSeq||data.data.revision<revision)return;
+  needsResync=false;
   lastHostSeq=data.seq;
   if(outstanding&&data.ack>=outstanding.seq)outstanding=null;
   visible=data.data;revision=data.data.revision;
@@ -427,12 +431,46 @@ $("sync").addEventListener("click",()=>{
 $("hints").addEventListener("click",()=>{hints=!hints;render();});
 $("guide").addEventListener("click",showGuide);
 $("closeGuide").addEventListener("click",()=>$("guideDialog").close?.());
-window.addEventListener("resize",()=>{
+// v0.5.0/0.5.1 can retain the Web Mini App page in browser back/forward
+// cache. A pagehide closes the ephemeral realtime channel; on a BFCache
+// pageshow we must rejoin before another move is accepted.
+function relayout(){
  if(!visible)return;
  const columns=window.innerWidth>=700?6:4;
  $("field").style.setProperty("--rows",String(Math.max(2,
   Math.ceil(visible.public.field.length/columns))));
+}
+window.addEventListener("resize",relayout);
+window.visualViewport?.addEventListener?.("resize",relayout);
+window.addEventListener("pagehide",()=>{
+ if(channel){channel.leave();channel=null;}
+ if(interval){clearInterval(interval);interval=null;}
 });
-window.addEventListener("pagehide",()=>{if(channel)channel.leave();if(interval)clearInterval(interval);});
+window.addEventListener("pageshow",event=>{
+ if(!event.persisted||!mode||channel)return;
+ try{
+  wire();
+  lastSeen=Date.now();sessionLost=false;
+  if(mode==="host"){
+   sendPlain({v:1,kind:"offer",room,from:me,pub:identity.publicKey});
+   if(connected&&hostMatch)void shareState().catch(e=>showStatus(e.message));
+  }else{
+   needsResync=true;
+   if(peer&&!connected)
+    sendPlain({v:1,kind:"join",room,from:me,pub:identity.publicKey});
+   else if(connected)
+    void sendSecure({kind:"sync"}).catch(e=>showStatus(e.message));
+  }
+ }catch(e){showStatus(tx("error")+": "+e.message);}
+ relayout();
+});
+document.addEventListener("visibilitychange",()=>{
+ if(document.visibilityState!=="visible"||!channel||!connected)return;
+ if(mode==="guest"){
+  needsResync=true;
+  void sendSecure({kind:"sync"}).catch(()=>{});
+ }else if(hostMatch)void shareState().catch(()=>{});
+ relayout();
+});
 $("host").disabled=!isAvailable();$("join").disabled=!isAvailable();
 localize();
