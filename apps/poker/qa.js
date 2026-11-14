@@ -15,6 +15,7 @@ const readSave=()=>{try{return localStorage.getItem(storageKey);}catch{return nu
 const readMode=()=>{try{return localStorage.getItem(modeKey)==="inline"?"inline":"drawer";}catch{return "drawer";}};
 let locale="en",session=null,table=null,seconds=30,paused=false,deadline=0,remaining=0,lastTurnKey="",storageNotice="",chatterHand=0,chatId=0,toastTimer=null,chatFocused=false,raiseOpen=false;
 let soloPrevious=null,soloVisualStamp="",soloSeenEvents=0,soloEvents=[],soloRestored=false;
+let soloPaintBoard="",soloPaintHand="";
 function soloSnapshot(h){
  return {seq:h.events.length,number:h.number,status:h.status,street:h.streetName,
   board:[...h.board],turn:h.turn,pot:h.players.reduce((sum,p)=>sum+p.total,0),
@@ -24,6 +25,7 @@ function soloSnapshot(h){
 }
 function resetSoloStory(restored=false){
  soloPrevious=null;soloVisualStamp="";soloSeenEvents=0;soloEvents=[];soloRestored=restored;
+ soloPaintBoard="";soloPaintHand="";
 }
 function soloEventText(e,h){
  const person=i=>h.players[i]?.name||"Seat "+(Number(i)+1);
@@ -316,17 +318,27 @@ function render(){
   seat.append(paymentLine);
   seats.append(seat);
  });
- const board=Array.from({length:5},(_,i)=>{
-  const card=makeCard(h.board[i],{empty:!h.board[i]});
-  if(motion?.newBoardIndices.includes(i))card.classList.add("is-revealed");
-  return card;
- });
- $("qa-board-cards").replaceChildren(...board);
- $("qa-hero-cards").replaceChildren(...h.players[0].hole.map(c=>{
-  const card=makeCard(c);
-  if(motion?.dealHand)card.classList.add("is-dealt");
-  return card;
- }));
+ // Clock/locale/chat renders must not remount cards and cancel the deal
+ // animation. Repaint board/hand only when the underlying cards change.
+ const boardKey=h.number+"/"+h.board.join(",");
+ if(boardKey!==soloPaintBoard){
+  soloPaintBoard=boardKey;
+  const board=Array.from({length:5},(_,i)=>{
+   const card=makeCard(h.board[i],{empty:!h.board[i]});
+   if(motion?.newBoardIndices.includes(i))card.classList.add("is-revealed");
+   return card;
+  });
+  $("qa-board-cards").replaceChildren(...board);
+ }
+ const handKey=h.number+"/"+h.players[0].hole.join(",");
+ if(handKey!==soloPaintHand){
+  soloPaintHand=handKey;
+  $("qa-hero-cards").replaceChildren(...h.players[0].hole.map(c=>{
+   const card=makeCard(c);
+   if(motion?.dealHand)card.classList.add("is-dealt");
+   return card;
+  }));
+ }
  // Independent compact strip for drawer / keyboard entry; never hidden
  // under the chat panel, and never relies on the full felt being visible.
  $("qa-hud-cards").replaceChildren(...h.players[0].hole.map(c=>makeCard(c,{small:true})));
