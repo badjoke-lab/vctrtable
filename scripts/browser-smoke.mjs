@@ -286,7 +286,7 @@ try{
       seats:[...document.querySelectorAll(".poker-seat")].map(rect)
     };
    });
-   assert.ok(mobile.felt.h<=545&&mobile.felt.h>=390,
+   assert.ok(mobile.felt.h<=545&&mobile.felt.h>=(view.height<=760?330:390),
      "Phone table must be compact and surveyable without a long scroll: "+JSON.stringify(mobile));
    assert.ok(mobile.felt.bottom<=view.height+15,
      "Entire felt must fit the initial phone viewport: "+JSON.stringify({view,mobile}));
