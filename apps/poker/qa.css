@@ -1196,3 +1196,111 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
 @media(prefers-reduced-motion:reduce){
  .qa-main .poker-seat.is-updated{animation:none!important}
 }
+
+/* 2026-11-15: board/hero collision discovered in the actual 360px river
+   capture. Move the OWN hand down inside the felt, never the board over seats.
+   Below 341px, the already-tested compact-screen coordinates are retained. */
+@media (min-width:341px) and (max-width:520px){
+ .qa-main .hero-spot{bottom:0!important}
+}
+/* Settlement belongs BELOW the cards, never on top of the community board. */
+.qa-main #qa-end .qa-result-stage{
+ box-sizing:border-box;position:relative;isolation:isolate;overflow:hidden;
+ width:100%;min-width:0;padding:14px 15px 13px;
+ display:flex;flex-direction:column;gap:6px;
+ background:linear-gradient(125deg,#183d32 0%,#123027 56%,#0b2323 100%);
+ border:1px solid #a88751;border-left:4px solid #e8be72;
+ border-radius:13px;color:#f6efdd;
+ box-shadow:0 10px 28px #0007,inset 0 1px 0 #cfc18e33;
+}
+.qa-main #qa-end .qa-result-eyebrow{
+ display:block;color:#dfc18d;
+ font-size:10px;letter-spacing:.19em;line-height:1.15;font-weight:850;
+}
+.qa-main #qa-end .qa-result-hero{
+ display:flex;align-items:baseline;justify-content:space-between;
+ gap:7px;position:relative;z-index:1;min-width:0;
+}
+.qa-main #qa-end #qa-result-headline{
+ font-size:clamp(21px,6.6vw,28px);
+ font-weight:950;letter-spacing:-.03em;line-height:1.1;
+ color:#ffe4a6;min-width:0;
+}
+.qa-main #qa-end #qa-result-amount{
+ font-weight:950;font-size:clamp(26px,8vw,36px);
+ line-height:1;color:#f4d28c;font-variant-numeric:tabular-nums;
+ letter-spacing:-.045em;white-space:nowrap;
+ text-shadow:0 1px 14px #eac17c40;
+}
+.qa-main #qa-end .qa-result-subline{
+ display:flex;flex-wrap:wrap;justify-content:space-between;
+ gap:4px 11px;position:relative;z-index:1;
+ color:#d8ebe0;font-size:11px;line-height:1.3;
+}
+.qa-main #qa-end .qa-result-subline span{overflow-wrap:anywhere;min-width:0}
+.qa-main #qa-end .qa-result-stage.is-negative{
+ border-color:#58716c;border-left-color:#829a95;
+ background:linear-gradient(120deg,#1a3232,#0b2225);
+}
+.qa-main #qa-end .qa-result-stage.is-negative #qa-result-amount{
+ color:#d3b4a5;text-shadow:none;
+}
+.qa-main #qa-end .qa-result-stage.is-neutral #qa-result-amount{
+ color:#e2eee5;text-shadow:none;
+}
+.qa-main #qa-end .qa-result-sparkles{
+ position:absolute;inset:0;z-index:0;
+ pointer-events:none;opacity:0;
+}
+.qa-main #qa-end .qa-result-sparkles i{
+ display:block;position:absolute;
+ width:6px;height:6px;border-radius:50%;
+ background:#f4d389;box-shadow:0 0 12px #f5d28aa8;
+}
+.qa-main #qa-end .qa-result-sparkles i:nth-child(1){left:12%;top:48%}
+.qa-main #qa-end .qa-result-sparkles i:nth-child(2){left:30%;top:15%}
+.qa-main #qa-end .qa-result-sparkles i:nth-child(3){right:12%;top:32%}
+.qa-main #qa-end .qa-result-sparkles i:nth-child(4){right:26%;bottom:12%}
+.qa-main #qa-end .qa-result-sparkles i:nth-child(5){left:62%;top:42%}
+.qa-main #qa-end .qa-result-stage.is-arriving{
+ animation:qa-result-show 620ms cubic-bezier(.12,.8,.22,1) both;
+}
+.qa-main #qa-end .qa-result-stage.is-positive.is-arriving .qa-result-sparkles{
+ animation:qa-result-glitter 1100ms ease-out both;
+}
+.qa-main #qa-end .qa-result-stage.is-positive.is-arriving .qa-result-sparkles i{
+ animation:qa-result-particle 1000ms ease-out both;
+}
+.qa-main .hero-spot.is-winning .hero-hand{
+ animation:qa-result-cards 940ms ease-out 1 both;
+}
+@keyframes qa-result-show{
+ from{opacity:.25;transform:translateY(16px);filter:brightness(1.8)}
+ 65%{opacity:1;transform:translateY(-2px);filter:brightness(1.2)}
+ to{opacity:1;transform:none;filter:none}
+}
+@keyframes qa-result-glitter{
+ 0%{opacity:0}25%{opacity:1}75%{opacity:.65}100%{opacity:0}
+}
+@keyframes qa-result-particle{
+ from{transform:translateY(13px) scale(.25);opacity:0}
+ 35%{transform:translateY(-7px) scale(1.1);opacity:1}
+ to{transform:translateY(-24px) scale(.2);opacity:0}
+}
+@keyframes qa-result-cards{
+ 0%{filter:brightness(1)}
+ 25%{filter:brightness(1.35) drop-shadow(0 0 9px #f6d4878a)}
+ 100%{filter:brightness(1)}
+}
+@media (max-width:370px){
+ .qa-main #qa-end .qa-result-stage{padding:12px 11px;gap:5px}
+ .qa-main #qa-end .qa-result-subline{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+ .qa-main #qa-end .qa-result-stage.is-arriving,
+ .qa-main #qa-end .qa-result-sparkles,
+ .qa-main #qa-end .qa-result-sparkles i,
+ .qa-main .hero-spot.is-winning .hero-hand{
+  animation:none!important;filter:none!important;transform:none!important;
+ }
+}
