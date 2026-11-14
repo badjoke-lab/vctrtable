@@ -46,11 +46,56 @@ let browser;
 try{
  browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
  const errors=[];
+ // A second, NORMAL-MOTION browser proves choreography is visible to
+ // actual players. The bulk geometry suite uses reduced motion for speed.
+ {
+  const context=await browser.newContext({viewport:{width:360,height:740},
+   isMobile:true,hasTouch:true,deviceScaleFactor:1,reducedMotion:"no-preference"});
+  // Disable the optional random bot raise in this deterministic visual test.
+  await context.addInitScript(()=>{Math.random=()=>0.5;});
+  const page=await context.newPage();
+  page.on("pageerror",error=>errors.push("solo-motion: "+error.message));
+  await page.goto(base+"/",{waitUntil:"networkidle"});
+  await page.locator("#qa-practice-details summary").click();
+  await page.locator("#qa-seats").fill("6");
+  await page.locator("#qa-seconds").fill("0");
+  await page.locator("#qa-form button[type=submit]").click();
+  await page.locator("#qa-table").waitFor({state:"visible"});
+  await page.waitForTimeout(125);
+  assert.equal(await page.locator("#qa-chat-toast").isVisible(),false,
+   "Scripted bot chat must never obscure real cards");
+  assert.equal(await page.locator("#qa-top-story-title").textContent(),"NEW HAND",
+   "Opening deal must remain on screen long enough to see");
+  const activeCards=await page.locator("#qa-hero-cards img.vcard").evaluateAll(cards=>
+   cards.filter(c=>c.getAnimations().some(a=>a.playState==="running")).length);
+  assert.ok(activeCards>=1,
+   "Actual non-reduced player must see moving deal animation");
+  const botActions=()=>page.locator("#qa-recent-actions .qa-action-tick")
+   .filter({hasText:/Seat [2-6] · (?:CALL|CHECK|RAISE)/}).count();
+  const start=Date.now();
+  if(await page.locator("#qa-check").isEnabled())await page.locator("#qa-check").click();
+  else if(await page.locator("#qa-call").isEnabled())await page.locator("#qa-call").click();
+  await page.waitForTimeout(225);
+  assert.equal(await botActions(),0,
+   "Scripted bots must not execute a whole table round instantaneously");
+  await page.waitForFunction(()=>
+   [...document.querySelectorAll("#qa-recent-actions .qa-action-tick")].some(x=>
+    /Seat [2-6] · (CALL|CHECK|RAISE)/.test(x.textContent)),{timeout:5000});
+  assert.ok(Date.now()-start>=560,"Computer actions must be visibly paced");
+  await page.waitForFunction(()=>
+   document.querySelectorAll("#qa-chip-flight .qa-flying-chip").length>0,{timeout:2500});
+  assert.ok(await page.locator("#qa-chip-flight .qa-flying-chip").count()>0,
+   "Calling chips must visibly travel from the acting seat toward the pot");
+  assert.equal(await page.locator(".qa-top-story").isVisible(),true);
+  await page.screenshot({path:path.join(dist,"poker-solo-motion-360.png")});
+  await context.close();
+ }
  for(const view of [
   {width:430,height:932,seats:6},{width:390,height:844,seats:6},{width:360,height:740,seats:6},
   {width:320,height:640,seats:6},{width:320,height:640,seats:2}
  ]){
-  const ctx=await browser.newContext({viewport:{width:view.width,height:view.height},isMobile:true,hasTouch:true,deviceScaleFactor:1});
+  const ctx=await browser.newContext({viewport:{width:view.width,height:view.height},isMobile:true,hasTouch:true,deviceScaleFactor:1,reducedMotion:"reduce"});
+  await ctx.addInitScript(()=>{Math.random=()=>0.5;});
   const page=await ctx.newPage();
   const dialogs=[];
   page.on("pageerror",error=>errors.push(view.width+": "+error.message));
@@ -81,12 +126,15 @@ try{
    }));
    throw new Error("Session startup failed: "+JSON.stringify({view,dialogs,errors,invalid}));
   }
+  assert.equal(await page.locator(".qa-top-story").isVisible(),true,
+    "Game events must be visible on the actual playing field");
+  assert.equal(await page.locator("#qa-players .poker-seat-avatar").count(),view.seats-1);
   assert.equal(await page.locator("#qa-players .poker-seat").count(),view.seats-1);
   assert.equal(await page.locator("#qa-hero-cards .vcard").count(),2);
-  assert.equal(await page.locator("#qa-top-story-title").textContent(),"NEW HAND",
-    "The actual first viewport must visibly announce the new hand");
-  assert.equal(await page.locator("#qa-story-title").textContent(),"NEW HAND",
-    "Solo practice must explain the initial deal");
+  assert.match(await page.locator("#qa-top-story-title").textContent(),/^(NEW HAND|CALL|CHECK|RAISE|FLOP|TURN|RIVER)$/,
+    "The first viewport must show the current real game event");
+  assert.match(await page.locator("#qa-story-title").textContent(),/^(NEW HAND|CALL|CHECK|RAISE|FLOP|TURN|RIVER)$/,
+    "Solo practice must identify the current engine state");
   assert.equal(await page.locator("#qa-hero-cards img.vcard.is-dealt").count(),2,
     "Solo private cards must animate as a deal");
   assert.ok(await page.locator("#qa-recent-actions .qa-action-tick").count()>0,
@@ -195,6 +243,19 @@ try{
       arena:rect(document.querySelector(".poker-arena")),
       viewport:innerWidth};
   });
+  const visual=await page.evaluate(()=>{
+   const r=selector=>{const x=document.querySelector(selector).getBoundingClientRect();
+    return {top:x.top,bottom:x.bottom,left:x.left,right:x.right};};
+   return {hero:r(".hero-info"),dock:r("#qa-controls"),
+    opponentCardWidths:[...document.querySelectorAll("#qa-players img.vcard-small")]
+     .map(el=>el.getBoundingClientRect().width)};
+  });
+  assert.ok(visual.opponentCardWidths.every(w=>w<=25),
+   "Hidden opponent backs must stay miniature: "+JSON.stringify(visual));
+  if(view.width===320){
+   assert.ok(visual.hero.bottom<=visual.dock.top-3,
+    "320px Android betting dock must not cover own stack: "+JSON.stringify(visual));
+  }
   const hit=(a,b)=>Math.min(a.right,b.right)-Math.max(a.x,b.x)>3&&
                       Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y)>3;
   // Five opponent seats always use the same card, badge and payout slots.
@@ -231,7 +292,7 @@ try{
       seats:[...document.querySelectorAll(".poker-seat")].map(rect)
     };
    });
-   assert.ok(mobile.felt.h<=545&&mobile.felt.h>=390,
+   assert.ok(mobile.felt.h<=545&&mobile.felt.h>=(view.height<=760?330:390),
      "Phone table must be compact and surveyable without a long scroll: "+JSON.stringify(mobile));
    assert.ok(mobile.felt.bottom<=view.height+15,
      "Entire felt must fit the initial phone viewport: "+JSON.stringify({view,mobile}));
@@ -340,6 +401,11 @@ try{
   while((await page.locator("#qa-street-label").textContent())!=="RIVER" &&
         !await page.locator("#qa-end").isVisible()){
     if(++riverSteps>20)throw Error("Could not reach river for card-overlap check");
+     await page.waitForFunction(()=>
+      !document.getElementById("qa-check").disabled ||
+      !document.getElementById("qa-call").disabled ||
+      !document.getElementById("qa-end").hidden,{timeout:20000});
+     if(await page.locator("#qa-end").isVisible())break;
     if(await page.locator("#qa-check").isEnabled())await page.locator("#qa-check").click();
     else if(await page.locator("#qa-call").isEnabled())await page.locator("#qa-call").click();
     else throw Error("No safe non-fold river progression");
@@ -376,6 +442,12 @@ try{
   // rather than only folding on preflop and missing showdown crashes.
   let turns=0;
   while(!await page.locator("#qa-end").isVisible()){
+   await page.waitForFunction(()=>
+    !document.getElementById("qa-check").disabled ||
+    !document.getElementById("qa-call").disabled ||
+    !document.getElementById("qa-fold").disabled ||
+    !document.getElementById("qa-end").hidden,{timeout:20000});
+   if(await page.locator("#qa-end").isVisible())break;
    if(++turns>55)throw new Error("Full hand stalled: "+JSON.stringify({view,errors,dialogs}));
    const check=page.locator("#qa-check"),call=page.locator("#qa-call");
    if(await check.isEnabled())await check.click();
@@ -526,6 +598,7 @@ try{
  // containers and buttons must stay in normal top-to-bottom document flow.
  for(const view of [{width:960,height:800},{width:1440,height:900}]){
   const ctx=await browser.newContext({viewport:view,deviceScaleFactor:1});
+  await ctx.addInitScript(()=>{Math.random=()=>0.5;});
   const page=await ctx.newPage();
   page.on("pageerror",error=>errors.push("desktop-"+view.width+": "+error.message));
   await page.goto(base+"/",{waitUntil:"networkidle"});
@@ -539,6 +612,12 @@ try{
   await page.locator("#qa-table").waitFor({state:"visible"});
   let turns=0;
   while(!await page.locator("#qa-end").isVisible()){
+   await page.waitForFunction(()=>
+    !document.getElementById("qa-check").disabled ||
+    !document.getElementById("qa-call").disabled ||
+    !document.getElementById("qa-fold").disabled ||
+    !document.getElementById("qa-end").hidden,{timeout:20000});
+   if(await page.locator("#qa-end").isVisible())break;
    if(++turns>65)throw Error("Desktop showdown did not finish at "+view.width);
    if(await page.locator("#qa-check").isEnabled())await page.locator("#qa-check").click();
    else if(await page.locator("#qa-call").isEnabled())await page.locator("#qa-call").click();
