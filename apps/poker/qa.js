@@ -431,13 +431,13 @@ function restore(){
   const raw=JSON.parse(readSave()||"null");
   if(!raw||raw.qaVersion!==1||!Number.isSafeInteger(raw.seconds)||raw.seconds<0||raw.seconds>3600)throw Error("Invalid save metadata");
   const saved=restoreSession(raw.journal);
-  session=saved;table=saved.table;seconds=raw.seconds;paused=false;remaining=seconds;lastTurnKey="";storageNotice="";raiseOpen=false;
+  session=saved;table=saved.table;seconds=raw.seconds;paused=false;remaining=seconds;lastTurnKey="";storageNotice="";raiseOpen=false;resetSoloStory(true);
   $("qa-setup").hidden=true;$("qa-table").hidden=false;
   chatFocused=false;drive();render();
  }catch(error){storageNotice=t("loadFailure")+" "+String(error.message||"");render();}
 }
 function newGame(){
- table=null;session=null;paused=false;chatterHand=0;lastTurnKey="";raiseOpen=false;
+ table=null;session=null;paused=false;chatterHand=0;lastTurnKey="";raiseOpen=false;resetSoloStory();
  document.querySelector(".qa-main").classList.remove("qa-playing");
  $("qa-setup").hidden=false;$("qa-table").hidden=true;
  demoChat.messages.length=0;demoChat.unread=0;demoChat.opened=false;chatFocused=false;render();
@@ -496,7 +496,7 @@ $("qa-form").addEventListener("submit",e=>{
  try{
   if(!Number.isSafeInteger(n)||n<2||n>6||!Number.isSafeInteger(seconds)||seconds<0||seconds>3600)throw Error(t("invalid"));
   session=createSession({players:Array.from({length:n},(_,i)=>({id:"p"+i,name:i===0?t("you"):"Seat "+(i+1)})),startingChips:chips,smallBlind:sb,bigBlind:bb,rebuy:$("qa-rebuy").checked});
-  table=session.table;startSessionHand(session);assertConservation(table);
+  table=session.table;resetSoloStory();startSessionHand(session);assertConservation(table);
   paused=false;chatterHand=0;lastTurnKey="";storageNotice="";raiseOpen=false;
   demoChat.messages.length=0;demoChat.unread=0;demoChat.opened=false;chatFocused=false;
   $("qa-setup").hidden=true;$("qa-table").hidden=false;
