@@ -62,7 +62,7 @@ try{
   await page.locator("#qa-form button[type=submit]").click();
   await page.locator("#qa-table").waitFor({state:"visible"});
   await page.waitForTimeout(125);
-  assert.equal(await page.locator("#qa-felt-action").textContent(),"NEW HAND",
+  assert.equal(await page.locator("#qa-top-story-title").textContent(),"NEW HAND",
    "Opening deal must remain on screen long enough to see");
   const activeCards=await page.locator("#qa-hero-cards img.vcard").evaluateAll(cards=>
    cards.filter(c=>c.getAnimations().some(a=>a.playState==="running")).length);
@@ -80,7 +80,7 @@ try{
    [...document.querySelectorAll("#qa-recent-actions .qa-action-tick")].some(x=>
     /Seat [2-6] · (CALL|CHECK|RAISE)/.test(x.textContent)),{timeout:5000});
   assert.ok(Date.now()-start>=560,"Computer actions must be visibly paced");
-  assert.equal(await page.locator("#qa-felt-callout").isVisible(),true);
+  assert.equal(await page.locator(".qa-top-story").isVisible(),true);
   await page.screenshot({path:path.join(dist,"poker-solo-motion-360.png")});
   await context.close();
  }
@@ -120,7 +120,7 @@ try{
    }));
    throw new Error("Session startup failed: "+JSON.stringify({view,dialogs,errors,invalid}));
   }
-  assert.equal(await page.locator("#qa-felt-callout").isVisible(),true,
+  assert.equal(await page.locator(".qa-top-story").isVisible(),true,
     "Game events must be visible on the actual playing field");
   assert.equal(await page.locator("#qa-players .poker-seat-avatar").count(),view.seats-1);
   assert.equal(await page.locator("#qa-players .poker-seat").count(),view.seats-1);
