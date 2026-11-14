@@ -21,7 +21,20 @@
 <p id="probe-inbound" role="status" aria-live="polite">No remote request seen / 他端末の受信なし</p>
 <p id="probe-roundtrip" role="status" aria-live="polite">No remote acknowledgement / 応答なし</p>
 </section>
-<section><h2>3. Interpretation / 判定</h2>
+<section><h2>3. Vector v0.5 realtime peer channel / リアルタイム通信</h2>
+<p>Vector 0.5 adds an optional live peer channel separate from persistent WebXDC updates. On BOTH devices press Join, then A sends one test and B manually acknowledges. No game actions or private cards use this channel. / 両端末で参加を押し、A側から送信、B側で応答してください。カードやベット操作は送りません。</p>
+<p>Joining may request network permission, especially over Tor or I2P. Do not join without agreeing to Vector's prompt. / ネットワーク接続の確認が出る場合があります。許可する場合だけ続けてください。</p>
+<div class="table-actions">
+<button id="probe-rt-join" type="button" class="secondary" disabled>Join realtime / 接続</button>
+<button id="probe-rt-send" type="button" disabled>Send realtime test / 即時送信</button>
+<button id="probe-rt-ack" type="button" class="secondary" disabled>Acknowledge realtime / 即時応答</button>
+<button id="probe-rt-leave" type="button" class="secondary" disabled>Leave / 切断</button>
+</div>
+<p id="probe-rt-capability" role="status">Not checked / 未確認</p>
+<p id="probe-rt-inbound" role="status" aria-live="polite">No realtime request seen / 未受信</p>
+<p id="probe-rt-roundtrip" role="status" aria-live="polite">No realtime acknowledgement / 応答なし</p>
+</section>
+<section><h2>4. Interpretation / 判定</h2>
 <p>Receiving the acknowledgement proves that a public WebXDC update made a round trip in this XDC instance. It does not prove the peer's actual Vector account or that an encrypted DM can reach the Mini App. The elapsed time is measured only with Device A's own clock, not with Device B's clock.</p>
 <p>応答の受信は共有通信の往復が成立したことだけを意味します。相手のVectorアカウント本人確認や、Botの個別DMの自動受信を証明しません。経過時間はA側の時計だけで計測します。</p>
 </section>
