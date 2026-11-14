@@ -83,6 +83,8 @@ try{
   }
   assert.equal(await page.locator("#qa-players .poker-seat").count(),view.seats-1);
   assert.equal(await page.locator("#qa-hero-cards .vcard").count(),2);
+  assert.equal(await page.locator("#qa-top-story-title").textContent(),"NEW HAND",
+    "The actual first viewport must visibly announce the new hand");
   assert.equal(await page.locator("#qa-story-title").textContent(),"NEW HAND",
     "Solo practice must explain the initial deal");
   assert.equal(await page.locator("#qa-hero-cards img.vcard.is-dealt").count(),2,
@@ -382,6 +384,8 @@ try{
    else throw new Error("No playable action before hand completion");
   }
   assert.equal(await page.locator("#qa-result").isVisible(),true);
+   assert.match(await page.locator("#qa-top-story-title").textContent(),/SHOWDOWN|HAND WON/,
+     "The top banner should show showdown before any scrolling");
    assert.match(await page.locator("#qa-story-title").textContent(),/SHOWDOWN|HAND WON/,
      "Completed Solo hand should announce a verified outcome");
    assert.ok(await page.locator("#qa-story-detail").textContent(),
