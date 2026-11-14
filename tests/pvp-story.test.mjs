@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {describePokerTransition as event,stageFor,POKER_STAGES} from "../packages/poker/pvp-story.js";
+import {describePokerTransition as event,stageFor,POKER_STAGES} from "../apps/poker/pvp-story.js";
 const player=(id,extra={})=>({id,name:id,stack:990,street:0,total:10,folded:false,inHand:true,...extra});
 const snap=(extra={})=>({seq:1,number:2,status:"betting",street:"preflop",board:[],turn:0,pot:20,
  players:[player("host"),player("guest")],awards:null,_room:"table-1",...extra});
