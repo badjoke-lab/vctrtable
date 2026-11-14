@@ -15,7 +15,7 @@ const readSave=()=>{try{return localStorage.getItem(storageKey);}catch{return nu
 const readMode=()=>{try{return localStorage.getItem(modeKey)==="inline"?"inline":"drawer";}catch{return "drawer";}};
 let locale="en",session=null,table=null,seconds=30,paused=false,deadline=0,remaining=0,lastTurnKey="",storageNotice="",chatterHand=0,chatId=0,toastTimer=null,chatFocused=false,raiseOpen=false;
 let soloPrevious=null,soloVisualStamp="",soloSeenEvents=0,soloEvents=[],soloRestored=false;
-let soloPaintBoard="",soloPaintHand="";
+let soloPaintBoard="",soloPaintHand="",soloLastResultKey="";
 let soloBotTimer=null,soloBotVersion=0;
 const motionReduced=()=>window.matchMedia?.("(prefers-reduced-motion: reduce)").matches||false;
 const botThinkMs=()=>motionReduced()?0:780;
@@ -29,7 +29,7 @@ function soloSnapshot(h){
 }
 function resetSoloStory(restored=false){
  soloPrevious=null;soloVisualStamp="";soloSeenEvents=0;soloEvents=[];soloRestored=restored;
- soloPaintBoard="";soloPaintHand="";
+ soloPaintBoard="";soloPaintHand="";soloLastResultKey="";
 }
 function flySoloChips(ids){
  if(motionReduced()||!table||!ids?.length)return;
@@ -56,6 +56,17 @@ function flySoloChips(ids){
    a.finished.catch(()=>{}).finally(()=>chip.remove());
   }
  }
+}
+function visibleStoryDetail(detail){
+ const text=String(detail||"");
+ const separator=text.indexOf(" / ");
+ if(separator<0)return text;
+ const english=text.slice(0,separator),japanese=text.slice(separator+3);
+ if(locale!=="ja")return english;
+ // An engine action already contains the acting seat and action; retain
+ // that context when adding the Japanese confirmation.
+ if(japanese==="操作が確定")return english+" · "+japanese;
+ return japanese||english;
 }
 function soloEventText(e,h){
  const person=i=>h.players[i]?.name||"Seat "+(Number(i)+1);
@@ -276,10 +287,10 @@ function render(){
   const story=$("qa-story");
   story.dataset.kind=motion.type;
   $("qa-story-title").textContent=motion.title;
-  $("qa-story-detail").textContent=motion.detail;
+  $("qa-story-detail").textContent=visibleStoryDetail(motion.detail);
   const top=$("qa-mode-banner");
   $("qa-top-story-title").textContent=motion.title;
-  $("qa-top-story-detail").textContent=motion.detail;
+  $("qa-top-story-detail").textContent=visibleStoryDetail(motion.detail);
   top.dataset.kind=motion.type;
   top.classList.remove("is-changing");
   void top.offsetWidth;top.classList.add("is-changing");
@@ -431,6 +442,38 @@ function render(){
  $("qa-buy").disabled=!table.settings.rebuy||!table.players.some(p=>p.stack===0);
  if(end){
   const summary=showdown;
+  const winners=summary.seats.filter(seat=>seat.awarded>0);
+  const winNames=winners.map(seat=>seat.name).join(" + ");
+  const youPositive=summary.hero.net>0;
+  const youNeutral=summary.hero.net===0;
+  const totalAwarded=summary.pots.reduce((n,p)=>n+p.amount,0);
+  const heroHand=summary.hero.handName;
+  const ja=locale==="ja";
+  const resultStage=$("qa-result-stage");
+  resultStage.classList.toggle("is-positive",youPositive);
+  resultStage.classList.toggle("is-negative",!youPositive&&!youNeutral);
+  resultStage.classList.toggle("is-neutral",youNeutral);
+  $("qa-result-eyebrow").textContent=heroHand?(ja?"ショーダウン":"SHOWDOWN"):
+   (ja?"勝敗確定":"HAND SETTLED");
+  $("qa-result-headline").textContent=youPositive?(ja?"あなたの勝利":"YOU WIN"):
+   youNeutral?(ja?"プラスマイナスゼロ":"EVEN HAND"):
+   (ja?"ハンド終了":"HAND COMPLETE");
+  $("qa-result-amount").textContent=(summary.hero.net>0?"+":"")+fmt(summary.hero.net);
+  $("qa-result-amount").setAttribute("aria-label",
+   (ja?"今回の収支 ":"Net chips ")+$("qa-result-amount").textContent);
+  $("qa-result-hand").textContent=heroHand?
+   (ja?"あなたの役 · ":"Your hand · ")+heroHand:
+   (ja?"獲得チップを精算しました":"Chips have been settled");
+  $("qa-result-winner").textContent=(ja?"獲得者 · ":"Awarded · ")+winNames+
+   " / "+fmt(totalAwarded);
+  document.querySelector(".hero-spot").classList.toggle("is-winning",summary.hero.awarded>0);
+  const outcomeKey=h.number+"/"+h.events.length;
+  if(outcomeKey!==soloLastResultKey){
+   soloLastResultKey=outcomeKey;
+   resultStage.classList.remove("is-arriving");
+   void resultStage.offsetWidth;
+   resultStage.classList.add("is-arriving");
+  }
   $("qa-result").textContent=t("you")+" · "+t("net")+" "+(summary.hero.net>=0?"+":"")+fmt(summary.hero.net);
   const entries=[];
   for(const p of summary.pots){
@@ -441,6 +484,7 @@ function render(){
   }
   $("qa-settlement").replaceChildren(...entries);
  }else{
+  document.querySelector(".hero-spot").classList.remove("is-winning");
   $("qa-result").textContent="";
   $("qa-settlement").replaceChildren();
  }
