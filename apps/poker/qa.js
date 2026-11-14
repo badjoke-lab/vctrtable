@@ -259,7 +259,15 @@ function render(){
     detail:"Local saved hand resumed / 保存した対戦を再開",dealHand:false};
   }
   soloRestored=false;
-  soloEvents.push(...h.events.slice(soloSeenEvents));
+  const newEvents=h.events.slice(soloSeenEvents);
+  if(motion&&["chips","fold","turn"].includes(motion.type)){
+   const action=[...newEvents].reverse().find(e=>e.kind==="action");
+   if(action){
+    motion={...motion,title:action.action.toUpperCase(),
+     detail:soloEventText(action,h)+" / "+(locale==="ja"?"操作が確定":"Action confirmed")};
+   }
+  }
+  soloEvents.push(...newEvents);
   soloEvents=soloEvents.slice(-4);
   soloSeenEvents=h.events.length;
   soloVisualStamp=stamp;soloPrevious=current;
