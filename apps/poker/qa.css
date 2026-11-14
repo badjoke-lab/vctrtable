@@ -959,3 +959,12 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
 .qa-main #qa-mode-banner.is-changing{animation:qa-story-cue 550ms ease-out}
 @media(max-width:520px){.qa-main #qa-story{display:none}}
 @media(prefers-reduced-motion:reduce){.qa-main #qa-mode-banner.is-changing{animation:none!important}}
+
+.qa-main .qa-top-story-line{display:flex;align-items:center;gap:6px;min-width:0}
+.qa-main .qa-top-story .qa-solo-label{
+ display:inline-flex;flex:0 0 auto;align-items:center;
+ border:1px solid #a98a59;border-radius:4px;padding:2px 4px;
+ font-size:8px;font-weight:900;letter-spacing:.06em;line-height:1;
+ color:#f5d6a1;background:#483b29;white-space:nowrap;
+}
+.qa-main .qa-top-story-line strong{min-width:0;overflow:hidden;text-overflow:ellipsis}
