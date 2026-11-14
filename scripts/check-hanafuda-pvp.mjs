@@ -270,9 +270,46 @@ try{
  await fsp.writeFile(path.join(output,"pvp-host.png"),Buffer.from(shot.data,"base64"));
  const shot2=await run2("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
  await fsp.writeFile(path.join(output,"pvp-guest.png"),Buffer.from(shot2.data,"base64"));
+
+ // Vector's Mini App container may expose WebXDC without the experimental
+ // realtime transport (or none at all). The lobby must not strand phone users.
+ const unsupportedTarget=await send("Target.createTarget",{url:"about:blank"});
+ const unsupportedAttached=await send("Target.attachToTarget",{
+  targetId:unsupportedTarget.targetId,flatten:true
+ });
+ const unsupportedSession=unsupportedAttached.sessionId;
+ const runUnsupported=(method,params)=>send(method,params,unsupportedSession);
+ await runUnsupported("Page.enable");
+ await runUnsupported("Runtime.enable");
+ await runUnsupported("Emulation.setDeviceMetricsOverride",{
+  width:360,height:640,deviceScaleFactor:1,mobile:true
+ });
+ await runUnsupported("Page.navigate",{url:baseUrl+"/pvp.html"});
+ let unsupported=null;
+ for(let attempt=0;attempt<60;attempt++){
+  const v=await runUnsupported("Runtime.evaluate",{
+   expression:"(()=>{const h=document.getElementById('host'),j=document.getElementById('join'),a=document.getElementById('fallbackPvE');if(!h||!j||!a)return null;return {hostDisabled:h.disabled,joinDisabled:j.disabled,href:a.getAttribute('href'),visible:a.getBoundingClientRect().height,description:document.getElementById('supportStatus').textContent};})()",
+   returnByValue:true
+  });
+  unsupported=v.result?.value;
+  if(unsupported?.hostDisabled&&unsupported?.joinDisabled)break;
+  await sleep(125);
+ }
+ if(!unsupported?.hostDisabled||!unsupported?.joinDisabled||
+  unsupported.visible<40||unsupported.href!=="./index.html"||
+  !unsupported.description.includes("does not support"))
+  throw Error("Vector without realtime did not offer a visible PvE fallback: "+
+   JSON.stringify(unsupported));
+ const unsupportedShot=await runUnsupported("Page.captureScreenshot",{
+  format:"png",captureBeyondViewport:false
+ });
+ await fsp.writeFile(path.join(output,"pvp-no-realtime-fallback.png"),
+  Buffer.from(unsupportedShot.data,"base64"));
+
  if(errors.length)throw Error("Uncaught PvP browser error: "+errors.join(" | "));
  console.log(JSON.stringify({status:"PASS",pairingCodeMatched:true,
-  encryptedPackets:sealed.length,actions,hostLayout,guestLayout},null,2));
+  encryptedPackets:sealed.length,actions,hostLayout,guestLayout,
+  noRealtimeFallback:true,bfcacheRestored:true},null,2));
 }finally{
  socket.close();child.kill();
  await new Promise(resolve=>server.close(resolve));
