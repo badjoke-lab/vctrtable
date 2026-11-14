@@ -62,6 +62,8 @@ try{
   await page.locator("#qa-form button[type=submit]").click();
   await page.locator("#qa-table").waitFor({state:"visible"});
   await page.waitForTimeout(125);
+  assert.equal(await page.locator("#qa-chat-toast").isVisible(),false,
+   "Scripted bot chat must never obscure real cards");
   assert.equal(await page.locator("#qa-top-story-title").textContent(),"NEW HAND",
    "Opening deal must remain on screen long enough to see");
   const activeCards=await page.locator("#qa-hero-cards img.vcard").evaluateAll(cards=>
