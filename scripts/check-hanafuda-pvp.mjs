@@ -95,8 +95,10 @@ const mockedWebxdc=String.raw`
 (()=> {
  const name="hanafuda-pvp-simulated-same-chat";
  window.__wire=[];
+ window.__channelJoins=0;
  window.webxdc={
   joinRealtimeChannel(){
+   window.__channelJoins++;
    const broadcast=new BroadcastChannel(name);
    let handler=()=>{};
    broadcast.onmessage=e=>{
@@ -235,16 +237,20 @@ try{
  // Vector v0.5 browser/PWA restoration: pagehide invalidates a realtime
  // channel, and a persisted pageshow must join again and recover the session.
  const guestStateBefore=await evaluate2("document.getElementById('roundLabel').textContent");
+ const guestWireBefore=await evaluate2("window.__wire.length");
  await evaluate2("window.dispatchEvent(new PageTransitionEvent('pagehide',{persisted:true}))");
  await evaluate2("window.dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true}))");
  await until(async()=>{
-  const packets=await evaluate2("window.__wire.filter(x=>{try{return JSON.parse(new TextDecoder().decode(new Uint8Array(x))).kind==='sealed'}catch{return false}}).length");
-  return packets>=5;
+  const count=await evaluate2("window.__wire.length");
+  const joined=await evaluate2("window.__channelJoins");
+  return count>guestWireBefore&&joined===2;
  },"guest restores encrypted channel after BFCache",8000);
  if(await evaluate2("document.getElementById('roundLabel').textContent")!==guestStateBefore)
   throw Error("PvP round was reset by BFCache return");
  await evaluate("window.dispatchEvent(new PageTransitionEvent('pagehide',{persisted:true}))");
  await evaluate("window.dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true}))");
+ if(await evaluate("window.__channelJoins")!==2)
+  throw Error("Host did not rejoin the realtime channel after BFCache");
  await until(async()=>{
   const isAlive=await evaluate("!document.getElementById('match').hidden");
   const guestAlive=await evaluate2("!document.getElementById('match').hidden");
