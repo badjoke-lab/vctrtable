@@ -195,3 +195,45 @@ device-verified until that workflow completes successfully**.
 This PR touches only multiplayer presentation, tests and docs. Solo
 practice has its own layout and must receive a separately measured
 visual pass rather than broad edits to its existing CSS.
+
+## Visual progression and animation — 2026-11-15
+
+Player feedback showed that simply repainting a felt table was not
+sufficient: players could not clearly follow the deal, the betting
+rounds, contributions, turn changes or the final hand result.
+
+The XDC now has **two presentation-only story layers**, neither of
+which can issue or modify poker actions:
+
+1. **Experimental PvP** (`pvp.html`): a five-step
+   Deal → Flop → Turn → River → Result progress row and a concise
+   bilingual event announcement derived only from newly verified,
+   signed host states. Two local hole cards reveal on a new hand;
+   the three Flop cards reveal in sequence, and Turn/River reveal
+   their single additional card. Pot increases, newly folded seats,
+   player turns and confirmed payouts have separate visual emphasis.
+   A one-second host-clock redraw does not remount table cards or
+   replay an animation.
+2. **Solo practice** (the **actual** `index.html` XDC landing and
+   `qa.html`): the same state-derived hand/street card effects plus
+   an action ticker from the LOCAL engine's real hand events. This
+   includes blinds, simulated players' Check/Call/Raise/Fold,
+   street changes and the result. The ticker is not live multiplayer
+   chat and does not disclose concealed cards.
+
+All board and hand cards remain the existing single transparent-free
+PNG art, with no counterfeit corner indices or DOM overlays.
+Animation only changes presentation, never card identity, chip
+accounting or encrypted transport. Animating opacity/clip-path in
+place does not change actual card boundaries or push cards over other
+seats. The `prefers-reduced-motion: reduce` preference disables all
+new motion without hiding information. Event text remains readable
+after a visual cue finishes.
+
+Validation: `tests/pvp-story.test.mjs` tests causal state
+transitions and suppresses no-op/host-clock updates. The packaged-XDC
+mobile browser suite checks Solo's initial deal and result narration,
+and the 3/6-seat browser suite checks fresh private deals,
+three/one/one community-card reveals, progress stages and verified
+settlement. Browser test pass does not establish real Vector account
+identity or a fair independent dealer.
