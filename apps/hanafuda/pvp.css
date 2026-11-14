@@ -72,3 +72,9 @@ dialog{border:2px solid #e1bd7d;border-radius:13px;background:#1b3528;color:#f8e
  .your-hand .card{height:60px}.captures .card{height:34px}
  #opponentCaptured,#yourCaptured{height:38px}
 }
+
+/* Vector v0.5's mobile app header hides the top PvE link. Keep a visible,
+   keyboard-accessible return path even when realtime is unavailable. */
+#fallbackPvE{display:inline-flex;align-items:center;justify-content:center;
+ text-decoration:none;padding:10px 14px;margin-top:6px;min-height:44px;
+ width:100%;max-width:380px}
