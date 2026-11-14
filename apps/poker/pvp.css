@@ -189,3 +189,16 @@ body{background:radial-gradient(ellipse at 48% -20%,#17302b 0%,#0b1518 50%,#070d
  .pvp-hero{width:52%}
 }
 @media(prefers-reduced-motion:reduce){.pvp *{scroll-behavior:auto;animation:none!important;transition:none!important}}
+
+/* At showdown there is no betting to keep at thumb level.
+   A sticky disabled action panel would cover the near-side cards whenever
+   room/Next-hand controls expanded at the top of the page. */
+.pvp.is-complete .pvp-control-panel{
+ position:static!important;
+ bottom:auto!important;
+ margin-top:10px;
+ box-shadow:none;
+}
+.pvp.is-complete .pvp-actions{display:none!important}
+.pvp.is-complete .pvp-turn-panel{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.pvp.is-complete #pvp-turn{margin:0;min-height:0}
