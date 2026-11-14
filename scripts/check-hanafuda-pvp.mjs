@@ -141,8 +141,8 @@ try{
  await run2("Emulation.setDeviceMetricsOverride",{
   width:960,height:680,deviceScaleFactor:1,mobile:false
  });
- await run("Page.addScriptToEvaluateOnNewDocument",{source:mockedWebxdc});
- await run2("Page.addScriptToEvaluateOnNewDocument",{source:mockedWebxdc});
+ await run("Page.addScriptToEvaluateOnNewDocument",{source:mockedWebxdc+'\nwindow.webxdc.selfAddr="qa-host";'});
+ await run2("Page.addScriptToEvaluateOnNewDocument",{source:mockedWebxdc+'\nwindow.webxdc.selfAddr="qa-guest";'});
  await Promise.all([
   run("Page.navigate",{url:baseUrl+"/pvp.html"}),
   run2("Page.navigate",{url:baseUrl+"/pvp.html"})
@@ -271,6 +271,62 @@ try{
  const shot2=await run2("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
  await fsp.writeFile(path.join(output,"pvp-guest.png"),Buffer.from(shot2.data,"base64"));
 
+
+ // Simulate a true WebView reload, which discards the host's JS heap, not
+ // merely a BFCache pagehide/pageshow. Re-pair to recover the LOCAL match.
+ const inspect=String.raw`(()=>{
+  const byId=id=>document.getElementById(id).textContent;
+  const cards=id=>[...document.querySelectorAll('#'+id+' .card')].map(x=>x.dataset.cardId||null);
+  return {round:byId('roundLabel'),yourScore:byId('yourScore'),
+   oppScore:byId('oppScore'),hand:cards('yourHand'),
+   field:cards('field'),deck:byId('deckCount')};
+ })()`;
+ const beforeHostReload=await evaluate(inspect);
+ const beforeGuestReload=await evaluate2(inspect);
+ const savedLocally=await evaluate("(()=>{const raw=localStorage.getItem('hanafuda:host-save:v1:qa-host');const cp=raw&&JSON.parse(raw).checkpoint;return {found:!!cp,deck:cp?.game.deck.length,privateHands:cp?.game.hands.length,revision:cp?.revision};})()");
+ if(!savedLocally.found||savedLocally.privateHands!==2)
+  throw Error("Host did not persist a private, complete checkpoint "+
+   JSON.stringify(savedLocally));
+ const otherSave=await evaluate2("localStorage.getItem('hanafuda:host-save:v1:qa-guest')");
+ if(otherSave!==null)throw Error("Guest unexpectedly wrote a host-only checkpoint");
+ await Promise.all([
+  run("Page.navigate",{url:baseUrl+"/pvp.html"}),
+  run2("Page.navigate",{url:baseUrl+"/pvp.html"})
+ ]);
+ await until(async()=>{
+  const hostReady=await evaluate("document.readyState==='complete' && !document.getElementById('resumePanel').hidden");
+  const guestReady=await evaluate2("document.readyState==='complete' && document.getElementById('resumePanel').hidden");
+  return hostReady&&guestReady;
+ },"private host saved match visible only to host",13000);
+ await evaluate("document.getElementById('resumeSaved').click()");
+ await evaluate2("document.getElementById('join').click()");
+ await until(async()=>{
+  const a=await evaluate("!document.getElementById('pairing').hidden");
+  const b=await evaluate2("!document.getElementById('pairing').hidden");
+  return a&&b;
+ },"fresh host/guest pairing after full reload",15000);
+ const resumedCodeA=await evaluate("document.getElementById('pairingCode').textContent");
+ const resumedCodeB=await evaluate2("document.getElementById('pairingCode').textContent");
+ if(resumedCodeA!==resumedCodeB||!/^[0-9]{6}$/.test(resumedCodeA))
+  throw Error("Re-pairing after restart failed");
+ await evaluate2("document.getElementById('approve').click()");
+ await evaluate("document.getElementById('approve').click()");
+ await until(async()=>{
+  const a=await evaluate("!document.getElementById('match').hidden");
+  const b=await evaluate2("!document.getElementById('match').hidden");
+  return a&&b;
+ },"both restored players see prior round",20000);
+ const recoveredHost=await evaluate(inspect);
+ const recoveredGuest=await evaluate2(inspect);
+ if(JSON.stringify(recoveredHost)!==JSON.stringify(beforeHostReload)||
+  JSON.stringify(recoveredGuest)!==JSON.stringify(beforeGuestReload))
+  throw Error("Saved host reload changed private card hands/field/scores: "+
+   JSON.stringify({beforeHostReload,recoveredHost,beforeGuestReload,recoveredGuest}));
+ // Restoration never sends a raw saved checkpoint, even when pairing again.
+ const rejoinPackets=await evaluate2("window.__wire.map(x=>JSON.parse(new TextDecoder().decode(new Uint8Array(x))))");
+ if(rejoinPackets.some(p=>p.checkpoint||p.game||p.hands||p.deck))
+  throw Error("Restored secret checkpoint appeared in realtime wire messages");
+
  // Vector's Mini App container may expose WebXDC without the experimental
  // realtime transport (or none at all). The lobby must not strand phone users.
  const unsupportedTarget=await send("Target.createTarget",{url:"about:blank"});
@@ -309,7 +365,7 @@ try{
  if(errors.length)throw Error("Uncaught PvP browser error: "+errors.join(" | "));
  console.log(JSON.stringify({status:"PASS",pairingCodeMatched:true,
   encryptedPackets:sealed.length,actions,hostLayout,guestLayout,
-  noRealtimeFallback:true,bfcacheRestored:true},null,2));
+  noRealtimeFallback:true,bfcacheRestored:true,fullHostReloadRestored:true},null,2));
 }finally{
  socket.close();child.kill();
  await new Promise(resolve=>server.close(resolve));
