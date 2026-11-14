@@ -892,9 +892,9 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
 }
 .qa-main .poker-seat.is-updated{animation:qa-seat-cue 640ms ease-out}
 @keyframes qa-card-reveal{
- from{opacity:0;transform:translateY(-15px) rotateY(65deg) scale(.86)}
- 65%{opacity:1;transform:translateY(0) rotateY(0deg) scale(1)}
- to{opacity:1;transform:none}
+ from{opacity:0;clip-path:inset(0 100% 0 0);filter:brightness(1.45)}
+ 65%{opacity:1;clip-path:inset(0 25% 0 0);filter:brightness(1.15)}
+ to{opacity:1;clip-path:inset(0);filter:none}
 }
 @keyframes qa-story-cue{
  from{opacity:.4;transform:translateY(-5px);filter:brightness(1.35)}
