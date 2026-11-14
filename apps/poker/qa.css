@@ -929,3 +929,33 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
  .qa-main .street-label.is-revealing,
  .qa-main .poker-seat.is-updated{animation:none!important;transform:none!important;filter:none!important}
 }
+
+/* The live Solo hand headline replaces the old developer notice at the top,
+   so progression is visible without scrolling under the playing surface. */
+.qa-main #qa-mode-banner{
+ min-height:43px;margin-top:8px;padding:6px 10px;
+ border:1px solid #446a55;border-left:3px solid #d7b574;
+ background:linear-gradient(110deg,#224638,#112c2c);
+}
+.qa-main #qa-mode-banner[data-kind="settlement"]{
+ border-color:#cda86a;background:linear-gradient(110deg,#574026,#173b35);
+}
+.qa-main .qa-top-story{
+ min-width:0;display:flex;flex-direction:column;gap:2px;
+ flex:1 1 0;justify-content:center;
+}
+.qa-main .qa-top-story strong{
+ display:block;font-size:12px;letter-spacing:.075em;
+ color:#ffe4a8;font-weight:900;white-space:nowrap;
+}
+.qa-main .qa-top-story span{
+ display:block;font-size:10px;line-height:1.15;color:#d3e9d7;
+ overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+}
+.qa-main #qa-mode-banner a{
+ font-size:11px;flex:0 0 auto;max-width:45%;overflow:hidden;
+ text-overflow:ellipsis;white-space:nowrap;
+}
+.qa-main #qa-mode-banner.is-changing{animation:qa-story-cue 550ms ease-out}
+@media(max-width:520px){.qa-main #qa-story{display:none}}
+@media(prefers-reduced-motion:reduce){.qa-main #qa-mode-banner.is-changing{animation:none!important}}
