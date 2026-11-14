@@ -97,3 +97,60 @@ secure dealing or production readiness.
 - Do not spoof `selfAddr` as an Nostr identity or leak encrypted hand
   data into public updates as a workaround.
 - Keep host-trusted gameplay clearly marked experimental.
+
+## Vector v0.5.1 transport audit — 2026-11-14
+
+Confirmed against the tagged release **v0.5.1** (2026-11-07):
+- [Release](https://github.com/VectorPrivacy/Vector/releases/tag/v0.5.1)
+- [Vigil v0.5.0 changes](https://github.com/VectorPrivacy/Vector/releases/tag/v0.5.0)
+- [Realtime peer channel draft](https://github.com/VectorPrivacy/Vector/blob/v0.5.1/docs/webxdc-realtime.md)
+- [Desktop WebXDC bridge](https://github.com/VectorPrivacy/Vector/blob/v0.5.1/src-tauri/src/miniapps/scheme.rs)
+- [Android Mini App IPC](https://github.com/VectorPrivacy/Vector/blob/v0.5.1/src-tauri/gen/android/app/src/main/java/io/vectorapp/miniapp/MiniAppIpc.kt)
+
+**New capability:** `webxdc.joinRealtimeChannel()` can return a realtime
+channel with `setListener(callback)`, `send(Uint8Array)` and `leave()`.
+Vector documents an Iroh gossip topic per shared XDC message with
+peer discovery inside the chat; payloads are ephemeral, capped at
+128,000 bytes. Vector v0.5 defaults multiplayer to relayed routes rather
+than exposing peers' IP addresses. Privacy permissions and different
+routing modes must still be checked in the actual client.
+
+**NOT enabled for betting or private dealing:** a realtime message does
+not represent a durable `sendUpdate` event, an authoritative host state,
+a signed turn journal, a verified Nostr identity, or an authenticated
+SDK-Bot DM. The release still shows `sendToChat()` as *Not implemented*
+in the desktop Mini App shim and no reviewed private DM Bot messaging
+command in the Mini App allowlist. No secret dealer data, deck, cards,
+keys, or gameplay events are sent through realtime in this project.
+
+The optional `diagnostics.html` page now permits TWO SEPARATE tests:
+(1) old manual persistent shared `sendUpdate` ping/ack; (2) new
+manual realtime-channel ping/ack, with independent random per-page
+pseudonyms (never `webxdc.selfAddr` in the realtime packets).
+The realtime test starts **only** after pressing **Join**, which
+allows the Vector host to display network permission prompts. Each
+subsequent ping and response is explicitly requested. Sending to the
+local API is *not* labeled as proof of peer delivery. Round-trip times
+are measured on the sender's local clock.
+
+### Required real-device matrix
+
+| Vector host | Persistent sendUpdate | Realtime join + ping | Notes |
+|---|---|---|---|
+| Android v0.5.1 | Not yet tested | Not yet tested | Native WebView / background |
+| Desktop v0.5.1 | Not yet tested | Not yet tested | Widescreen game WebView |
+| Vector Web v0.5.1 | Not yet tested | Not yet tested | Browser storage and permissions |
+| Tor/I2P mode | Not yet tested | Not yet tested | Prompt and networking caveats |
+
+Run the same XDC message on two independent accounts. For realtime
+test press Join on both, Send on A, Acknowledge on B, then check A's
+locally observed result. Test after suspension and reopen, and test
+network refusal. Cross-chat XDC copies must not intermix signals.
+Compare delivery with and without realtime peer access. Never infer a
+working authenticated player identity from an unauthenticated echo.
+
+`scripts/transport-probe-browser-smoke.mjs` adds two simulated
+Chromium realtime channels alongside the old persisted transport tests.
+This is a regression test for our JS protocol only, not proof that
+actual Android/desktop/web Vector multiplayer works. Merge only after
+packaged-XDC CI succeeds and real-device tests can be recorded separately.
