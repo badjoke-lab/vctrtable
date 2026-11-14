@@ -22,9 +22,17 @@
 
 **Encryption scope:** Both users create ephemeral P-256 ECDH keys in their browser. Peer keys are included in a six-digit code that must be compared verbally. The host encrypts the guest's own hand plus a redacted public snapshot with AES-GCM, authenticated to the intended peer, room, and sender. The plaintext realtime broadcast does **not** include the whole deck, both hands or secret keys. Guest moves are also encrypted and authenticated. Since a chat member could actively impersonate an initial pairing, users MUST compare codes out-of-band.
 
-**Reliability limits:** WebXDC realtime messages are ephemeral and can be lost. Guest requests have sequence numbers and repeat until a host response; the host deduplicates them. Sync can resupply the latest redacted state **while the host's app remains running**. Reloading/closing the hosting app destroys its unpersisted game and private keys; that match cannot resume. Sender identity is keyed to the ephemeral handshake, **not attested to a Vector identity**. This is a **two-player QA release**, not production PvP.
+**Reliability limits:** WebXDC realtime messages are ephemeral and can be lost. Guest requests have sequence numbers and repeat until a host response; the host deduplicates them. Sync can resupply the latest redacted state **while the host's app remains running**. When the host reloads, the game can be resumed from the hosting device's local private checkpoint if its WebXDC localStorage survives. The old ephemeral pairing key is intentionally NOT persisted: the guest must reopen the SAME Mini App and verify a new six-digit code. This is not a guarantee of long-term storage or device migration. If local storage is purged or unsupported, the game cannot be recovered. Sender identity is keyed to the ephemeral handshake, **not attested to a Vector identity**. This is a **two-player QA release**, not production PvP.
 
 **No gambling:** No cash, token purchases, payments, wagering, trading, or chip conversion.
+
+## Host reload and recovery (local QA)
+
+1. While hosting a match, after the deal and every accepted move, the full host-only checkpoint is saved to localStorage **inside the hosting player's WebXDC sandbox**. It contains both hands and the complete ordered deck; it is deliberately **never** broadcast via `sendUpdate` or realtime messages.
+2. After the hosting WebView is fully reloaded or the Mini App is closed and reopened **on that same device and same app message**, the lobby shows **Resume saved match / 保存した対局を再開** if a valid checkpoint is still present.
+3. The host taps Resume; their former encryption keys are discarded, and a new temporary room and key are created. The guest must **reopen the same Mini App message**, tap Join and both users must compare a **new** six-digit code. The previous connection cannot simply carry on.
+4. Once both agree, the host continues from the exact same round, score, turn, field, draw pile and both hands. The guest receives only their own hand and public match data in an encrypted snapshot. **Discard local save** removes the host's checkpoint.
+5. LocalStorage is **not a durable database**: Vector may clear it, browsing modes can disable it, and it does not synchronize across devices or accounts. The restored host is still trusted, not cryptographically fair. Users should not play this QA mode on shared host devices because the local app storage contains the ordered deck and private cards.
 
 ## Test gates
 
