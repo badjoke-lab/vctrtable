@@ -1081,34 +1081,6 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
 }
 .qa-main #qa-my-stack{font-weight:900;color:#f7d287;font-variant-numeric:tabular-nums}
 .qa-main #qa-timer{font-size:12px;color:#9cf5c1}
-.qa-main .qa-felt-callout{
- position:absolute;left:50%;top:63%;z-index:5;
- transform:translate(-50%,-50%);min-width:98px;max-width:51%;
- border:1px solid #d9bc83;border-radius:9px;
- background:linear-gradient(125deg,#202c25ed,#182a24fa);
- padding:6px 9px;text-align:center;
- box-shadow:0 5px 18px #000a;pointer-events:none;
- display:flex;align-items:center;flex-direction:column;gap:2px;
-}
-.qa-main .qa-felt-callout[hidden]{display:none!important}
-.qa-main .qa-felt-callout span{
- display:block;color:#f4d28c;font-size:10px;font-weight:950;letter-spacing:.095em;
- white-space:nowrap;
-}
-.qa-main .qa-felt-callout strong{
- display:block;max-width:100%;font-size:10px;color:#e9f5e6;
- font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.qa-main .qa-felt-callout[data-kind="street"]{
- background:linear-gradient(130deg,#74552c,#1a3c30);
- border-color:#f3d68e;
-}
-.qa-main .qa-felt-callout[data-kind="settlement"]{
- background:linear-gradient(130deg,#8b6233,#25382c);
-}
-.qa-main .qa-felt-callout.is-on{
- animation:solo-felt-cue 660ms cubic-bezier(.17,.8,.18,1) both;
-}
 .qa-main .qa-chip-flight{position:absolute;inset:0;z-index:6;overflow:visible;pointer-events:none}
 .qa-main .qa-flying-chip{
  position:absolute;display:block;width:20px;height:20px;
@@ -1132,10 +1104,8 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
  .qa-main .poker-seat.pos-top-right{left:82%}
  .qa-main .community-cards img.vcard,
  .qa-main .community-cards .vcard-empty{width:clamp(33px,10.6vw,39px)!important;flex-basis:clamp(33px,10.6vw,39px)!important}
- .qa-main .qa-felt-callout{max-width:56%;top:61%;padding:4px 7px}
 }
 @media(prefers-reduced-motion:reduce){
- .qa-main .qa-felt-callout.is-on{animation:none!important}
  .qa-main .qa-flying-chip{display:none!important}
 }
 
@@ -1190,7 +1160,6 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
  font-size:10px!important;line-height:1.2!important;
 }
 .qa-main .hero-spot{width:48%!important;bottom:2.6%}
-.qa-main .qa-felt-callout{top:65%}
 @media(max-width:370px){
  .qa-main .poker-seat.pos-mid-left{left:13%!important}
  .qa-main .poker-seat.pos-mid-right{left:87%!important}
@@ -1208,4 +1177,23 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
  .qa-main .poker-arena{padding:5px 4px 7px!important}
  .qa-main .felt{height:340px!important}
  .qa-main .hero-spot{bottom:3.2%!important}
+}
+
+/* The active player's own seat is the action cue, not a floating card cover. */
+.qa-main .poker-seat.is-updated{
+ border-color:#f5cd78!important;
+ box-shadow:0 0 0 2px #e6bb6a9e,0 0 24px #cfa35672,0 5px 15px #000a!important;
+ animation:solo-actor-cue 760ms ease-out both!important;
+}
+.qa-main .poker-seat.is-updated .poker-seat-bet{
+ background:#d9ac66!important;color:#152821!important;
+ border-radius:99px;padding:2px 7px;font-size:11px!important;font-weight:900!important;
+}
+@keyframes solo-actor-cue{
+ 0%{filter:brightness(1);transform:translate(-50%,-50%) scale(1)}
+ 48%{filter:brightness(1.4);transform:translate(-50%,-50%) scale(1.035)}
+ 100%{filter:brightness(1);transform:translate(-50%,-50%) scale(1)}
+}
+@media(prefers-reduced-motion:reduce){
+ .qa-main .poker-seat.is-updated{animation:none!important}
 }
