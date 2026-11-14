@@ -234,6 +234,19 @@ try{
       arena:rect(document.querySelector(".poker-arena")),
       viewport:innerWidth};
   });
+  const visual=await page.evaluate(()=>{
+   const r=selector=>{const x=document.querySelector(selector).getBoundingClientRect();
+    return {top:x.top,bottom:x.bottom,left:x.left,right:x.right};};
+   return {hero:r(".hero-info"),dock:r("#qa-controls"),
+    opponentCardWidths:[...document.querySelectorAll("#qa-players img.vcard-small")]
+     .map(el=>el.getBoundingClientRect().width)};
+  });
+  assert.ok(visual.opponentCardWidths.every(w=>w<=25),
+   "Hidden opponent backs must stay miniature: "+JSON.stringify(visual));
+  if(view.width===320){
+   assert.ok(visual.hero.bottom<=visual.dock.top-3,
+    "320px Android betting dock must not cover own stack: "+JSON.stringify(visual));
+  }
   const hit=(a,b)=>Math.min(a.right,b.right)-Math.max(a.x,b.x)>3&&
                       Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y)>3;
   // Five opponent seats always use the same card, badge and payout slots.
