@@ -71,6 +71,12 @@ jobs:
         run: node scripts/check-hanafuda-layout.mjs
       - name: Simulate two WebXDC peers in Chromium
         run: node scripts/check-hanafuda-pvp.mjs
+      - name: Attach tested dual-mode XDC
+        uses: actions/upload-artifact@v4
+        with:
+          name: hanafuda-vector-v051-xdc
+          path: dist/hanafuda.xdc
+          if-no-files-found: error
       - name: Save Hanafuda viewport screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -79,7 +85,6 @@ jobs:
           path: dist/hanafuda-layout-preview/*.png
           if-no-files-found: warn
       - name: Publish stable direct .xdc URL on prerelease
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
