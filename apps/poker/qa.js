@@ -7,12 +7,45 @@ import {ChatViewModel,QUICK_REPLIES,cannedTranslation} from "./chat-view.js";
 import {createPublicChatTransport} from "./public-chat.js";
 import {bettingControls} from "./betting-controls.js";
 import {settlementSummary} from "./showdown-summary.js";
+import {describePokerTransition} from "./pvp-story.js";
 
 const $=id=>document.getElementById(id);
 const storageKey="vctrtable-poker-qa-v1",modeKey="vctrtable-poker-chat-mode-v1";
 const readSave=()=>{try{return localStorage.getItem(storageKey);}catch{return null;}};
 const readMode=()=>{try{return localStorage.getItem(modeKey)==="inline"?"inline":"drawer";}catch{return "drawer";}};
 let locale="en",session=null,table=null,seconds=30,paused=false,deadline=0,remaining=0,lastTurnKey="",storageNotice="",chatterHand=0,chatId=0,toastTimer=null,chatFocused=false,raiseOpen=false;
+let soloPrevious=null,soloVisualStamp="",soloSeenEvents=0,soloEvents=[],soloRestored=false;
+function soloSnapshot(h){
+ return {seq:h.events.length,number:h.number,status:h.status,street:h.streetName,
+  board:[...h.board],turn:h.turn,pot:h.players.reduce((sum,p)=>sum+p.total,0),
+  players:h.players.map(p=>({id:p.id,name:p.name,stack:p.stack,
+   street:p.street,total:p.total,folded:p.folded,inHand:p.inHand})),
+  awards:[...h.awards],_room:"solo"};
+}
+function resetSoloStory(restored=false){
+ soloPrevious=null;soloVisualStamp="";soloSeenEvents=0;soloEvents=[];soloRestored=restored;
+}
+function soloEventText(e,h){
+ const person=i=>h.players[i]?.name||"Seat "+(Number(i)+1);
+ const ja=locale==="ja";
+ if(e.kind==="action"){
+  const labels=ja?{fold:"フォールド",check:"チェック",call:"コール",raise:"レイズ"}:
+   {fold:"FOLD",check:"CHECK",call:"CALL",raise:"RAISE"};
+  return person(e.seat)+" · "+(labels[e.action]||e.action)+
+   (e.action==="raise"?" "+fmt(e.target):"");
+ }
+ if(e.kind==="street")return ({flop:ja?"フロップ・3枚公開":"FLOP · 3 cards",
+  turn:ja?"ターン・4枚目":"TURN · 4th card",
+  river:ja?"リバー・5枚目":"RIVER · 5th card"})[e.street]||e.street;
+ if(e.kind==="blinds")return ja?
+  person(e.sb)+" / "+person(e.bb)+" · ブラインド":
+  person(e.sb)+" / "+person(e.bb)+" · BLINDS";
+ if(e.kind==="complete"){
+  const winners=h.players.filter((p,i)=>e.awards?.[i]>0).map(p=>p.name);
+  return (ja?"決着 · ":"RESULT · ")+winners.join(" + ");
+ }
+ return "";
+}
 const demoChat=new ChatViewModel({mode:readMode()});
 const vectorChat=new ChatViewModel({mode:readMode()});
 let chat=demoChat;
@@ -182,6 +215,36 @@ function render(){
  renderChat();
  if(!table)return;
  const h=table.hand,L=legalActions(table),pot=h.players.reduce((sum,p)=>sum+p.total,0),end=h.status==="complete";
+ const current=soloSnapshot(h);
+ const stamp=h.number+"/"+h.events.length+"/"+h.status;
+ let motion=null;
+ if(soloVisualStamp!==stamp){
+  const sameHand=soloPrevious?.number===h.number;
+  if(!sameHand){soloSeenEvents=0;soloEvents=[];}
+  motion=describePokerTransition(soloPrevious,current,h.players[0].id);
+  if(soloRestored&&motion?.type==="deal"){
+   motion={...motion,type:"sync",title:"TABLE RESTORED",
+    detail:"Local saved hand resumed / 保存した対戦を再開",dealHand:false};
+  }
+  soloRestored=false;
+  soloEvents.push(...h.events.slice(soloSeenEvents));
+  soloEvents=soloEvents.slice(-4);
+  soloSeenEvents=h.events.length;
+  soloVisualStamp=stamp;soloPrevious=current;
+ }
+ if(motion){
+  const story=$("qa-story");
+  story.dataset.kind=motion.type;
+  $("qa-story-title").textContent=motion.title;
+  $("qa-story-detail").textContent=motion.detail;
+  story.classList.remove("is-entering");
+  void story.offsetWidth;story.classList.add("is-entering");
+ }
+ const recent=$("qa-recent-actions");recent.replaceChildren();
+ for(const evt of soloEvents){
+  const label=soloEventText(evt,h);
+  if(label)recent.append(elem("span",label,"qa-action-tick"));
+ }
  const showdown=end?settlementSummary(table,{locale,heroId:h.players[0].id}):null;
  // During live play keep chat immediately after the felt/info, as expected
  // by the viewport observer. At showdown move it BELOW the compact payout
