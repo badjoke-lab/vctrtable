@@ -83,6 +83,12 @@ try{
   }
   assert.equal(await page.locator("#qa-players .poker-seat").count(),view.seats-1);
   assert.equal(await page.locator("#qa-hero-cards .vcard").count(),2);
+  assert.equal(await page.locator("#qa-story-title").textContent(),"NEW HAND",
+    "Solo practice must explain the initial deal");
+  assert.equal(await page.locator("#qa-hero-cards img.vcard.is-dealt").count(),2,
+    "Solo private cards must animate as a deal");
+  assert.ok(await page.locator("#qa-recent-actions .qa-action-tick").count()>0,
+    "Solo practice should show engine-sourced blind/action events");
   assert.equal(await page.locator("#qa-board-cards .vcard").count(),5);
   assert.equal(await page.locator("#qa-players .poker-seat.inspectable").count(),0,
    "Opponent hole cards must not be inspectable before showdown");
@@ -376,6 +382,12 @@ try{
    else throw new Error("No playable action before hand completion");
   }
   assert.equal(await page.locator("#qa-result").isVisible(),true);
+   assert.match(await page.locator("#qa-story-title").textContent(),/SHOWDOWN|HAND WON/,
+     "Completed Solo hand should announce a verified outcome");
+   assert.ok(await page.locator("#qa-story-detail").textContent(),
+     "Completed Solo hand must name the award recipients");
+   assert.ok(await page.locator("#qa-recent-actions .qa-action-tick").count()>0,
+     "Engine event ticker must survive through showdown");
   if(await page.locator("#qa-timer").isVisible()){
    assert.equal(await page.locator("#qa-timer").evaluate(el=>el.classList.contains("qa-hero-hand-rank")),true,
     "The old countdown may only be replaced by the hero's actual hand rank");
