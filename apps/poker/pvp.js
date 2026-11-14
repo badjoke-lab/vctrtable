@@ -10,6 +10,7 @@ import {makeHostSession,makeStateEvent,readMyHand,makeSignedAction,
 import {serializeSession,restoreSession,sessionAction} from "./session.js";
 import {reconcileTurnClock,timeoutAction} from "./pvp-turn-clock.js";
 import {SeatActionOutbox} from "./pvp-action-outbox.js";
+import {describePokerTransition,stageFor,POKER_STAGES} from "./pvp-story.js";
 import {saveHostCheckpoint,loadHostCheckpoint} from "./pvp-host-checkpoint.js";
 import {makeCard} from "./cards.js";
 const $=id=>document.getElementById(id),api=window.webxdc;
@@ -18,7 +19,7 @@ const live=Boolean(api?.selfAddr&&typeof api.sendUpdate==="function"&&
 const me=live?api.selfAddr:"",updates=new Map(),peers=new Map(),seen=new Set();
 let keys=null,hostSession=null,game=null,hole=null,seq=0,turnClock=null,queue=Promise.resolve();
 let keySent=false,pending=false,errorMessage="",hostRecovered=false,hostProposalId=null;
-let activeTableId=null,outboundInFlight=false;
+let activeTableId=null,outboundInFlight=false,lastPaintedRevision=null;
 const actionOutbox=new SeatActionOutbox();
 function room(){
  return deriveSharedTable([...updates.values()].map(x=>({event:x.payload,serial:x.serial}))
@@ -26,7 +27,7 @@ function room(){
 }
 const unanimous=r=>Boolean(r.table&&r.seats.has(me)&&r.seats.size>=2&&
  r.ready.size===r.seats.size&&r.proposal&&r.proposal.approvals.size===r.seats.size);
-function draw(){
+function draw(motion=null){
  const r=room(),host=r.table?.host===me;
  const root=document.querySelector(".pvp");
  root.classList.toggle("is-playing",Boolean(game));
@@ -71,9 +72,44 @@ function draw(){
  (Boolean(game)&&!hostSession);
  $("pvp-start").textContent=completed?"Host: Next hand":"Host: Deal hand";
  $("pvp-game").hidden=!game;
- if(!game)return;
- $("pvp-street").textContent="Hand "+game.number+" · "+game.street.toUpperCase();
+ if(!game){lastPaintedRevision=null;return;}
+ const stage=stageFor(game),stageIndex=POKER_STAGES.indexOf(stage);
+ for(const marker of $("pvp-progress").children){
+  const index=POKER_STAGES.indexOf(marker.dataset.stage);
+  marker.classList.toggle("is-active",index===stageIndex);
+  marker.classList.toggle("is-done",index<stageIndex);
+  if(index===stageIndex)marker.setAttribute("aria-current","step");
+  else marker.removeAttribute("aria-current");
+ }
+ const panel=document.querySelector(".pvp-control-panel");
+ panel.classList.toggle("is-your-turn",game.status==="betting"&&game.legal?.playerId===me);
+ if(motion){
+  const banner=$("pvp-event");
+  banner.dataset.kind=motion.type;
+  $("pvp-event-title").textContent=motion.title;
+  $("pvp-event-detail").textContent=motion.detail;
+  $("pvp-event-icon").textContent={
+   deal:"♠",sync:"↻",street:"◆",chips:"●",
+   fold:"×",turn:"➜",settlement:"★"
+  }[motion.type]||"♠";
+  banner.classList.remove("is-entering");
+  // Re-trigger only when a verified NEW game transition arrives.
+  void banner.offsetWidth;
+  banner.classList.add("is-entering");
+ }
+ $("pvp-street").textContent="Hand "+game.number+" · "+(stage==="complete"?"RESULT":stage.toUpperCase());
  $("pvp-pot").textContent="Pot "+game.pot;
+ if(motion?.potBump){
+  const pot=$("pvp-pot");
+  pot.classList.remove("is-bumping");
+  void pot.offsetWidth;
+  pot.classList.add("is-bumping");
+ }
+ // The clock redraws once per second. Replacing card elements on each tick
+ // would restart animations and interrupt drag/focus; paint only a new state.
+ const renderKey=(game._room||"")+"|"+game.number+"|"+game.seq;
+ if(renderKey!==lastPaintedRevision){
+ lastPaintedRevision=renderKey;
  const seats=$("pvp-table-seats");seats.replaceChildren();
  seats.dataset.opponents=String(game.players.length-1);
  const acting=game.status==="betting"?game.players[game.turn]?.id:null;
@@ -83,7 +119,8 @@ function draw(){
   const own=p.id===me;
   const item=document.createElement("div");
   item.className="pvp-seat"+(own?" is-self":" seat-pos-"+(++position))+
-   (p.folded?" is-folded":"")+(acting===p.id?" is-turn":"");
+   (p.folded?" is-folded":"")+(acting===p.id?" is-turn":"")+
+   (motion?.changedSeats.includes(p.id)?" is-updated":"");
   const avatar=document.createElement("span");avatar.className="pvp-avatar";
   avatar.setAttribute("aria-hidden","true");
   avatar.textContent=(p.name||"?").trim().slice(0,1).toUpperCase();
@@ -105,14 +142,22 @@ function draw(){
  document.querySelector(".pvp-hero-chip").textContent=dealer===me?"D":"●";
  $("pvp-hero-stack").textContent=self?Number(self.stack).toLocaleString("en-US"):"—";
  const board=$("pvp-board");board.replaceChildren();
- for(const card of game.board)board.append(makeCard(card));
+ for(let i=0;i<game.board.length;i++){
+  const card=makeCard(game.board[i]);
+  if(motion?.newBoardIndices.includes(i))card.classList.add("is-revealed");
+  board.append(card);
+ }
  for(let i=game.board.length;i<5;i++){
   const slot=document.createElement("span");slot.className="pvp-empty";
   slot.setAttribute("aria-hidden","true");board.append(slot);
  }
  const own=$("pvp-hole");own.replaceChildren();
- for(const c of (hole?.length===2?hole:["BACK","BACK"]))
-  own.append(c==="BACK"?makeCard("AS",{hidden:true}):makeCard(c));
+ for(const c of (hole?.length===2?hole:["BACK","BACK"])){
+  const card=c==="BACK"?makeCard("AS",{hidden:true}):makeCard(c);
+  if(motion?.dealHand)card.classList.add("is-dealt");
+  own.append(card);
+ }
+ } // End revision-guarded table repaint.
  const L=game.legal,turn=game.status==="betting"&&L?.playerId===me;
  const clock=game.turnClock,secondsLeft=clock&&!clock.paused&&
   Number.isSafeInteger(clock.deadlineAt)?
@@ -179,8 +224,9 @@ async function updateState(packet,r){
   }
  }
  actionOutbox.acknowledge(r.table.id,state.seq);
+ const transition=describePokerTransition(game,{...state,_room:r.table.id},me);
  seq=state.seq;game={...state,_room:r.table.id};hole=own;
- errorMessage="";pending=false;draw();
+ errorMessage="";pending=false;draw(transition);
 }
 async function accept(update){
  const e=update?.payload,serial=update?.serial;
@@ -195,7 +241,7 @@ async function accept(update){
   // the next table with the previous roster and block a fresh key exchange.
   const nextTableId=r.table?.id??null;
   if(nextTableId!==activeTableId){
-   activeTableId=nextTableId;
+   activeTableId=nextTableId;lastPaintedRevision=null;
    peers.clear();keySent=false;actionOutbox.reset();outboundInFlight=false;
    game=null;hole=null;hostSession=null;turnClock=null;seq=0;
    hostProposalId=null;hostRecovered=false;pending=false;errorMessage="";

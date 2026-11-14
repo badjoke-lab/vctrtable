@@ -840,3 +840,131 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
  .qa-main .qa-practice-details > summary span{flex:1 0 80%}
  .qa-main .qa-practice-details > summary::after{order:0}
 }
+
+/* Solo practice: real engine-derived hand narration, not a static QA log. */
+.qa-main .qa-turn-status{
+ display:flex;flex-direction:column;gap:7px;
+ padding:9px 11px;margin:8px 1px;
+}
+.qa-main #qa-info-main{font-size:12px;line-height:1.3;font-weight:650;color:#d8eee0}
+.qa-main .qa-story{
+ display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 9px;
+ background:linear-gradient(105deg,#234a3c,#17302e);
+ border:1px solid #517e64;border-left:3px solid #e0c17d;
+ padding:6px 9px;border-radius:8px;min-height:32px;
+}
+.qa-main .qa-story[data-kind="settlement"]{
+ border-color:#e5c079;background:linear-gradient(105deg,#533b23,#193c34 85%);
+}
+.qa-main .qa-story strong{
+ color:#ffe1a2;font-size:12px;line-height:1.2;font-weight:900;letter-spacing:.055em;
+}
+.qa-main .qa-story span{font-size:11px;color:#d1e8d5;line-height:1.3}
+.qa-main .qa-recent-actions{
+ display:flex;align-items:center;gap:5px;max-width:100%;
+ overflow-x:auto;overscroll-behavior-x:contain;
+ scrollbar-width:thin;padding-bottom:1px;
+}
+.qa-main .qa-action-tick{
+ display:inline-flex;align-items:center;white-space:nowrap;flex:0 0 auto;
+ padding:3px 7px;border:1px solid #477365;border-radius:99px;
+ background:#0d2c2a;color:#b7dccc;font-size:10px;font-weight:700;
+ line-height:1.2;
+}
+.qa-main .qa-story.is-entering{
+ animation:qa-story-cue 550ms ease-out both;
+}
+.qa-main .community-cards img.vcard.is-revealed{
+ animation:qa-card-reveal 500ms cubic-bezier(.22,.76,.22,1) both;
+}
+.qa-main .community-cards img.vcard.is-revealed:nth-child(1){animation-delay:30ms}
+.qa-main .community-cards img.vcard.is-revealed:nth-child(2){animation-delay:125ms}
+.qa-main .community-cards img.vcard.is-revealed:nth-child(3){animation-delay:220ms}
+.qa-main .community-cards img.vcard.is-revealed:nth-child(4),
+.qa-main .community-cards img.vcard.is-revealed:nth-child(5){animation-delay:45ms}
+.qa-main .hero-hand img.vcard.is-dealt{
+ animation:qa-card-reveal 400ms cubic-bezier(.22,.76,.22,1) both;
+}
+.qa-main .hero-hand img.vcard.is-dealt:nth-child(2){animation-delay:95ms}
+.qa-main .pot-pill.is-bumping{animation:qa-pot-cue 500ms ease-out}
+.qa-main .street-label.is-revealing{
+ animation:qa-street-cue 520ms ease-out both;
+}
+.qa-main .poker-seat.is-updated{animation:qa-seat-cue 640ms ease-out}
+@keyframes qa-card-reveal{
+ from{opacity:0;clip-path:inset(0 100% 0 0);filter:brightness(1.45)}
+ 65%{opacity:1;clip-path:inset(0 25% 0 0);filter:brightness(1.15)}
+ to{opacity:1;clip-path:inset(0);filter:none}
+}
+@keyframes qa-story-cue{
+ from{opacity:.4;transform:translateY(-5px);filter:brightness(1.35)}
+ to{opacity:1;transform:none;filter:none}
+}
+@keyframes qa-pot-cue{
+ 0%{filter:brightness(1);transform:scale(1)}
+ 45%{filter:brightness(1.45);transform:scale(1.08)}
+ 100%{filter:brightness(1);transform:none}
+}
+@keyframes qa-street-cue{
+ 0%{color:#f7da90;letter-spacing:.28em;opacity:.2}
+ 70%{color:#f5dfaa;letter-spacing:.13em;opacity:1}
+ 100%{color:#c9d6ca;letter-spacing:inherit;opacity:1}
+}
+@keyframes qa-seat-cue{
+ 0%{filter:brightness(1)}
+ 45%{filter:brightness(1.4)}
+ 100%{filter:brightness(1)}
+}
+@media(max-width:370px){
+ .qa-main .qa-turn-status{gap:5px;padding:7px 9px}
+ .qa-main .qa-story{padding:5px 7px}
+ .qa-main .qa-story strong{font-size:11px}
+ .qa-main .qa-story span{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+ .qa-main .qa-story.is-entering,
+ .qa-main .community-cards img.vcard.is-revealed,
+ .qa-main .hero-hand img.vcard.is-dealt,
+ .qa-main .pot-pill.is-bumping,
+ .qa-main .street-label.is-revealing,
+ .qa-main .poker-seat.is-updated{animation:none!important;transform:none!important;filter:none!important}
+}
+
+/* The live Solo hand headline replaces the old developer notice at the top,
+   so progression is visible without scrolling under the playing surface. */
+.qa-main #qa-mode-banner{
+ min-height:43px;margin-top:8px;padding:6px 10px;
+ border:1px solid #446a55;border-left:3px solid #d7b574;
+ background:linear-gradient(110deg,#224638,#112c2c);
+}
+.qa-main #qa-mode-banner[data-kind="settlement"]{
+ border-color:#cda86a;background:linear-gradient(110deg,#574026,#173b35);
+}
+.qa-main .qa-top-story{
+ min-width:0;display:flex;flex-direction:column;gap:2px;
+ flex:1 1 0;justify-content:center;
+}
+.qa-main .qa-top-story strong{
+ display:block;font-size:12px;letter-spacing:.075em;
+ color:#ffe4a8;font-weight:900;white-space:nowrap;
+}
+.qa-main .qa-top-story span{
+ display:block;font-size:10px;line-height:1.15;color:#d3e9d7;
+ overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+}
+.qa-main #qa-mode-banner a{
+ font-size:11px;flex:0 0 auto;max-width:45%;overflow:hidden;
+ text-overflow:ellipsis;white-space:nowrap;
+}
+.qa-main #qa-mode-banner.is-changing{animation:qa-story-cue 550ms ease-out}
+@media(max-width:520px){.qa-main #qa-story{display:none}}
+@media(prefers-reduced-motion:reduce){.qa-main #qa-mode-banner.is-changing{animation:none!important}}
+
+.qa-main .qa-top-story-line{display:flex;align-items:center;gap:6px;min-width:0}
+.qa-main .qa-top-story .qa-solo-label{
+ display:inline-flex;flex:0 0 auto;align-items:center;
+ border:1px solid #a98a59;border-radius:4px;padding:2px 4px;
+ font-size:8px;font-weight:900;letter-spacing:.06em;line-height:1;
+ color:#f5d6a1;background:#483b29;white-space:nowrap;
+}
+.qa-main .qa-top-story-line strong{min-width:0;overflow:hidden;text-overflow:ellipsis}

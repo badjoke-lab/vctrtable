@@ -7,12 +7,47 @@ import {ChatViewModel,QUICK_REPLIES,cannedTranslation} from "./chat-view.js";
 import {createPublicChatTransport} from "./public-chat.js";
 import {bettingControls} from "./betting-controls.js";
 import {settlementSummary} from "./showdown-summary.js";
+import {describePokerTransition} from "./pvp-story.js";
 
 const $=id=>document.getElementById(id);
 const storageKey="vctrtable-poker-qa-v1",modeKey="vctrtable-poker-chat-mode-v1";
 const readSave=()=>{try{return localStorage.getItem(storageKey);}catch{return null;}};
 const readMode=()=>{try{return localStorage.getItem(modeKey)==="inline"?"inline":"drawer";}catch{return "drawer";}};
 let locale="en",session=null,table=null,seconds=30,paused=false,deadline=0,remaining=0,lastTurnKey="",storageNotice="",chatterHand=0,chatId=0,toastTimer=null,chatFocused=false,raiseOpen=false;
+let soloPrevious=null,soloVisualStamp="",soloSeenEvents=0,soloEvents=[],soloRestored=false;
+let soloPaintBoard="",soloPaintHand="";
+function soloSnapshot(h){
+ return {seq:h.events.length,number:h.number,status:h.status,street:h.streetName,
+  board:[...h.board],turn:h.turn,pot:h.players.reduce((sum,p)=>sum+p.total,0),
+  players:h.players.map(p=>({id:p.id,name:p.name,stack:p.stack,
+   street:p.street,total:p.total,folded:p.folded,inHand:p.inHand})),
+  awards:[...h.awards],_room:"solo"};
+}
+function resetSoloStory(restored=false){
+ soloPrevious=null;soloVisualStamp="";soloSeenEvents=0;soloEvents=[];soloRestored=restored;
+ soloPaintBoard="";soloPaintHand="";
+}
+function soloEventText(e,h){
+ const person=i=>h.players[i]?.name||"Seat "+(Number(i)+1);
+ const ja=locale==="ja";
+ if(e.kind==="action"){
+  const labels=ja?{fold:"フォールド",check:"チェック",call:"コール",raise:"レイズ"}:
+   {fold:"FOLD",check:"CHECK",call:"CALL",raise:"RAISE"};
+  return person(e.seat)+" · "+(labels[e.action]||e.action)+
+   (e.action==="raise"?" "+fmt(e.target):"");
+ }
+ if(e.kind==="street")return ({flop:ja?"フロップ・3枚公開":"FLOP · 3 cards",
+  turn:ja?"ターン・4枚目":"TURN · 4th card",
+  river:ja?"リバー・5枚目":"RIVER · 5th card"})[e.street]||e.street;
+ if(e.kind==="blinds")return ja?
+  person(e.sb)+" / "+person(e.bb)+" · ブラインド":
+  person(e.sb)+" / "+person(e.bb)+" · BLINDS";
+ if(e.kind==="complete"){
+  const winners=h.players.filter((p,i)=>e.awards?.[i]>0).map(p=>p.name);
+  return (ja?"決着 · ":"RESULT · ")+winners.join(" + ");
+ }
+ return "";
+}
 const demoChat=new ChatViewModel({mode:readMode()});
 const vectorChat=new ChatViewModel({mode:readMode()});
 let chat=demoChat;
@@ -182,6 +217,42 @@ function render(){
  renderChat();
  if(!table)return;
  const h=table.hand,L=legalActions(table),pot=h.players.reduce((sum,p)=>sum+p.total,0),end=h.status==="complete";
+ const current=soloSnapshot(h);
+ const stamp=h.number+"/"+h.events.length+"/"+h.status;
+ let motion=null;
+ if(soloVisualStamp!==stamp){
+  const sameHand=soloPrevious?.number===h.number;
+  if(!sameHand){soloSeenEvents=0;soloEvents=[];}
+  motion=describePokerTransition(soloPrevious,current,h.players[0].id);
+  if(soloRestored&&motion?.type==="deal"){
+   motion={...motion,type:"sync",title:"TABLE RESTORED",
+    detail:"Local saved hand resumed / 保存した対戦を再開",dealHand:false};
+  }
+  soloRestored=false;
+  soloEvents.push(...h.events.slice(soloSeenEvents));
+  soloEvents=soloEvents.slice(-4);
+  soloSeenEvents=h.events.length;
+  soloVisualStamp=stamp;soloPrevious=current;
+ }
+ if(motion){
+  const story=$("qa-story");
+  story.dataset.kind=motion.type;
+  $("qa-story-title").textContent=motion.title;
+  $("qa-story-detail").textContent=motion.detail;
+  const top=$("qa-mode-banner");
+  $("qa-top-story-title").textContent=motion.title;
+  $("qa-top-story-detail").textContent=motion.detail;
+  top.dataset.kind=motion.type;
+  top.classList.remove("is-changing");
+  void top.offsetWidth;top.classList.add("is-changing");
+  story.classList.remove("is-entering");
+  void story.offsetWidth;story.classList.add("is-entering");
+ }
+ const recent=$("qa-recent-actions");recent.replaceChildren();
+ for(const evt of soloEvents){
+  const label=soloEventText(evt,h);
+  if(label)recent.append(elem("span",label,"qa-action-tick"));
+ }
  const showdown=end?settlementSummary(table,{locale,heroId:h.players[0].id}):null;
  // During live play keep chat immediately after the felt/info, as expected
  // by the viewport observer. At showdown move it BELOW the compact payout
@@ -199,6 +270,14 @@ function render(){
  $("qa-street-label").hidden=end; // "Hand · Showdown" is already visible above the table; never mask the winning seat.
  $("qa-pot").textContent=t(end?"paidOut":"pot")+" "+fmt(pot);
  $("qa-pot").hidden=end; // The result below already names the winner and paid-out amount.
+ if(motion?.potBump&&!end){
+  const p=$("qa-pot");p.classList.remove("is-bumping");
+  void p.offsetWidth;p.classList.add("is-bumping");
+ }
+ if(motion?.type==="street"){
+  const l=$("qa-street-label");l.classList.remove("is-revealing");
+  void l.offsetWidth;l.classList.add("is-revealing");
+ }
  const names=["pos-top-left","pos-top","pos-top-right","pos-mid-left","pos-mid-right"];
  const layouts={
   1:["pos-top"],2:["pos-top-left","pos-top-right"],3:["pos-top-left","pos-top","pos-top-right"],
@@ -206,13 +285,17 @@ function render(){
  };
  const slots=layouts[h.players.length-1]||names;
  const seats=$("qa-players");seats.replaceChildren();
+ const highlighted=new Set(motion?.changedSeats||[]);
+ const latestAction=h.events.findLast(e=>e.kind==="action");
+ if(motion&&latestAction)highlighted.add(h.players[latestAction.seat]?.id);
  h.players.slice(1).forEach((p,i)=>{
   const id=i+1;
   const handName=showdown?.seats[id]?.handName??null;
   const revealed=Boolean(handName);
   const awarded=end&&h.awards[id]>0;
   const seat=elem("div",undefined,"poker-seat "+slots[i]+(h.turn===id?" active":"")+
-   (p.folded?" folded":"")+(p.stack===0&&p.inHand?" all-in":"")+(awarded?" winner":""));
+   (p.folded?" folded":"")+(p.stack===0&&p.inHand?" all-in":"")+
+   (awarded?" winner":"")+(motion&&highlighted.has(p.id)?" is-updated":""));
   if(revealed){
    seat.classList.add("inspectable");seat.tabIndex=0;seat.setAttribute("role","button");
    seat.setAttribute("aria-label",p.name+" — "+handName+" — "+p.hole.map(c=>c[0]+SUIT_SYMBOLS[c[1]]).join(", ")+
@@ -241,8 +324,27 @@ function render(){
   seat.append(paymentLine);
   seats.append(seat);
  });
- $("qa-board-cards").replaceChildren(...Array.from({length:5},(_,i)=>makeCard(h.board[i],{empty:!h.board[i]})));
- $("qa-hero-cards").replaceChildren(...h.players[0].hole.map(c=>makeCard(c)));
+ // Clock/locale/chat renders must not remount cards and cancel the deal
+ // animation. Repaint board/hand only when the underlying cards change.
+ const boardKey=h.number+"/"+h.board.join(",");
+ if(boardKey!==soloPaintBoard){
+  soloPaintBoard=boardKey;
+  const board=Array.from({length:5},(_,i)=>{
+   const card=makeCard(h.board[i],{empty:!h.board[i]});
+   if(motion?.newBoardIndices.includes(i))card.classList.add("is-revealed");
+   return card;
+  });
+  $("qa-board-cards").replaceChildren(...board);
+ }
+ const handKey=h.number+"/"+h.players[0].hole.join(",");
+ if(handKey!==soloPaintHand){
+  soloPaintHand=handKey;
+  $("qa-hero-cards").replaceChildren(...h.players[0].hole.map(c=>{
+   const card=makeCard(c);
+   if(motion?.dealHand)card.classList.add("is-dealt");
+   return card;
+  }));
+ }
  // Independent compact strip for drawer / keyboard entry; never hidden
  // under the chat panel, and never relies on the full felt being visible.
  $("qa-hud-cards").replaceChildren(...h.players[0].hole.map(c=>makeCard(c,{small:true})));
@@ -254,7 +356,7 @@ function render(){
  document.querySelector(".qa-main").classList.toggle("qa-playing",!end);
   document.querySelector(".qa-main").classList.toggle("qa-showdown",end);
  const winners=h.players.filter((p,i)=>h.awards[i]>0).map(p=>p.name);
- $("qa-info").textContent=end?t("showdown")+" · "+winners.join(", ")+
+ $("qa-info-main").textContent=end?t("showdown")+" · "+winners.join(", ")+
   " · "+t("paidOut")+" "+fmt(h.awards.reduce((a,b)=>a+b,0)):
   paused?t("paused"):h.turn===0?t("turn")+" · "+t("toCall")+" "+fmt(L?.toCall??0):t("wait");
  const canAct=Boolean(L&&L.seat===0&&!paused);
@@ -347,13 +449,13 @@ function restore(){
   const raw=JSON.parse(readSave()||"null");
   if(!raw||raw.qaVersion!==1||!Number.isSafeInteger(raw.seconds)||raw.seconds<0||raw.seconds>3600)throw Error("Invalid save metadata");
   const saved=restoreSession(raw.journal);
-  session=saved;table=saved.table;seconds=raw.seconds;paused=false;remaining=seconds;lastTurnKey="";storageNotice="";raiseOpen=false;
+  session=saved;table=saved.table;seconds=raw.seconds;paused=false;remaining=seconds;lastTurnKey="";storageNotice="";raiseOpen=false;resetSoloStory(true);
   $("qa-setup").hidden=true;$("qa-table").hidden=false;
   chatFocused=false;drive();render();
  }catch(error){storageNotice=t("loadFailure")+" "+String(error.message||"");render();}
 }
 function newGame(){
- table=null;session=null;paused=false;chatterHand=0;lastTurnKey="";raiseOpen=false;
+ table=null;session=null;paused=false;chatterHand=0;lastTurnKey="";raiseOpen=false;resetSoloStory();
  document.querySelector(".qa-main").classList.remove("qa-playing");
  $("qa-setup").hidden=false;$("qa-table").hidden=true;
  demoChat.messages.length=0;demoChat.unread=0;demoChat.opened=false;chatFocused=false;render();
@@ -412,7 +514,7 @@ $("qa-form").addEventListener("submit",e=>{
  try{
   if(!Number.isSafeInteger(n)||n<2||n>6||!Number.isSafeInteger(seconds)||seconds<0||seconds>3600)throw Error(t("invalid"));
   session=createSession({players:Array.from({length:n},(_,i)=>({id:"p"+i,name:i===0?t("you"):"Seat "+(i+1)})),startingChips:chips,smallBlind:sb,bigBlind:bb,rebuy:$("qa-rebuy").checked});
-  table=session.table;startSessionHand(session);assertConservation(table);
+  table=session.table;resetSoloStory();startSessionHand(session);assertConservation(table);
   paused=false;chatterHand=0;lastTurnKey="";storageNotice="";raiseOpen=false;
   demoChat.messages.length=0;demoChat.unread=0;demoChat.opened=false;chatFocused=false;
   $("qa-setup").hidden=true;$("qa-table").hidden=false;

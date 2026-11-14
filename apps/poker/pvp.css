@@ -202,3 +202,104 @@ body{background:radial-gradient(ellipse at 48% -20%,#17302b 0%,#0b1518 50%,#070d
 .pvp.is-complete .pvp-actions{display:none!important}
 .pvp.is-complete .pvp-turn-panel{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .pvp.is-complete #pvp-turn{margin:0;min-height:0}
+
+/* HAND STORY — each cue corresponds to an authenticated newer host snapshot.
+   Not run by the clock's one-second redraw; no phantom card deals. */
+.pvp-progress{
+ display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;
+ margin:3px 0 8px;
+}
+.pvp-progress span{
+ min-width:0;min-height:28px;display:flex;align-items:center;justify-content:center;
+ gap:5px;padding:5px 4px;border-radius:6px;
+ background:#14242a;border:1px solid #2e4944;
+ color:#758f89;font-size:10px;line-height:1.1;font-weight:850;letter-spacing:.055em;
+}
+.pvp-progress span small{font-size:9px;font-weight:600;color:inherit;opacity:.85}
+.pvp-progress span.is-done{
+ background:#17372e;color:#b5d8c1;border-color:#32634b;
+}
+.pvp-progress span.is-active{
+ background:linear-gradient(135deg,#d5b377,#a67b43);border-color:#f3d69e;
+ color:#14241c;box-shadow:inset 0 1px 0 #f7e2b3,0 0 12px #e6b96c25;
+}
+.pvp-event{
+ min-height:50px;display:flex;align-items:center;gap:11px;
+ padding:8px 13px;margin-bottom:10px;
+ border:1px solid #446f60;border-left:3px solid #d8b475;
+ border-radius:10px;background:linear-gradient(110deg,#183b31,#112327 70%);
+ box-shadow:0 5px 16px #0004;color:#e9f4ea;
+}
+#pvp-event-icon{
+ display:flex;align-items:center;justify-content:center;
+ width:32px;height:32px;flex:0 0 32px;
+ border-radius:50%;background:#d0af70;color:#14221c;
+ font-size:19px;font-weight:900;
+}
+.pvp-event-copy{min-width:0;display:flex;flex-direction:column;gap:2px}
+#pvp-event-title{font-size:14px;font-weight:900;letter-spacing:.08em;line-height:1.15;color:#f9e0af}
+#pvp-event-detail{font-size:11px;font-weight:600;color:#c3d9ca;line-height:1.3}
+.pvp-event[data-kind="settlement"]{
+ border-color:#d4af68;border-left-width:5px;
+ background:linear-gradient(105deg,#4a3721,#17352c 85%);
+}
+.pvp-event[data-kind="settlement"] #pvp-event-icon{background:#ffdb86}
+.pvp-event[data-kind="turn"]{border-left-color:#55d9a3}
+.pvp-event[data-kind="turn"] #pvp-event-icon{background:#78deaf}
+.pvp-event[data-kind="fold"]{border-left-color:#bda6a6}
+.pvp-event[data-kind="fold"] #pvp-event-icon{background:#a89090}
+.pvp-event.is-entering{animation:pvp-story-pop 750ms cubic-bezier(.18,.82,.22,1) both}
+.pvp-board img.vcard.is-revealed{
+ transform-origin:50% 100%;
+ animation:pvp-reveal 660ms cubic-bezier(.2,.78,.22,1) both;
+}
+.pvp-board img.vcard.is-revealed:nth-child(1){animation-delay:60ms}
+.pvp-board img.vcard.is-revealed:nth-child(2){animation-delay:180ms}
+.pvp-board img.vcard.is-revealed:nth-child(3){animation-delay:300ms}
+.pvp-board img.vcard.is-revealed:nth-child(4),
+.pvp-board img.vcard.is-revealed:nth-child(5){animation-delay:75ms}
+.pvp-own-cards img.vcard.is-dealt{
+ transform-origin:50% 100%;animation:pvp-reveal 700ms cubic-bezier(.2,.78,.22,1) both;
+}
+.pvp-own-cards img.vcard.is-dealt:nth-child(2){animation-delay:160ms}
+#pvp-pot.is-bumping{animation:pvp-pot-bump 680ms cubic-bezier(.2,.82,.2,1)}
+.pvp-seat.is-updated .pvp-avatar{animation:pvp-player-pulse 850ms ease-out}
+.pvp-control-panel.is-your-turn{
+ border-color:#b19d69;box-shadow:0 0 0 1px #ccad7150,0 10px 28px #0005;
+}
+.pvp-control-panel.is-your-turn .pvp-turn-panel small{color:#f1d38b}
+.pvp-control-panel.is-your-turn #pvp-turn{color:#91f2b8}
+@keyframes pvp-story-pop{
+ from{opacity:.3;transform:translateY(-8px);filter:brightness(1.6)}
+ 55%{opacity:1;transform:translateY(2px);filter:brightness(1.25)}
+ to{opacity:1;transform:translateY(0);filter:brightness(1)}
+}
+@keyframes pvp-reveal{
+ from{opacity:0;clip-path:inset(0 100% 0 0);filter:brightness(1.7)}
+ 60%{opacity:1;clip-path:inset(0 25% 0 0);filter:brightness(1.25)}
+ to{opacity:1;clip-path:inset(0);filter:none}
+}
+@keyframes pvp-pot-bump{
+ 0%{transform:scale(1);filter:brightness(1)}
+ 32%{transform:scale(1.15);filter:brightness(1.35);box-shadow:0 0 18px #e5c1758a}
+ 100%{transform:scale(1);filter:brightness(1)}
+}
+@keyframes pvp-player-pulse{
+ 0%{transform:scale(1);box-shadow:0 0 0 0 #e8c5809e}
+ 50%{transform:scale(1.13);box-shadow:0 0 0 5px #e8c58040}
+ 100%{transform:scale(1);box-shadow:0 0 0 0 transparent}
+}
+@media(max-width:520px){
+ .pvp-progress{gap:3px;margin:2px 0 6px}
+ .pvp-progress span{min-height:26px;padding:4px 1px;gap:2px;font-size:8px;letter-spacing:0;flex-direction:column}
+ .pvp-progress span small{font-size:8px}
+ .pvp-event{min-height:44px;padding:6px 9px;margin-bottom:7px;gap:8px}
+ #pvp-event-icon{width:27px;height:27px;flex-basis:27px;font-size:15px}
+ #pvp-event-title{font-size:12px}
+ #pvp-event-detail{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+ .pvp-event.is-entering,.pvp-board img.vcard.is-revealed,
+ .pvp-own-cards img.vcard.is-dealt,#pvp-pot.is-bumping,
+ .pvp-seat.is-updated .pvp-avatar{animation:none!important;transform:none!important;filter:none!important}
+}

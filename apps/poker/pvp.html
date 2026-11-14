@@ -44,6 +44,21 @@
       <strong id="pvp-street">HAND 1 · PREFLOP</strong>
     </div>
 
+    <div id="pvp-progress" class="pvp-progress" role="group" aria-label="Hand progress / ラウンド進行">
+      <span data-stage="preflop">DEAL <small>配札</small></span>
+      <span data-stage="flop">FLOP <small>3枚</small></span>
+      <span data-stage="turn">TURN <small>4枚目</small></span>
+      <span data-stage="river">RIVER <small>5枚目</small></span>
+      <span data-stage="complete">RESULT <small>結果</small></span>
+    </div>
+    <div id="pvp-event" class="pvp-event" role="status" aria-live="polite" aria-atomic="true">
+      <span id="pvp-event-icon" aria-hidden="true">♠</span>
+      <span class="pvp-event-copy">
+        <strong id="pvp-event-title">READY TO DEAL</strong>
+        <span id="pvp-event-detail">Game events will appear here / ここに進行状況を表示します</span>
+      </span>
+    </div>
+
     <div class="pvp-stage-grid">
       <div class="pvp-felt-outer">
         <div class="pvp-felt" aria-label="Poker table with opponents, board and your cards">

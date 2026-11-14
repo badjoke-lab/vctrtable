@@ -15,7 +15,13 @@
   <div><small>VCTRTABLE / POKER</small><h1 data-l10n="title">Poker</h1></div>
   <label class="qa-lang"><span data-l10n="language">Language</span><select id="qa-language"><option value="en">English</option><option value="ja">日本語</option></select></label>
 </header>
-<div id="qa-mode-banner" class="qa-mode-banner" hidden><span data-l10n="testLabel">LOCAL QA · scripted opponents · not live PvP</span><a href="lobby.html" data-l10n="back">Create / Join Table</a></div>
+<div id="qa-mode-banner" class="qa-mode-banner" hidden>
+  <div class="qa-top-story">
+    <div class="qa-top-story-line"><span class="qa-solo-label">SOLO</span><strong id="qa-top-story-title">NEW HAND</strong></div>
+    <span id="qa-top-story-detail">Two cards dealt / 手札2枚配布</span>
+  </div>
+  <a href="lobby.html" data-l10n="back">Create / Join Table</a>
+</div>
 
 <section id="qa-setup" class="qa-mode-home">
 <h2 data-l10n="entryHeading">Choose how to play</h2>
@@ -78,7 +84,14 @@
     </div>
   </section>
 
-  <div class="qa-turn-status" id="qa-info" role="status"></div>
+  <div class="qa-turn-status" id="qa-info">
+    <div id="qa-info-main" role="status" aria-live="polite"></div>
+    <div id="qa-story" class="qa-story" role="status" aria-live="polite" aria-atomic="true">
+      <strong id="qa-story-title">NEW HAND</strong>
+      <span id="qa-story-detail">Cards are being dealt / 配札中</span>
+    </div>
+    <div id="qa-recent-actions" class="qa-recent-actions" aria-label="Recent table actions / 直近の操作"></div>
+  </div>
   <div id="qa-chat-toast" class="qa-chat-toast" role="status" aria-live="polite" hidden></div>
 
 

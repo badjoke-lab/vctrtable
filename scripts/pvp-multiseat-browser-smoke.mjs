@@ -139,6 +139,16 @@ try{
    }
    assert.equal(new Set(all).size,playerCount*2,
     "Each seat must decrypt a distinct private 2-card hand");
+   for(const c of clients){
+    assert.equal(await c.page.locator("#pvp-event-title").textContent(),"NEW HAND",
+     "First dealt hand did not announce the cards");
+    assert.equal(await c.page.locator("#pvp-hole img.is-dealt").count(),2,
+     "Private cards must animate exactly once at deal");
+    assert.equal(await c.page.locator("#pvp-board > *").count(),5,
+     "Community card timeline must show five positions");
+    assert.equal(await c.page.locator("#pvp-progress [data-stage=preflop].is-active").count(),1,
+     "Preflop stage must be selected");
+   }
    // Validate rendered tabletop geometry for every seat rather than trusting
    // CSS class names. Desktop host and mobile guest have different stages.
    for(const c of clients){
@@ -197,9 +207,28 @@ try{
    const action=await chooseAction();
    assert.ok(action,"No active seat had an available Check or Call");
    const before=(await statePackets()).length;
+   const previous=(await statePackets()).at(-1).payload.state;
    await action.c.page.locator("#pvp-"+action.kind).click();
    await until("signed action settlement "+action.c.name+" "+action.kind,async()=>
     (await statePackets()).length>before);
+   const current=(await statePackets()).at(-1).payload.state;
+   const newBoard=current.board.length-previous.board.length;
+   const stage=current.status==="complete"?"complete":current.street;
+   const expectedTitle=newBoard?
+    ({flop:"FLOP",turn:"TURN",river:"RIVER"}[stage]||"BOARD"):null;
+   await until("hand-stage presentation",async()=>{
+    for(const c of clients){
+     if(await c.page.locator("#pvp-progress [data-stage="+stage+"].is-active").count()!==1)return false;
+     if(newBoard){
+      if(await c.page.locator("#pvp-event-title").textContent()!==expectedTitle)return false;
+      if(await c.page.locator("#pvp-board img.is-revealed").count()!==newBoard)return false;
+     }
+     if(stage==="complete"){
+      if(!/SHOWDOWN|HAND WON/.test(await c.page.locator("#pvp-event-title").textContent()))return false;
+     }
+    }
+    return true;
+   });
    return action;
   }
   try{
