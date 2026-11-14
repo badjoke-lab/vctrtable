@@ -1197,3 +1197,15 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
  .qa-main .hero-spot{width:48%!important}
  .qa-main .qa-felt-callout{top:64%}
 }
+
+/* Short 320px Android screens: the own stack may never sit behind the dock. */
+@media(max-width:370px) and (max-height:760px){
+ .qa-main .qa-topbar{padding-top:1px!important;padding-bottom:3px!important;min-height:0!important}
+ .qa-main .qa-topbar small{display:none!important}
+ .qa-main .qa-topbar h1{font-size:19px!important;line-height:1.15!important;margin:0!important}
+ .qa-main #qa-mode-banner{margin-top:4px!important;min-height:35px!important;padding:5px 8px!important}
+ .qa-main .qa-meta{margin:6px 2px 7px!important;min-height:33px!important}
+ .qa-main .poker-arena{padding:5px 4px 7px!important}
+ .qa-main .felt{height:340px!important}
+ .qa-main .hero-spot{bottom:3.2%!important}
+}
