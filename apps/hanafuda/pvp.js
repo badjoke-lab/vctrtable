@@ -10,7 +10,7 @@ const STR={
   lobbyTitle:"Play a friend · PvP",warning:"FRIENDLY-HOST MODE: The player creating this table controls the shuffle and can know both hands. Use only with a person you trust. Compare the six-digit pairing code verbally; this is not cheat-proof ranked play.",
   unavailable:"This Vector/WebXDC host does not support realtime multiplayer. PvE remains available.",
   available:"Realtime multiplayer supported. Open this same Mini App in one Vector chat.",
-  host:"Create table",join:"Join friend's table",rounds:"Rounds",
+  host:"Create table",join:"Join friend's table",rounds:"Rounds",fallbackPvE:"Play against computer · PvE",
   instructions:"Open the SAME Mini App message in the SAME Vector chat. Two unrelated Notes are not connected. Both players must keep the game open during this QA test.",
   waiting:"Hosting · waiting for a second player to open this Mini App…",
   searching:"Searching for a host in this Mini App…",
@@ -41,7 +41,7 @@ const STR={
   lobbyTitle:"友人と対戦 · PvP",warning:"【信頼型の親方式】卓を作る人が配札を管理するため、技術的には相手の手札も分かります。信頼できる友人同士で使用し、6桁の照合番号を互いに確認してください。公平性が証明された競技モードではありません。",
   unavailable:"このVector/WebXDC環境ではリアルタイム対戦に対応していません。PvEは引き続き遊べます。",
   available:"リアルタイム通信に対応しています。同じVectorチャットの同じMini Appを開いてください。",
-  host:"卓を作る",join:"友人の卓に参加",rounds:"局数",
+  host:"卓を作る",join:"友人の卓に参加",rounds:"局数",fallbackPvE:"コンピューターと対戦 · PvE",
   instructions:"同じVectorチャットにある同じMini Appメッセージを2人で開きます。別のNoteでは接続されません。QA中は2人とも画面を開いたままにしてください。",
   waiting:"卓を作成済み · 相手が同じMini Appを開くのを待機中",
   searching:"同じMini App内の親を検索中…",
@@ -94,7 +94,7 @@ function setText(id,word){$(id).textContent=tx(word);}
 function localize(){
  const ids={
   lobbyTitle:"lobbyTitle",hostingWarning:"warning",host:"host",
-  join:"join",roundsLabel:"rounds",instructions:"instructions",
+  join:"join",roundsLabel:"rounds",instructions:"instructions",fallbackPvE:"fallbackPvE",
   pairingText:"pairing",approve:"approval",startMatch:"start",
   oppLabel:"opponent",youLabel:"you",opponentHandLabel:"oppHand",
   oppCapturedLabel:"oppCaptured",fieldLabel:"field",drawPileLabel:"draw",
