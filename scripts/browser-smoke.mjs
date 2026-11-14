@@ -298,6 +298,13 @@ try{
      "Entire felt must fit the initial phone viewport: "+JSON.stringify({view,mobile}));
    const overlapArea=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.x,b.x))*
      Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y));
+   for(const [k,boardCard] of mobile.board.entries()){
+    for(const [p,privateCard] of mobile.hero.entries()){
+     assert.ok(overlapArea(boardCard,privateCard)<=1,
+      "Community "+(k+1)+" overlaps own private card "+(p+1)+" on "+view.width+
+      "px phone at RIVER: "+JSON.stringify(mobile));
+    }
+   }
    for(let i=0;i<mobile.seats.length;i++){
     for(const [k,card] of [...mobile.hero,...mobile.board].entries())
      assert.ok(overlapArea(mobile.seats[i],card)<=1,
@@ -456,6 +463,17 @@ try{
    else throw new Error("No playable action before hand completion");
   }
   assert.equal(await page.locator("#qa-result").isVisible(),true);
+  assert.equal(await page.locator("#qa-result-stage").isVisible(),true,
+   "Settled hand must present a visible result headline");
+  const resultNet=await page.locator("#qa-result-amount").textContent();
+  const resultLegacy=await page.locator("#qa-result").textContent();
+  assert.ok(resultNet&&resultLegacy.includes(resultNet),
+   "Prominent net chips must agree with the audited settlement: "+JSON.stringify({resultNet,resultLegacy}));
+  assert.match(await page.locator("#qa-result-headline").textContent(),/YOU WIN|EVEN HAND|HAND COMPLETE/,
+   "Showdown must clearly describe player's actual settlement");
+  assert.match(await page.locator("#qa-result-winner").textContent(),/Awarded · /,
+   "Showdown must identify the actual awarded seats");
+  await page.screenshot({path:path.join(dist,"poker-solo-result-"+view.width+"-"+view.seats+".png"),fullPage:true});
    assert.match(await page.locator("#qa-top-story-title").textContent(),/SHOWDOWN|HAND WON/,
      "The top banner should show showdown before any scrolling");
    assert.match(await page.locator("#qa-story-title").textContent(),/SHOWDOWN|HAND WON/,
