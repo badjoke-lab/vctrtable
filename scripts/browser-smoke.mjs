@@ -80,6 +80,10 @@ try{
    [...document.querySelectorAll("#qa-recent-actions .qa-action-tick")].some(x=>
     /Seat [2-6] · (CALL|CHECK|RAISE)/.test(x.textContent)),{timeout:5000});
   assert.ok(Date.now()-start>=560,"Computer actions must be visibly paced");
+  await page.waitForFunction(()=>
+   document.querySelectorAll("#qa-chip-flight .qa-flying-chip").length>0,{timeout:2500});
+  assert.ok(await page.locator("#qa-chip-flight .qa-flying-chip").count()>0,
+   "Calling chips must visibly travel from the acting seat toward the pot");
   assert.equal(await page.locator(".qa-top-story").isVisible(),true);
   await page.screenshot({path:path.join(dist,"poker-solo-motion-360.png")});
   await context.close();
