@@ -1,8 +1,204 @@
-.pvp{max-width:800px;padding-bottom:45px}.pvp a{color:#99ffcf}.pvp-roster{background:#123035}.pvp-seats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}.pvp-seats .seat{border-radius:10px}.pvp-board,.pvp-own-cards{display:flex;justify-content:center;flex-wrap:nowrap;gap:6px;min-height:96px}.pvp-board img,.pvp-own-cards img{width:clamp(45px,15vw,90px);height:auto;align-self:center}.pvp-board img{width:clamp(42px,12vw,72px)}.pvp-own{background:#153f36;border-radius:14px;padding:15px;margin:18px 0;text-align:center}.pvp-own small{display:block;color:#b6e6d0;margin-bottom:12px}.pvp-actions{display:flex;align-items:end;flex-wrap:wrap;gap:8px}.pvp-actions label{flex:1 1 120px}.pvp-actions button{flex:1 1 68px}.pvp-actions button:disabled{opacity:.35}.pvp .back-link{font-size:13px;white-space:nowrap}.pvp-status{white-space:pre-wrap}#pvp-game[hidden]{display:none!important}#pvp-start{width:100%}#pvp-retry{width:100%;margin:8px 0 12px;min-height:44px}#pvp-retry[hidden]{display:none!important}#pvp-delivery:not(:empty){font-size:13px;line-height:1.45;color:#c7e6d9;margin:8px 0}@media(max-width:420px){.pvp-board,.pvp-own-cards{gap:3px}.pvp-board img{width:17%}.pvp-own-cards img{width:28%}}
-/* Consistent genuine poker-card corners, never stretching printed cards. */
-.pvp img.vcard{border:0!important;box-shadow:none!important;
- background:transparent!important;border-radius:6% / 4.3%!important;
- overflow:hidden;object-fit:contain;aspect-ratio:5 / 7;height:auto!important}
-.pvp-board img.vcard,.pvp-own-cards img.vcard{height:auto!important}
-.pvp-seats .seat{box-sizing:border-box;min-height:56px;display:flex;align-items:center;
- justify-content:center;text-align:center}
+/* Poker table — single coherent view, no stacked developer-style player cards.
+   The same layout works offline in Chromium and in Vector's WebXDC WebView. */
+:root {
+ --pvp-ink:#e8eee8;--pvp-muted:#99afa9;--pvp-panel:#101f25;
+ --pvp-felt:#104b38;--pvp-brass:#d0ac6b;--pvp-line:#306959;
+}
+html{background:#070d12}
+body{background:radial-gradient(ellipse at 48% -20%,#17302b 0%,#0b1518 50%,#070d12 90%);min-height:100vh}
+.pvp{width:min(100%,1220px);max-width:1220px;margin:auto;padding:14px 18px max(24px,env(safe-area-inset-bottom));color:var(--pvp-ink)}
+.pvp [hidden]{display:none!important}
+.pvp button:focus-visible,.pvp input:focus-visible,.pvp a:focus-visible,.pvp summary:focus-visible{outline:3px solid #f1d395;outline-offset:3px}
+.pvp-header{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:10px 0 13px;border-bottom:1px solid #294137}
+.pvp-heading{display:flex;align-items:center;gap:18px;min-width:0}
+.pvp .back-link{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;color:#d0dcce;text-decoration:none;font-size:13px;font-weight:750;letter-spacing:.07em;border:1px solid #38564b;padding:8px 11px;border-radius:10px}
+.pvp .back-link:first-letter{font-size:18px}
+.pvp-brand{min-width:0}
+.pvp-brand small{display:block;font-size:10px;letter-spacing:.2em;color:var(--pvp-brass);font-weight:800}
+.pvp-brand h1{margin:3px 0 0;font-size:clamp(20px,2.1vw,29px);letter-spacing:-.045em;line-height:1.1}
+.pvp-experiment{display:inline-flex;flex-shrink:0;align-items:center;gap:8px;white-space:nowrap;font-size:10px;font-weight:800;letter-spacing:.12em;color:#e7cda1;border:1px solid #685435;background:#2a241d;padding:8px 11px;border-radius:99px}
+.pvp-safety{margin:9px 0 0;background:#101b20;border:1px solid #30453d;border-radius:9px;color:#b9c9bc}
+.pvp-safety summary{cursor:pointer;padding:8px 12px;font-size:11px;line-height:1.4;letter-spacing:.015em}
+.pvp-safety summary::marker{color:#c2a26a}
+.pvp-safety p{padding:0 13px 9px;margin:0;color:#e3cca8;font-size:12px;line-height:1.55}
+#pvp-status{margin:9px 0;color:#b9d3c5;font-size:12px;line-height:1.35}
+.pvp.is-playing:not(.has-error) #pvp-status{display:none}
+.pvp-room{background:#101d22;border:1px solid #284c44;border-radius:15px;padding:12px 16px 13px;margin:10px 0 16px}
+.pvp-room-title{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.pvp-room-title small{color:var(--pvp-brass);font-weight:850;letter-spacing:.14em;font-size:10px}
+.pvp-room-title h2{margin:3px 0 0;font-size:19px;letter-spacing:-.015em}
+.pvp-room-title h2 span{font-size:12px;font-weight:600;color:#b9d0c3;margin-left:7px}
+.pvp-room-caption{font-size:11px;color:#a6bcb1;text-align:right}
+.pvp-roster{margin:12px 0 4px;gap:7px}
+.pvp-roster .seat{background:#213e36;border:1px solid #386350;border-radius:8px;color:#e2f4e7;padding:7px 10px;font-size:11px}
+#pvp-key-status{font-size:11px;margin:9px 0;color:#b1d0c1}
+#pvp-start{width:100%;min-height:45px;border-radius:10px;background:#d5b275;color:#15211c;font-weight:850}
+.pvp.is-betting .pvp-room{display:none}
+.pvp.is-complete .pvp-room{display:block}
+.pvp-play{padding:0!important;border:0!important;background:transparent!important;border-radius:0!important;margin:12px 0!important}
+.pvp-play-topline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 2px 11px}
+.pvp-overline{font-size:10px;letter-spacing:.15em;font-weight:800;color:var(--pvp-brass)}
+#pvp-street{font-size:12px;letter-spacing:.08em;color:#deebe0}
+.pvp-stage-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(255px,300px);align-items:start;gap:17px}
+.pvp-felt-outer{min-width:0;padding:10px;border:1px solid #5b503b;background:linear-gradient(135deg,#3b3026,#1f2520 53%,#413327);border-radius:clamp(85px,31%,245px) / 38%;box-shadow:inset 0 0 0 2px #b69a6650,0 14px 38px #0009}
+.pvp-felt{height:clamp(430px,52vw,600px);min-height:0;position:relative;border:7px solid #8c7045;border-radius:clamp(75px,30%,230px) / 38%;overflow:hidden;background:radial-gradient(ellipse at 50% 43%,#18664b 0%,#11543e 37%,#0b3e2e 73%,#082e23 100%);box-shadow:inset 0 0 0 2px #e1bf7955,inset 0 0 38px #001b17c9,inset 0 0 95px #061e15bb}
+.pvp-felt::before{content:"";position:absolute;inset:9px;border:1px solid #8bbe9770;border-radius:inherit;pointer-events:none}
+.pvp-felt-mark{position:absolute;left:50%;top:43%;transform:translate(-50%,-50%);font-family:Georgia,serif;font-size:clamp(100px,20vw,210px);line-height:1;color:#215e4860;pointer-events:none}
+.pvp-seats{position:absolute;inset:0;z-index:3;pointer-events:none}
+.pvp-seats .pvp-seat{position:absolute;transform:translate(-50%,-50%);width:clamp(84px,16%,112px);min-width:0;min-height:62px;display:flex;align-items:center;gap:6px;background:#101e20f2;border:1px solid #4c8271;border-radius:12px;padding:7px;box-shadow:0 5px 16px #0009;color:#eef5ee;pointer-events:auto;text-align:left}
+.pvp-seat.is-turn{border-color:#f1ce83;box-shadow:0 0 0 2px #ebc47070,0 4px 18px #000a}
+.pvp-seat.is-folded{opacity:.53;filter:saturate(.6)}
+.pvp-seat.is-self{position:absolute!important;clip:rect(0 0 0 0)!important;clip-path:inset(50%)!important;height:1px!important;width:1px!important;overflow:hidden!important;padding:0!important;border:0!important}
+.pvp-seat .pvp-avatar{display:flex;justify-content:center;align-items:center;width:32px;height:32px;flex:0 0 32px;border-radius:50%;border:1px solid #578777;background:linear-gradient(150deg,#3b6858,#1c3634);font-size:14px;font-weight:850;color:#e4eddc}
+.pvp-seat.is-turn .pvp-avatar{background:linear-gradient(135deg,#cfb072,#7f6040);border-color:#ebc783;color:#101b16}
+.pvp-seat .pvp-seat-info{min-width:0;display:flex;flex-direction:column;gap:4px}
+.pvp-seat .pvp-seat-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:76px;font-size:11px;font-weight:750;line-height:1.2}
+.pvp-seat .pvp-seat-stack{font-size:11px;color:#dabf80;font-weight:800;font-variant-numeric:tabular-nums}
+.pvp-seat .pvp-seat-flag{font-size:9px;font-weight:900;letter-spacing:.07em;color:#f2d38c;white-space:nowrap}
+.pvp-seat.seat-pos-1{left:19%;top:16%}
+.pvp-seat.seat-pos-2{left:50%;top:14%}
+.pvp-seat.seat-pos-3{left:81%;top:16%}
+.pvp-seat.seat-pos-4{left:12%;top:70%}
+.pvp-seat.seat-pos-5{left:88%;top:70%}
+.pvp-seats[data-opponents="1"] .seat-pos-1{left:50%;top:17%}
+.pvp-seats[data-opponents="2"] .seat-pos-1{left:29%;top:17%}
+.pvp-seats[data-opponents="2"] .seat-pos-2{left:71%;top:17%}
+.pvp-seats[data-opponents="4"] .seat-pos-1{left:28%;top:17%}
+.pvp-seats[data-opponents="4"] .seat-pos-2{left:72%;top:17%}
+.pvp-seats[data-opponents="4"] .seat-pos-3{left:12%;top:69%}
+.pvp-seats[data-opponents="4"] .seat-pos-4{left:88%;top:69%}
+.pvp-center{position:absolute;left:50%;top:43%;width:min(94%,560px);z-index:2;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:7px;pointer-events:none}
+.pvp-pot-caption{font-size:10px;letter-spacing:.18em;font-weight:850;color:#d0bd94}
+#pvp-pot{padding:6px 19px;background:#091f1bd9;border:1px solid #bd9c61;border-radius:99px;font-size:clamp(18px,2vw,24px);font-weight:850;letter-spacing:-.02em;color:#f2d8a0;font-variant-numeric:tabular-nums;box-shadow:0 6px 20px #0005}
+.pvp-board{display:flex;gap:clamp(3px,.7vw,8px);align-items:center;justify-content:center;min-height:70px;width:100%}
+.pvp-board img.vcard{display:block;flex:0 0 auto;width:clamp(45px,8vw,74px);height:auto!important;aspect-ratio:5/7!important;object-fit:contain;border:0!important;border-radius:6% / 4.3%!important;background:transparent!important;box-shadow:0 4px 10px #0005!important}
+.pvp-board .pvp-empty{flex:0 0 auto;display:block;width:clamp(45px,8vw,74px);aspect-ratio:5/7;border:1px dashed #8fc29c71;border-radius:5px;background:#092f279c}
+.pvp-hero{position:absolute;left:50%;bottom:3%;width:min(56%,290px);z-index:4;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;align-items:center}
+.pvp-own{background:transparent!important;border:0!important;border-radius:0!important;padding:0!important;margin:0!important;text-align:center;width:100%;min-width:0}
+.pvp-own-heading{display:flex;justify-content:center;align-items:center;gap:8px;margin:0 0 4px}
+.pvp-own-heading span:first-child{font-size:10px;letter-spacing:.11em;font-weight:800;color:#f4e7c0}
+.pvp-hero-chip{font-size:11px;color:#d4aa60;line-height:1}
+.pvp-own-cards{display:flex;gap:6px;justify-content:center;align-items:center;min-height:78px;width:100%}
+.pvp-own-cards img.vcard{display:block;flex:0 0 auto;width:clamp(60px,10vw,88px);height:auto!important;aspect-ratio:5/7!important;object-fit:contain;border:0!important;border-radius:6% / 4.3%!important;background:transparent!important;box-shadow:0 7px 16px #0009!important}
+.pvp-hero-identity{min-width:0;width:min(100%,255px);display:flex;align-items:center;gap:8px;background:#0e2320ef;border:1px solid #b99b61;border-radius:999px;padding:5px 10px 5px 5px;box-shadow:0 6px 17px #0007}
+.pvp-hero-avatar{display:flex;align-items:center;justify-content:center;flex:0 0 32px;height:32px;background:#d8b579;border-radius:50%;font-size:9px;font-weight:900;color:#1e2920}
+.pvp-hero-person{display:flex;flex:1 1 auto;min-width:0;flex-direction:column;gap:2px;text-align:left}
+.pvp-hero-person strong{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pvp-hero-person span{font-size:8px;color:#c7d0bb;letter-spacing:.09em}
+#pvp-hero-stack{font-size:14px;flex-shrink:0;color:#f1d28d;font-variant-numeric:tabular-nums}
+.pvp-control-panel{min-width:0;background:#101d22;border:1px solid #355449;border-radius:17px;padding:16px;box-shadow:0 12px 28px #0003}
+.pvp-turn-panel small{font-size:10px;color:#d4b880;letter-spacing:.16em;font-weight:850}
+#pvp-turn{font-size:clamp(14px,1.6vw,18px);font-weight:750;color:#e8f9ec;line-height:1.4;margin:7px 0 15px;min-height:22px}
+#pvp-delivery:not(:empty){font-size:12px;line-height:1.45;color:#c7dec8;background:#173029;padding:9px;border-radius:8px;margin:0 0 9px}
+#pvp-retry{min-height:42px;width:100%;margin:0 0 8px;background:#285247;border:1px solid #6aaa8f;border-radius:9px;color:#ebf9e8;font-size:12px}
+.pvp-actions{display:flex;flex-direction:column;gap:11px}
+.pvp-action-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.pvp-action-row button{min-width:0;min-height:52px;border:1px solid transparent;border-radius:10px;font-size:14px;letter-spacing:.015em;font-weight:800}
+#pvp-fold{background:#2b353c;color:#f0e3dd;border-color:#4b555a}
+#pvp-check{background:#234c42;color:#d8f1e1;border-color:#3a7163}
+#pvp-call{background:#278468;color:#f4fff8}
+#pvp-raise{background:#d7b574;color:#16231d}
+.pvp-action-row button:disabled{opacity:.38}
+.pvp-raise-input{display:flex;align-items:center;justify-content:space-between;gap:10px;border-radius:10px;background:#0d181d;border:1px solid #335648;padding:7px 10px;min-height:44px}
+.pvp-raise-input span{margin:0;color:#b1cfc0;white-space:nowrap;font-size:10px;letter-spacing:.12em;font-weight:800}
+.pvp-raise-input input{min-width:0!important;max-width:115px!important;height:33px;border:1px solid #446758!important;background:#182a29!important;color:#fff9e8;text-align:right;font-size:14px!important;font-variant-numeric:tabular-nums}
+#pvp-result{font-size:13px;line-height:1.55;color:#f2d69b;margin:12px 0 0}
+.pvp footer{font-size:11px;color:#788e89;padding:16px 6px 4px;line-height:1.5}
+
+/* The stage becomes a real tabletop on wide screens, not a blown-up phone UI. */
+@media(min-width:950px){
+ .pvp-control-panel{position:sticky;top:18px}
+ .pvp-stage-grid{grid-template-columns:minmax(0,1fr) minmax(280px,305px);gap:24px}
+ .pvp-action-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:949px){
+ .pvp-stage-grid{display:block}
+ .pvp-control-panel{position:sticky;bottom:0;z-index:7;display:block;margin-top:10px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#0d1c21f5;backdrop-filter:blur(15px);box-shadow:0 -9px 25px #000a;border-radius:15px}
+ .pvp-turn-panel{display:flex;justify-content:space-between;align-items:center;gap:10px}
+ #pvp-turn{font-size:13px;margin:0 0 8px;min-height:0;text-align:right}
+ .pvp-action-row{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+ .pvp-action-row button{min-height:46px;padding:6px 2px;font-size:12px}
+ .pvp-actions{gap:7px}
+ .pvp-raise-input{min-height:37px;padding:3px 9px}
+ .pvp-raise-input input{height:30px}
+}
+@media(max-width:520px){
+ .pvp{padding:6px 9px max(12px,env(safe-area-inset-bottom))}
+ .pvp-header{padding:7px 0 8px;gap:5px}
+ .pvp-heading{gap:8px}
+ .pvp .back-link{padding:7px 8px;font-size:10px}
+ .pvp-brand h1{font-size:19px}
+ .pvp-brand small{font-size:8px}
+ .pvp-experiment{padding:6px 8px;font-size:8px;gap:3px;letter-spacing:.06em}
+ .pvp-safety{margin-top:7px}
+ .pvp-safety summary{padding:6px 9px;font-size:10px}
+ #pvp-status{font-size:11px;margin:6px 0}
+ .pvp-room{padding:10px;margin:7px 0}
+ .pvp-play{margin:8px 0!important}
+ .pvp-play-topline{margin-bottom:7px}
+ .pvp-overline{font-size:9px}
+ #pvp-street{font-size:10px}
+ .pvp-felt-outer{padding:6px;border-radius:40% / 25%}
+ .pvp-felt{height:clamp(405px,58svh,510px);border-width:5px;border-radius:42% / 28%}
+ .pvp-felt::before{inset:6px}
+ .pvp-felt-mark{font-size:100px}
+ .pvp-seats .pvp-seat{width:clamp(76px,24.5vw,94px);min-height:56px;padding:5px 4px;gap:4px;border-radius:9px}
+ .pvp-seat .pvp-avatar{height:26px;width:26px;flex-basis:26px;font-size:12px}
+ .pvp-seat .pvp-seat-name{font-size:10px;max-width:55px}
+ .pvp-seat .pvp-seat-stack{font-size:10px}
+ .pvp-seat .pvp-seat-flag{font-size:8px}
+ .pvp-seat.seat-pos-1{left:18%;top:16%}
+ .pvp-seat.seat-pos-2{left:50%;top:15%}
+ .pvp-seat.seat-pos-3{left:82%;top:16%}
+ .pvp-seat.seat-pos-4{left:15%;top:75%}
+ .pvp-seat.seat-pos-5{left:85%;top:75%}
+ .pvp-seats[data-opponents="2"] .seat-pos-1{left:28%}
+ .pvp-seats[data-opponents="2"] .seat-pos-2{left:72%}
+ .pvp-seats[data-opponents="4"] .seat-pos-1{left:28%}
+ .pvp-seats[data-opponents="4"] .seat-pos-2{left:72%}
+ .pvp-seats[data-opponents="4"] .seat-pos-3{left:15%;top:75%}
+ .pvp-seats[data-opponents="4"] .seat-pos-4{left:85%;top:75%}
+ .pvp-center{top:42%;gap:5px;width:99%}
+ .pvp-pot-caption{font-size:9px}
+ #pvp-pot{font-size:17px;padding:4px 14px}
+ .pvp-board{min-height:61px;gap:3px}
+ .pvp-board img.vcard,.pvp-board .pvp-empty{width:clamp(37px,12.7vw,58px)}
+ .pvp-hero{bottom:3%;width:52%;gap:3px}
+ .pvp-own-heading{margin-bottom:3px;gap:5px}
+ .pvp-own-heading span:first-child{font-size:8px}
+ .pvp-own-cards{min-height:72px;gap:5px}
+ .pvp-own-cards img.vcard{width:clamp(58px,18vw,77px)}
+ .pvp-hero-identity{padding:4px 8px 4px 4px;gap:5px}
+ .pvp-hero-avatar{height:27px;flex-basis:27px;font-size:8px}
+ .pvp-hero-person strong{font-size:10px}
+ .pvp-hero-person span{font-size:7px}
+ #pvp-hero-stack{font-size:12px}
+ .pvp-control-panel{padding:7px 9px calc(8px + env(safe-area-inset-bottom));margin-top:6px}
+ #pvp-turn{font-size:11px;max-width:71%}
+ .pvp-turn-panel small{font-size:9px}
+ .pvp-action-row button{min-height:44px}
+ .pvp-raise-input{min-height:35px}
+ .pvp footer{font-size:10px;padding:7px 3px}
+}
+@media(max-width:340px){
+ .pvp-seats .pvp-seat{width:78px;gap:3px}
+ .pvp-seat .pvp-avatar{width:22px;height:22px;flex-basis:22px}
+ .pvp-seat .pvp-seat-name{max-width:46px}
+ .pvp-board img.vcard,.pvp-board .pvp-empty{width:39px}
+ .pvp-own-cards img.vcard{width:58px}
+ .pvp-hero{width:52%}
+}
+@media(prefers-reduced-motion:reduce){.pvp *{scroll-behavior:auto;animation:none!important;transition:none!important}}
+
+/* At showdown there is no betting to keep at thumb level.
+   A sticky disabled action panel would cover the near-side cards whenever
+   room/Next-hand controls expanded at the top of the page. */
+.pvp.is-complete .pvp-control-panel{
+ position:static!important;
+ bottom:auto!important;
+ margin-top:10px;
+ box-shadow:none;
+}
+.pvp.is-complete .pvp-actions{display:none!important}
+.pvp.is-complete .pvp-turn-panel{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.pvp.is-complete #pvp-turn{margin:0;min-height:0}

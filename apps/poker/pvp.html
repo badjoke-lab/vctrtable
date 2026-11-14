@@ -1,34 +1,96 @@
 <!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="color-scheme" content="dark"><title>vctrtable — Experimental Private Poker</title>
-<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="pvp.css"><script src="webxdc.js"></script>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>vctrtable — Poker</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="pvp.css">
+<script src="webxdc.js"></script>
 <script type="module" src="pvp.js"></script>
-</head><body><main class="pvp">
-<header><div><small>VCTRTABLE / LIVE EXPERIMENT</small><h1>Private Poker</h1></div>
-<a class="back-link" href="lobby.html">← Lobby</a></header>
-<div class="warning" id="security-warning">HOST-TRUSTED EXPERIMENT · The host can see the full deck. No verified Vector identity, no money, no anonymous fairness. Keep the host app open during hands.</div>
-<p id="pvp-status" role="status">Connecting to shared table…</p>
-<section class="pvp-roster">
-<div class="between"><h2>Same-chat participants</h2><span id="pvp-ready">—</span></div>
-<div id="pvp-players" class="seats"></div><p id="pvp-key-status">Secure hand-key exchange not started.</p>
-<button type="button" id="pvp-start" disabled>Host: Deal next hand</button></section>
-<section id="pvp-game" hidden>
-<div class="between"><strong id="pvp-street"></strong><strong id="pvp-pot"></strong></div>
-<div id="pvp-table-seats" class="pvp-seats"></div>
-<div class="pvp-board" id="pvp-board"></div>
-<div class="pvp-own"><small>YOUR PRIVATE CARDS</small><div class="pvp-own-cards" id="pvp-hole"></div></div>
-<p id="pvp-turn" role="status"></p>
-<div id="pvp-delivery" role="status" aria-live="polite"></div>
-<button id="pvp-retry" type="button" class="secondary" hidden>Resend exact action / 同じ操作を再送</button>
-<div class="pvp-actions">
-<button id="pvp-fold" type="button" disabled>Fold</button>
-<button id="pvp-check" type="button" disabled>Check</button>
-<button id="pvp-call" type="button" disabled>Call</button>
-<label>Raise to <input id="pvp-raise-amount" type="number" min="1" step="1"></label>
-<button id="pvp-raise" type="button" disabled>Raise</button>
-</div>
-<p id="pvp-result"></p>
-</section>
-<footer>Beta gameplay: the host must remain online. Poker chips have no cash or transfer value. Do not use this for wagering. Session keys are locally generated and cannot prove the Vector account holder.</footer>
-</main></body></html>
+</head>
+<body>
+<main class="pvp">
+  <header class="pvp-header">
+    <div class="pvp-heading">
+      <a class="back-link" href="lobby.html" aria-label="Back to lobby">‹ <span>LOBBY</span></a>
+      <div class="pvp-brand"><small>VCTRTABLE / POKER</small><h1>Texas Hold’em</h1></div>
+    </div>
+    <span class="pvp-experiment">EXPERIMENTAL <span aria-hidden="true">·</span> NO CASH</span>
+  </header>
+
+  <details class="pvp-safety">
+    <summary>Host-trusted table · Security details / 対人戦の注意事項</summary>
+    <p id="security-warning">The host can see the entire deck. Vector identities are not verified.
+       Do not play for money, prizes or anything of value. The host must keep the app open.
+       / ホストには全カードが見えます。Vectorの本人認証はありません。金銭を賭けないでください。</p>
+  </details>
+  <p id="pvp-status" role="status" aria-live="polite">Connecting to shared table…</p>
+
+  <section class="pvp-room" aria-label="Shared table setup">
+    <div class="pvp-room-title">
+      <div><small>YOUR TABLE</small><h2>Players <span id="pvp-ready">—</span></h2></div>
+      <span class="pvp-room-caption">Same Vector chat / 同じチャット</span>
+    </div>
+    <div id="pvp-players" class="seats pvp-roster"></div>
+    <p id="pvp-key-status">Secure hand-key exchange not started.</p>
+    <button type="button" id="pvp-start" disabled>Host: Deal next hand</button>
+  </section>
+
+  <section id="pvp-game" class="pvp-play" hidden aria-label="Poker game">
+    <div class="pvp-play-topline">
+      <span class="pvp-overline">LIVE TABLE <span aria-hidden="true">·</span> 2–6 PLAYERS</span>
+      <strong id="pvp-street">HAND 1 · PREFLOP</strong>
+    </div>
+
+    <div class="pvp-stage-grid">
+      <div class="pvp-felt-outer">
+        <div class="pvp-felt" aria-label="Poker table with opponents, board and your cards">
+          <div class="pvp-felt-mark" aria-hidden="true">♠</div>
+          <div id="pvp-table-seats" class="pvp-seats" aria-label="Player positions"></div>
+          <div class="pvp-center">
+            <div class="pvp-pot-caption">TOTAL POT</div>
+            <strong id="pvp-pot">Pot 0</strong>
+            <div id="pvp-board" class="pvp-board" aria-label="Community cards"></div>
+          </div>
+          <div class="pvp-hero">
+            <div class="pvp-own">
+              <div class="pvp-own-heading"><span>YOUR HAND / 手札</span><span class="pvp-hero-chip" aria-hidden="true">●</span></div>
+              <div class="pvp-own-cards" id="pvp-hole" aria-label="Your private cards"></div>
+            </div>
+            <div class="pvp-hero-identity">
+              <span class="pvp-hero-avatar" aria-hidden="true">YOU</span>
+              <div class="pvp-hero-person"><strong id="pvp-hero-name">You</strong><span>YOUR STACK</span></div>
+              <strong id="pvp-hero-stack">—</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="pvp-control-panel" aria-label="Turn and betting controls">
+        <div class="pvp-turn-panel">
+          <small>THE ACTION</small>
+          <p id="pvp-turn" role="status" aria-live="polite"></p>
+        </div>
+        <div id="pvp-delivery" role="status" aria-live="polite"></div>
+        <button id="pvp-retry" type="button" class="secondary" hidden>Resend exact action / 同じ操作を再送</button>
+        <div class="pvp-actions">
+          <div class="pvp-action-row">
+            <button id="pvp-fold" type="button" disabled>Fold</button>
+            <button id="pvp-check" type="button" disabled>Check</button>
+            <button id="pvp-call" type="button" disabled>Call</button>
+            <button id="pvp-raise" type="button" disabled>Raise</button>
+          </div>
+          <label class="pvp-raise-input" for="pvp-raise-amount"><span>RAISE TO</span>
+            <input id="pvp-raise-amount" type="number" min="1" step="1" inputmode="numeric" aria-label="Raise target">
+          </label>
+        </div>
+        <p id="pvp-result" aria-live="polite"></p>
+      </aside>
+    </div>
+  </section>
+  <footer>Recreational chips only · No wagering · Host-trusted experimental PvP / 実験的な対人戦</footer>
+</main>
+</body>
+</html>

@@ -257,6 +257,20 @@ try{
  assert.equal(await host.locator("#pvp-turn").textContent(),"Hand complete",
   "Unapproved pause request incorrectly froze the action clock");
  assert.equal(await guest.locator("#pvp-turn").textContent(),"Hand complete");
+ // Finished hands must not leave a sticky disabled betting dock
+ // obscuring the hero cards after the lobby's Next Hand controls return.
+ const completeLayout=await host.evaluate(()=>{
+  const panel=document.querySelector(".pvp-control-panel");
+  const hand=document.querySelector("#pvp-hole");
+  const p=panel.getBoundingClientRect(),h=hand.getBoundingClientRect();
+  return {position:getComputedStyle(panel).position,
+   panelTop:p.top,handBottom:h.bottom,
+   overlaps:p.top<h.bottom&&p.bottom>h.top};
+ });
+ assert.equal(completeLayout.position,"static",
+  "Completed hand left a sticky action dock over the felt: "+JSON.stringify(completeLayout));
+ assert.equal(completeLayout.overlaps,false,
+  "Completed hand obscured the near-side cards: "+JSON.stringify(completeLayout));
  await host.screenshot({path:path.resolve("dist/poker-pvp-two-clients-360.png"),fullPage:true});
  assert.deepEqual(errors,[],"Browser JavaScript error");
  for(const c of clients)await c.ctx.close();

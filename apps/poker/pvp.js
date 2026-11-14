@@ -28,6 +28,11 @@ const unanimous=r=>Boolean(r.table&&r.seats.has(me)&&r.seats.size>=2&&
  r.ready.size===r.seats.size&&r.proposal&&r.proposal.approvals.size===r.seats.size);
 function draw(){
  const r=room(),host=r.table?.host===me;
+ const root=document.querySelector(".pvp");
+ root.classList.toggle("is-playing",Boolean(game));
+ root.classList.toggle("is-betting",game?.status==="betting");
+ root.classList.toggle("is-complete",game?.status==="complete");
+ root.classList.toggle("has-error",Boolean(errorMessage));
  $("pvp-status").textContent=errorMessage||(!live?
  "Secure WebXDC is required (not a local or separate Note session).":
  !r.table?"No shared table. Create one in Lobby first.":
@@ -70,14 +75,41 @@ function draw(){
  $("pvp-street").textContent="Hand "+game.number+" · "+game.street.toUpperCase();
  $("pvp-pot").textContent="Pot "+game.pot;
  const seats=$("pvp-table-seats");seats.replaceChildren();
+ seats.dataset.opponents=String(game.players.length-1);
+ const acting=game.status==="betting"?game.players[game.turn]?.id:null;
+ const dealer=game.players[game.button]?.id;
+ let position=0;
  for(const p of game.players){
-  const item=document.createElement("span");item.className="seat";
-  item.textContent=p.name+" · "+p.stack+(p.folded?" (Folded)":"")+
-   (game.players[game.turn]?.id===p.id?" · TURN":"");
+  const own=p.id===me;
+  const item=document.createElement("div");
+  item.className="pvp-seat"+(own?" is-self":" seat-pos-"+(++position))+
+   (p.folded?" is-folded":"")+(acting===p.id?" is-turn":"");
+  const avatar=document.createElement("span");avatar.className="pvp-avatar";
+  avatar.setAttribute("aria-hidden","true");
+  avatar.textContent=(p.name||"?").trim().slice(0,1).toUpperCase();
+  const details=document.createElement("span");details.className="pvp-seat-info";
+  const name=document.createElement("strong");name.className="pvp-seat-name";
+  name.textContent=p.name;
+  const stack=document.createElement("span");stack.className="pvp-seat-stack";
+  stack.textContent=Number(p.stack).toLocaleString("en-US");
+  const flag=document.createElement("span");flag.className="pvp-seat-flag";
+  flag.textContent=p.folded?"FOLDED":
+   [dealer===p.id?"D":"",acting===p.id?"● TURN":""].filter(Boolean).join(" · ");
+  details.append(name,stack,flag);item.append(avatar,details);
+  item.setAttribute("aria-label",p.name+" · "+p.stack+
+   (p.folded?" folded":"")+(acting===p.id?" acting":""));
   seats.append(item);
  }
+ const self=game.players.find(p=>p.id===me);
+ $("pvp-hero-name").textContent=self?.name||"You";
+ document.querySelector(".pvp-hero-chip").textContent=dealer===me?"D":"●";
+ $("pvp-hero-stack").textContent=self?Number(self.stack).toLocaleString("en-US"):"—";
  const board=$("pvp-board");board.replaceChildren();
  for(const card of game.board)board.append(makeCard(card));
+ for(let i=game.board.length;i<5;i++){
+  const slot=document.createElement("span");slot.className="pvp-empty";
+  slot.setAttribute("aria-hidden","true");board.append(slot);
+ }
  const own=$("pvp-hole");own.replaceChildren();
  for(const c of (hole?.length===2?hole:["BACK","BACK"]))
   own.append(c==="BACK"?makeCard("AS",{hidden:true}):makeCard(c));
