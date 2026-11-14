@@ -95,8 +95,10 @@ const mockedWebxdc=String.raw`
 (()=> {
  const name="hanafuda-pvp-simulated-same-chat";
  window.__wire=[];
+ window.__channelJoins=0;
  window.webxdc={
   joinRealtimeChannel(){
+   window.__channelJoins++;
    const broadcast=new BroadcastChannel(name);
    let handler=()=>{};
    broadcast.onmessage=e=>{
@@ -231,14 +233,83 @@ try{
   actions++;
   await sleep(600);
  }
+
+ // Vector v0.5 browser/PWA restoration: pagehide invalidates a realtime
+ // channel, and a persisted pageshow must join again and recover the session.
+ const guestStateBefore=await evaluate2("document.getElementById('roundLabel').textContent");
+ const guestWireBefore=await evaluate2("window.__wire.length");
+ await evaluate2("window.dispatchEvent(new PageTransitionEvent('pagehide',{persisted:true}))");
+ await evaluate2("window.dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true}))");
+ await until(async()=>{
+  const count=await evaluate2("window.__wire.length");
+  const joined=await evaluate2("window.__channelJoins");
+  return count>guestWireBefore&&joined===2;
+ },"guest restores encrypted channel after BFCache",8000);
+ if(await evaluate2("document.getElementById('roundLabel').textContent")!==guestStateBefore)
+  throw Error("PvP round was reset by BFCache return");
+ await evaluate("window.dispatchEvent(new PageTransitionEvent('pagehide',{persisted:true}))");
+ await evaluate("window.dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true}))");
+ if(await evaluate("window.__channelJoins")!==2)
+  throw Error("Host did not rejoin the realtime channel after BFCache");
+ await until(async()=>{
+  const isAlive=await evaluate("!document.getElementById('match').hidden");
+  const guestAlive=await evaluate2("!document.getElementById('match').hidden");
+  return isAlive&&guestAlive;
+ },"host returns from BFCache with same match",8000);
+ // v0.5 landscape and desktop width changes must recompute the card rows
+ // without discarding a game or revealing hidden opponent hands.
+ await run2("Emulation.setDeviceMetricsOverride",{
+  width:740,height:420,deviceScaleFactor:1,mobile:false
+ });
+ await evaluate2("window.dispatchEvent(new Event('resize'))");
+ const rowCount=await evaluate2("document.getElementById('field').style.getPropertyValue('--rows')");
+ if(!/^[2-9]\d*$/.test(rowCount))throw Error("Landscape field grid did not resize");
+
  if(actions<3)throw Error("Real connected browser pair could not progress at least three actions");
  const shot=await run("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
  await fsp.writeFile(path.join(output,"pvp-host.png"),Buffer.from(shot.data,"base64"));
  const shot2=await run2("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
  await fsp.writeFile(path.join(output,"pvp-guest.png"),Buffer.from(shot2.data,"base64"));
+
+ // Vector's Mini App container may expose WebXDC without the experimental
+ // realtime transport (or none at all). The lobby must not strand phone users.
+ const unsupportedTarget=await send("Target.createTarget",{url:"about:blank"});
+ const unsupportedAttached=await send("Target.attachToTarget",{
+  targetId:unsupportedTarget.targetId,flatten:true
+ });
+ const unsupportedSession=unsupportedAttached.sessionId;
+ const runUnsupported=(method,params)=>send(method,params,unsupportedSession);
+ await runUnsupported("Page.enable");
+ await runUnsupported("Runtime.enable");
+ await runUnsupported("Emulation.setDeviceMetricsOverride",{
+  width:360,height:640,deviceScaleFactor:1,mobile:true
+ });
+ await runUnsupported("Page.navigate",{url:baseUrl+"/pvp.html"});
+ let unsupported=null;
+ for(let attempt=0;attempt<60;attempt++){
+  const v=await runUnsupported("Runtime.evaluate",{
+   expression:"(()=>{const h=document.getElementById('host'),j=document.getElementById('join'),a=document.getElementById('fallbackPvE');if(!h||!j||!a)return null;return {hostDisabled:h.disabled,joinDisabled:j.disabled,href:a.getAttribute('href'),visible:a.getBoundingClientRect().height,description:document.getElementById('supportStatus').textContent};})()",
+   returnByValue:true
+  });
+  unsupported=v.result?.value;
+  if(unsupported?.hostDisabled&&unsupported?.joinDisabled)break;
+  await sleep(125);
+ }
+ if(!unsupported?.hostDisabled||!unsupported?.joinDisabled||
+  unsupported.visible<40||unsupported.href!=="./index.html"||
+  !unsupported.description.includes("does not support"))
+  throw Error("Vector without realtime did not offer a visible PvE fallback: "+
+   JSON.stringify(unsupported));
+ const unsupportedShot=await runUnsupported("Page.captureScreenshot",{
+  format:"png",captureBeyondViewport:false
+ });
+ await fsp.writeFile(path.join(output,"pvp-no-realtime-fallback.png"),
+  Buffer.from(unsupportedShot.data,"base64"));
+
  if(errors.length)throw Error("Uncaught PvP browser error: "+errors.join(" | "));
  console.log(JSON.stringify({status:"PASS",pairingCodeMatched:true,
-  encryptedPackets:sealed.length,actions,hostLayout,guestLayout},null,2));
+  encryptedPackets:sealed.length,actions,hostLayout,guestLayout,
+  noRealtimeFallback:true,bfcacheRestored:true},null,2));
 }finally{
  socket.close();child.kill();
  await new Promise(resolve=>server.close(resolve));

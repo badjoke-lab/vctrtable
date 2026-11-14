@@ -10,7 +10,7 @@ const STR={
   lobbyTitle:"Play a friend · PvP",warning:"FRIENDLY-HOST MODE: The player creating this table controls the shuffle and can know both hands. Use only with a person you trust. Compare the six-digit pairing code verbally; this is not cheat-proof ranked play.",
   unavailable:"This Vector/WebXDC host does not support realtime multiplayer. PvE remains available.",
   available:"Realtime multiplayer supported. Open this same Mini App in one Vector chat.",
-  host:"Create table",join:"Join friend's table",rounds:"Rounds",
+  host:"Create table",join:"Join friend's table",rounds:"Rounds",fallbackPvE:"Play against computer · PvE",
   instructions:"Open the SAME Mini App message in the SAME Vector chat. Two unrelated Notes are not connected. Both players must keep the game open during this QA test.",
   waiting:"Hosting · waiting for a second player to open this Mini App…",
   searching:"Searching for a host in this Mini App…",
@@ -41,7 +41,7 @@ const STR={
   lobbyTitle:"友人と対戦 · PvP",warning:"【信頼型の親方式】卓を作る人が配札を管理するため、技術的には相手の手札も分かります。信頼できる友人同士で使用し、6桁の照合番号を互いに確認してください。公平性が証明された競技モードではありません。",
   unavailable:"このVector/WebXDC環境ではリアルタイム対戦に対応していません。PvEは引き続き遊べます。",
   available:"リアルタイム通信に対応しています。同じVectorチャットの同じMini Appを開いてください。",
-  host:"卓を作る",join:"友人の卓に参加",rounds:"局数",
+  host:"卓を作る",join:"友人の卓に参加",rounds:"局数",fallbackPvE:"コンピューターと対戦 · PvE",
   instructions:"同じVectorチャットにある同じMini Appメッセージを2人で開きます。別のNoteでは接続されません。QA中は2人とも画面を開いたままにしてください。",
   waiting:"卓を作成済み · 相手が同じMini Appを開くのを待機中",
   searching:"同じMini App内の親を検索中…",
@@ -83,7 +83,7 @@ let lang="en",mode=null,identity=null,peer=null,key=null,channel=null;
 let room=null,me=null,approved=false,peerApproved=false,connected=false;
 let hostMatch=null,visible=null,revision=-1,hostSeq=0,lastHostSeq=0,guestSeq=0,lastGuestSeq=0;
 let outstanding=null,selected=null,target=null,hints=false,offeredCode="",lastSeen=Date.now();
-let updating=false,interval=null,sessionLost=false;
+let updating=false,interval=null,sessionLost=false,needsResync=false;
 const tx=k=>STR[lang][k]||k;
 const yaku=key=>lang==="ja"?(Y[key]?.[0]||key):
  (Y[key]?Y[key][0]+" ("+Y[key][1]+" — "+Y[key][2]+")":key);
@@ -94,7 +94,7 @@ function setText(id,word){$(id).textContent=tx(word);}
 function localize(){
  const ids={
   lobbyTitle:"lobbyTitle",hostingWarning:"warning",host:"host",
-  join:"join",roundsLabel:"rounds",instructions:"instructions",
+  join:"join",roundsLabel:"rounds",instructions:"instructions",fallbackPvE:"fallbackPvE",
   pairingText:"pairing",approve:"approval",startMatch:"start",
   oppLabel:"opponent",youLabel:"you",opponentHandLabel:"oppHand",
   oppCapturedLabel:"oppCaptured",fieldLabel:"field",drawPileLabel:"draw",
@@ -131,6 +131,7 @@ async function shareState(){
  selected=null;target=null;render();
 }
 function wire(){
+ if(channel||!mode)return;
  channel=window.webxdc.joinRealtimeChannel();
  channel.setListener(bytes=>{
   try{
@@ -138,6 +139,7 @@ function wire(){
    void received(packet).catch(e=>showStatus("Network: "+e.message));
   }catch(e){showStatus("Packet: "+e.message);}
  });
+ if(interval)clearInterval(interval);
  interval=setInterval(()=>{
   if(mode==="host"){
    sendPlain({v:1,kind:"offer",room,from:me,pub:identity.publicKey});
@@ -148,6 +150,7 @@ function wire(){
     if(approved&&key)void sendSecure({kind:"ready"}).catch(()=>{});
    }
    if(connected){
+    if(needsResync)void sendSecure({kind:"sync"}).catch(()=>{});
     if(outstanding)void sendSecure(outstanding).catch(()=>{});
     else void sendSecure({kind:"ping",n:Date.now()}).catch(()=>{});
    }
@@ -245,6 +248,7 @@ async function onGuestMessage(data){
      data.data.protocol!==1||data.revision!==data.data.revision||
      !Number.isSafeInteger(data.seq))return;
   if(data.seq<=lastHostSeq||data.data.revision<revision)return;
+  needsResync=false;
   lastHostSeq=data.seq;
   if(outstanding&&data.ack>=outstanding.seq)outstanding=null;
   visible=data.data;revision=data.data.revision;
@@ -427,12 +431,46 @@ $("sync").addEventListener("click",()=>{
 $("hints").addEventListener("click",()=>{hints=!hints;render();});
 $("guide").addEventListener("click",showGuide);
 $("closeGuide").addEventListener("click",()=>$("guideDialog").close?.());
-window.addEventListener("resize",()=>{
+// v0.5.0/0.5.1 can retain the Web Mini App page in browser back/forward
+// cache. A pagehide closes the ephemeral realtime channel; on a BFCache
+// pageshow we must rejoin before another move is accepted.
+function relayout(){
  if(!visible)return;
  const columns=window.innerWidth>=700?6:4;
  $("field").style.setProperty("--rows",String(Math.max(2,
   Math.ceil(visible.public.field.length/columns))));
+}
+window.addEventListener("resize",relayout);
+window.visualViewport?.addEventListener?.("resize",relayout);
+window.addEventListener("pagehide",()=>{
+ if(channel){channel.leave();channel=null;}
+ if(interval){clearInterval(interval);interval=null;}
 });
-window.addEventListener("pagehide",()=>{if(channel)channel.leave();if(interval)clearInterval(interval);});
+window.addEventListener("pageshow",event=>{
+ if(!event.persisted||!mode||channel)return;
+ try{
+  wire();
+  lastSeen=Date.now();sessionLost=false;
+  if(mode==="host"){
+   sendPlain({v:1,kind:"offer",room,from:me,pub:identity.publicKey});
+   if(connected&&hostMatch)void shareState().catch(e=>showStatus(e.message));
+  }else{
+   needsResync=true;
+   if(peer&&!connected)
+    sendPlain({v:1,kind:"join",room,from:me,pub:identity.publicKey});
+   else if(connected)
+    void sendSecure({kind:"sync"}).catch(e=>showStatus(e.message));
+  }
+ }catch(e){showStatus(tx("error")+": "+e.message);}
+ relayout();
+});
+document.addEventListener("visibilitychange",()=>{
+ if(document.visibilityState!=="visible"||!channel||!connected)return;
+ if(mode==="guest"){
+  needsResync=true;
+  void sendSecure({kind:"sync"}).catch(()=>{});
+ }else if(hostMatch)void shareState().catch(()=>{});
+ relayout();
+});
 $("host").disabled=!isAvailable();$("join").disabled=!isAvailable();
 localize();

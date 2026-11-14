@@ -1,0 +1,103 @@
+name: Hanafuda Vector v0.5 compatibility QA
+on:
+  push:
+    branches:
+      - feat/vector-v051-compat-20261114
+    paths:
+      - "apps/hanafuda/**"
+      - "packages/hanafuda/**"
+      - "scripts/build-hanafuda.mjs"
+      - "scripts/hanafuda-card-assets.mjs"
+      - "scripts/check-hanafuda-layout.mjs"
+      - "scripts/check-hanafuda-pvp.mjs"
+      - "tests/hanafuda*.test.mjs"
+      - "package.json"
+      - ".github/workflows/hanafuda-vector-v051.yml"
+  pull_request:
+    branches: [feat/hanafuda-pve-pvp-20261029]
+    paths:
+      - ".github/workflows/hanafuda-xdc-release.yml"
+      - "apps/hanafuda/**"
+      - "packages/hanafuda/**"
+      - "scripts/build-hanafuda.mjs"
+      - "scripts/hanafuda-card-assets.mjs"
+      - "tests/hanafuda*.test.mjs"
+  workflow_dispatch:
+permissions:
+  contents: write
+  
+concurrency:
+  group: hanafuda-vector-v051-qa
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.repository == 'badjoke-lab/vctrtable' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout vctrtable
+        uses: actions/checkout@v4
+      - name: Checkout pinned licensed 48-card art
+        uses: actions/checkout@v4
+        with:
+          repository: dotty-dev/Hanafuda-Louie-Recolor
+          ref: a4ac60e4bd60f95ab8c4e5176b50bfd2e3772992
+          path: external/hanafuda-art
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run regression tests for both modes
+        run: |
+          node --check apps/hanafuda/pvp.js
+          node --check packages/hanafuda/pvp-core.js
+          node --check packages/hanafuda/pvp-crypto.js
+          npm test
+      - name: Build bundled Hanafuda
+        run: npm run build:hanafuda
+      - name: Verify package contents
+        run: |
+          unzip -t dist/hanafuda.xdc
+          test "$(unzip -Z1 dist/hanafuda.xdc | grep '^cards/[0-9].*\.svg$' | wc -l)" -eq 48
+          unzip -Z1 dist/hanafuda.xdc | grep -q '^cards/back.svg$'
+          unzip -Z1 dist/hanafuda.xdc | grep -qx '^index.html$'
+          for file in pvp.html pvp.css pvp.js pvp-core.js pvp-crypto.js; do
+            unzip -Z1 dist/hanafuda.xdc | grep -qx "$file"
+          done
+          if unzip -Z1 dist/hanafuda.xdc | grep -q '^webxdc.js$'; then
+            echo "Host-supplied webxdc.js must not be bundled"
+            exit 1
+          fi
+      - name: Check PC and phone viewport geometry in real Chrome
+        run: node scripts/check-hanafuda-layout.mjs
+      - name: Simulate two WebXDC peers in Chromium
+        run: node scripts/check-hanafuda-pvp.mjs
+      - name: Attach tested dual-mode XDC
+        uses: actions/upload-artifact@v4
+        with:
+          name: hanafuda-vector-v051-xdc
+          path: dist/hanafuda.xdc
+          if-no-files-found: error
+      - name: Save Hanafuda viewport screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hanafuda-vector-v051-screenshots
+          path: dist/hanafuda-layout-preview/*.png
+          if-no-files-found: warn
+      - name: Publish stable direct .xdc URL on prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="hanafuda-vector-v051-qa-latest"
+          SHA="${{ github.event.pull_request.head.sha || github.sha }}"
+          NOTES="Vector 0.5.0/0.5.1 compatibility QA build with local computer PvE and experimental two-human PvP over WebXDC realtime. Web and mobile BFCache reconnect + responsive window validation, not yet verified on physical Vector devices. Friendly-host trusted dealing only: the host knows the full deck and guest hand, so fairness against a malicious host is NOT guaranteed. ECDH pairing code must be manually verified; sender identity is not Vector-attested. Reconnect requires the host to remain open; no persistent match recovery. No money stakes. Tested code SHA ${SHA}. Card art CC BY-SA 4.0."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/hanafuda.xdc --clobber
+            gh release edit "$TAG" --prerelease --title "Hanafuda Koi-Koi — Vector 0.5.1 PvE + PvP QA" --notes "$NOTES"
+          else
+            gh release create "$TAG" dist/hanafuda.xdc --target "$SHA" --prerelease --title "Hanafuda Koi-Koi — Vector 0.5.1 PvE + PvP QA" --notes "$NOTES"
+          fi
+          echo "URL: https://github.com/${GH_REPO}/releases/download/${TAG}/hanafuda.xdc"
