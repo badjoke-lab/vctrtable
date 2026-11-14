@@ -1138,3 +1138,62 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
  .qa-main .qa-felt-callout.is-on{animation:none!important}
  .qa-main .qa-flying-chip{display:none!important}
 }
+
+/* Supersede legacy QA's six-row 142px opponent panels and its !important
+   side-seat width. All five opponents now use identical concise widgets. */
+.qa-main .poker-seat{
+ width:clamp(70px,23vw,89px)!important;
+ height:clamp(84px,29vw,103px)!important;
+ min-width:0!important;max-width:none!important;min-height:0!important;
+ display:flex!important;flex-direction:column!important;align-items:center!important;
+ justify-content:center!important;gap:2px!important;
+ padding:5px 4px!important;grid-template-rows:none!important;
+}
+.qa-main .poker-seat.pos-mid-left,
+.qa-main .poker-seat.pos-mid-right{
+ width:clamp(70px,23vw,89px)!important;
+ height:clamp(84px,29vw,103px)!important;
+ padding:5px 4px!important;top:79%!important;
+}
+.qa-main .poker-seat.pos-mid-left{left:13.5%!important}
+.qa-main .poker-seat.pos-mid-right{left:86.5%!important}
+.qa-main .poker-seat .poker-seat-name{
+ padding:3px 0 0 20px!important;
+ font-size:10px!important;line-height:1.15!important;
+ min-height:14px!important;height:auto!important;
+}
+.qa-main .poker-seat.pos-mid-left .poker-seat-name,
+.qa-main .poker-seat.pos-mid-right .poker-seat-name{
+ padding:3px 0 0 20px!important;text-align:left!important;
+}
+.qa-main .poker-seat.pos-mid-left .poker-seat-avatar,
+.qa-main .poker-seat.pos-mid-right .poker-seat-avatar{
+ left:5px!important;top:5px!important;transform:none!important;
+}
+.qa-main .poker-seat .poker-seat-tags{
+ height:auto!important;min-height:0!important;max-height:13px!important;
+ flex:0 0 auto!important;
+}
+.qa-main .poker-seat .poker-seat-tags:empty,
+.qa-main .poker-seat .poker-seat-card-index:empty{display:none!important}
+.qa-main .poker-seat .poker-seat-cards{
+ height:24px!important;min-height:24px!important;
+ margin:0!important;flex:0 0 auto!important;
+ overflow:visible!important;gap:3px!important;
+}
+.qa-main .poker-seat .poker-seat-card-index{
+ height:auto!important;min-height:0!important;line-height:1.15!important;
+ font-size:9px!important;
+}
+.qa-main .poker-seat .poker-seat-bet{
+ height:auto!important;min-height:0!important;
+ font-size:10px!important;line-height:1.2!important;
+}
+.qa-main .hero-spot{width:48%!important;bottom:2.6%}
+.qa-main .qa-felt-callout{top:65%}
+@media(max-width:370px){
+ .qa-main .poker-seat.pos-mid-left{left:13%!important}
+ .qa-main .poker-seat.pos-mid-right{left:87%!important}
+ .qa-main .hero-spot{width:48%!important}
+ .qa-main .qa-felt-callout{top:64%}
+}
