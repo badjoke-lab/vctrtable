@@ -16,6 +16,10 @@ const readMode=()=>{try{return localStorage.getItem(modeKey)==="inline"?"inline"
 let locale="en",session=null,table=null,seconds=30,paused=false,deadline=0,remaining=0,lastTurnKey="",storageNotice="",chatterHand=0,chatId=0,toastTimer=null,chatFocused=false,raiseOpen=false;
 let soloPrevious=null,soloVisualStamp="",soloSeenEvents=0,soloEvents=[],soloRestored=false;
 let soloPaintBoard="",soloPaintHand="";
+let soloBotTimer=null,soloBotVersion=0,soloCueSerial=0;
+const motionReduced=()=>window.matchMedia?.("(prefers-reduced-motion: reduce)").matches||false;
+const botThinkMs=()=>motionReduced()?0:780;
+function cancelSoloBots(){soloBotVersion++;if(soloBotTimer!==null)clearTimeout(soloBotTimer);soloBotTimer=null;}
 function soloSnapshot(h){
  return {seq:h.events.length,number:h.number,status:h.status,street:h.streetName,
   board:[...h.board],turn:h.turn,pot:h.players.reduce((sum,p)=>sum+p.total,0),
@@ -26,6 +30,32 @@ function soloSnapshot(h){
 function resetSoloStory(restored=false){
  soloPrevious=null;soloVisualStamp="";soloSeenEvents=0;soloEvents=[];soloRestored=restored;
  soloPaintBoard="";soloPaintHand="";
+}
+function flySoloChips(ids){
+ if(motionReduced()||!table||!ids?.length)return;
+ const layer=$("qa-chip-flight"),felt=layer?.parentElement,pot=$("qa-pot");
+ if(!layer||!felt||!pot)return;
+ const bounds=felt.getBoundingClientRect(),end=pot.getBoundingClientRect();
+ const toX=end.left+end.width/2-bounds.left,toY=end.top+end.height/2-bounds.top;
+ for(const id of ids){
+  const source=id===table.hand.players[0].id?
+   $("qa-hero-cards"):document.querySelector('#qa-players .poker-seat[data-seat-id="'+id+'"]');
+  if(!source)continue;
+  const r=source.getBoundingClientRect();
+  const fromX=r.left+r.width/2-bounds.left,fromY=r.top+r.height/2-bounds.top;
+  for(let i=0;i<3;i++){
+   const chip=document.createElement("span");chip.className="qa-flying-chip";
+   chip.textContent="●";chip.style.left=fromX+"px";chip.style.top=fromY+"px";
+   layer.append(chip);
+   const a=chip.animate([
+    {transform:"translate(-50%,-50%) scale(.7)",opacity:0},
+    {transform:"translate(-50%,-50%) scale(1.1)",opacity:1,offset:.17},
+    {transform:"translate(calc(-50% + "+(toX-fromX)+"px), calc(-50% + "+(toY-fromY)+"px)) scale(.72)",opacity:1,offset:.85},
+    {transform:"translate(calc(-50% + "+(toX-fromX)+"px), calc(-50% + "+(toY-fromY)+"px)) scale(.2)",opacity:0}
+   ],{duration:850,delay:i*110,easing:"ease-in-out",fill:"forwards"});
+   a.finished.catch(()=>{}).finally(()=>chip.remove());
+  }
+ }
 }
 function soloEventText(e,h){
  const person=i=>h.players[i]?.name||"Seat "+(Number(i)+1);
@@ -247,6 +277,17 @@ function render(){
   void top.offsetWidth;top.classList.add("is-changing");
   story.classList.remove("is-entering");
   void story.offsetWidth;story.classList.add("is-entering");
+  const felt=$("qa-felt-callout");
+  felt.hidden=false;
+  felt.dataset.kind=motion.type;
+  $("qa-felt-action").textContent=motion.title;
+  $("qa-felt-actor").textContent=motion.detail.split(" / ")[0];
+  soloCueSerial++;
+  felt.classList.remove("is-on");
+  void felt.offsetWidth;felt.classList.add("is-on");
+  // A deliberately persistent cue keeps individual scripted actions legible.
+  // Never conceal the latest information before its next engine update.
+  if(motion.type==="chips")requestAnimationFrame(()=>flySoloChips(motion.changedSeats));
  }
  const recent=$("qa-recent-actions");recent.replaceChildren();
  for(const evt of soloEvents){
@@ -303,7 +344,9 @@ function render(){
    seat.addEventListener("click",()=>inspectSeat(id));
    seat.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();inspectSeat(id);}});
   }
-  seat.append(elem("b",p.name,"poker-seat-name"),elem("span",fmt(p.stack),"poker-seat-stack"));
+  seat.dataset.seatId=p.id;
+  seat.append(elem("span",["♠","♥","♦","♣","♠"][i],"poker-seat-avatar"),
+   elem("b",p.name,"poker-seat-name"),elem("span",fmt(p.stack),"poker-seat-stack"));
   const tags=elem("div",undefined,"poker-seat-tags");
   for(const [index,label,cls] of [[h.button,"D","d"],[h.sbSeat,"SB",""],[h.bbSeat,"BB","bb"]])
    if(index===id)tags.append(elem("span",label,"poker-seat-badge "+cls));
@@ -412,24 +455,44 @@ function resetClock(){
 }
 function drive(){
  if(!table||paused)return;
+ cancelSoloBots();
+ const version=soloBotVersion;
  let guard=0;
- while(table.hand.status==="betting"&&table.hand.turn!==0){
-  if(++guard>90)throw new Error("Scripted seat progression stopped");
-  const l=legalActions(table);if(!l)break;
-  const opponent=table.hand.players[l.seat];
-  if(l.canRaise&&Math.random()<.09&&l.maxRaiseTo>=l.minRaiseTo)
-   sessionAction(session,opponent.id,"raise",Math.min(l.maxRaiseTo,l.minRaiseTo));
-  else sessionAction(session,opponent.id,l.toCall?"call":"check");
-  assertConservation(table);
- }
- if(table.hand.status==="complete"&&chatterHand!==table.hand.number){
-  chatterHand=table.hand.number;
-  if(table.hand.number<=3){
-   const lines=["nice hand!","gg","ty!"];
-   notifyChat("Seat "+(2+(table.hand.number-1)%Math.max(1,table.players.length-1)),lines[table.hand.number-1],{id:"qa-demo-end-"+table.hand.number});
+ const step=()=>{
+  if(version!==soloBotVersion||!table||paused)return;
+  if(table.hand.status==="betting"&&table.hand.turn!==0){
+   if(++guard>90){console.error("Scripted seat progression stopped");return;}
+   const l=legalActions(table);if(!l)return;
+   const opponent=table.hand.players[l.seat];
+   const beforeStreet=table.hand.streetName;
+   try{
+    if(l.canRaise&&Math.random()<.09&&l.maxRaiseTo>=l.minRaiseTo)
+     sessionAction(session,opponent.id,"raise",Math.min(l.maxRaiseTo,l.minRaiseTo));
+    else sessionAction(session,opponent.id,l.toCall?"call":"check");
+    assertConservation(table);
+    render(); // Each individual opponent action is displayed, not skipped.
+   }catch(error){console.error("Scripted action failed:",error);render();return;}
+   if(table.hand.status==="betting"&&table.hand.turn!==0){
+    const streetChange=table.hand.streetName!==beforeStreet;
+    soloBotTimer=setTimeout(step,motionReduced()?0:streetChange?1250:780);
+   }else step();
+   return;
   }
- }
- resetClock();render();
+  if(table.hand.status==="complete"&&chatterHand!==table.hand.number){
+   chatterHand=table.hand.number;
+   if(table.hand.number<=3){
+    const lines=["nice hand!","gg","ty!"];
+    notifyChat("Seat "+(2+(table.hand.number-1)%Math.max(1,table.players.length-1)),
+     lines[table.hand.number-1],{id:"qa-demo-end-"+table.hand.number});
+   }
+  }
+  resetClock();render();
+ };
+ // Animate one opponent at a time. Display the new private deal first.
+ render();
+ if(table.hand.status==="betting"&&table.hand.turn!==0)
+  soloBotTimer=setTimeout(step,botThinkMs());
+ else step();
 }
 function move(kind,target){
  if(!table||paused)return;
@@ -449,13 +512,13 @@ function restore(){
   const raw=JSON.parse(readSave()||"null");
   if(!raw||raw.qaVersion!==1||!Number.isSafeInteger(raw.seconds)||raw.seconds<0||raw.seconds>3600)throw Error("Invalid save metadata");
   const saved=restoreSession(raw.journal);
-  session=saved;table=saved.table;seconds=raw.seconds;paused=false;remaining=seconds;lastTurnKey="";storageNotice="";raiseOpen=false;resetSoloStory(true);
+  cancelSoloBots();session=saved;table=saved.table;seconds=raw.seconds;paused=false;remaining=seconds;lastTurnKey="";storageNotice="";raiseOpen=false;resetSoloStory(true);
   $("qa-setup").hidden=true;$("qa-table").hidden=false;
   chatFocused=false;drive();render();
  }catch(error){storageNotice=t("loadFailure")+" "+String(error.message||"");render();}
 }
 function newGame(){
- table=null;session=null;paused=false;chatterHand=0;lastTurnKey="";raiseOpen=false;resetSoloStory();
+ cancelSoloBots();table=null;session=null;paused=false;chatterHand=0;lastTurnKey="";raiseOpen=false;resetSoloStory();
  document.querySelector(".qa-main").classList.remove("qa-playing");
  $("qa-setup").hidden=false;$("qa-table").hidden=true;
  demoChat.messages.length=0;demoChat.unread=0;demoChat.opened=false;chatFocused=false;render();
@@ -514,7 +577,7 @@ $("qa-form").addEventListener("submit",e=>{
  try{
   if(!Number.isSafeInteger(n)||n<2||n>6||!Number.isSafeInteger(seconds)||seconds<0||seconds>3600)throw Error(t("invalid"));
   session=createSession({players:Array.from({length:n},(_,i)=>({id:"p"+i,name:i===0?t("you"):"Seat "+(i+1)})),startingChips:chips,smallBlind:sb,bigBlind:bb,rebuy:$("qa-rebuy").checked});
-  table=session.table;resetSoloStory();startSessionHand(session);assertConservation(table);
+  cancelSoloBots();table=session.table;resetSoloStory();startSessionHand(session);assertConservation(table);
   paused=false;chatterHand=0;lastTurnKey="";storageNotice="";raiseOpen=false;
   demoChat.messages.length=0;demoChat.unread=0;demoChat.opened=false;chatFocused=false;
   $("qa-setup").hidden=true;$("qa-table").hidden=false;
@@ -536,7 +599,7 @@ $("qa-raise").addEventListener("click",()=>move("raise",Number($("qa-raise-amoun
 $("qa-allin").addEventListener("click",()=>{const L=table?legalActions(table):null;if(!L)return;const bet=bettingControls(L,{pot:table.hand.players.reduce((sum,p)=>sum+p.total,0),currentBet:table.hand.currentBet});if(bet.allIn)move(bet.allIn.kind,bet.allIn.target);});
 for(const [id,kind] of [["qa-min","min"],["qa-half","half"],["qa-pot-preset","pot"],["qa-max","max"]])$(id).addEventListener("click",()=>preset(kind));
 $("qa-next").addEventListener("click",()=>{
- if(!table)return;try{startSessionHand(session);lastTurnKey="";drive();}
+ if(!table)return;try{cancelSoloBots();startSessionHand(session);lastTurnKey="";drive();}
  catch(e){window.alert(e.message);}
 });
 $("qa-buy").addEventListener("click",()=>{
@@ -546,8 +609,11 @@ $("qa-buy").addEventListener("click",()=>{
 $("qa-reset").addEventListener("click",newGame);
 $("qa-pause").addEventListener("click",()=>{
  if(!table||table.hand.status==="complete")return;
- paused=!paused;if(paused)remaining=seconds===0?0:Math.max(0,(deadline-Date.now())/1000);
- else if(seconds!==0)deadline=Date.now()+remaining*1000;
+ paused=!paused;if(paused){cancelSoloBots();remaining=seconds===0?0:Math.max(0,(deadline-Date.now())/1000);}
+ else{
+  if(seconds!==0)deadline=Date.now()+remaining*1000;
+  drive();return;
+ }
  render();
 });
 $("qa-save").addEventListener("click",()=>{
