@@ -2,7 +2,7 @@
  * This module NEVER exports deck order or the opponent's hand in a snapshot.
  * Host is trusted to deal; this is NOT provably fair mental poker.
  */
-import {startRound,chooseInitialDealer,playCard,chooseTarget,
+import {CARDS,startRound,chooseInitialDealer,playCard,chooseTarget,
  drawNextCard,decide,scoreCards,getPublicState,cardById} from "./koikoi.js";
 
 export function secureRandom() {
@@ -16,13 +16,57 @@ export function matchingTargets(field,cardId) {
  if(!card)throw Error("Unknown card");
  return field.filter(id=>cardById(id).month===card.month);
 }
-export function createAuthoritativeMatch({rounds=12,rng=secureRandom}={}) {
+// Checkpoints contain BOTH hands and ordered draw pile. They must never be
+// placed in sendUpdate, realtime packets, public snapshots or log messages.
+// Only the hosting browser's per-app private storage may hold this object.
+export function validateHostCheckpoint(input){
+ if(!input||typeof input!=="object"||input.format!==1)
+  throw Error("Unsupported local host checkpoint");
+ const {rounds,round,scores,revision,game,events,settled}=input;
+ const legalCards=new Set(CARDS.map(c=>c.id));
+ if(![3,6,12].includes(rounds)||!Number.isInteger(round)||
+   round<1||round>rounds||!Array.isArray(scores)||scores.length!==2||
+   scores.some(v=>!Number.isSafeInteger(v)||v<0)||
+   !Number.isSafeInteger(revision)||revision<0||
+   !Array.isArray(events)||events.length>500||
+   typeof settled!=="boolean")throw Error("Invalid checkpoint metadata");
+ if(!game||!Array.isArray(game.hands)||game.hands.length!==2||
+   !game.hands.every(Array.isArray)||!Array.isArray(game.deck)||
+   !Array.isArray(game.field)||!Array.isArray(game.captured)||
+   game.captured.length!==2||!game.captured.every(Array.isArray)||
+   !Array.isArray(game.log)||game.log.length>500||
+   ![0,1].includes(game.active)||![0,1].includes(game.dealer)||
+   !["turn","choose","decision","ended","draw-pending"].includes(game.phase))
+  throw Error("Invalid checkpoint game state");
+ const zones=[...game.hands,game.field,game.deck,...game.captured];
+ if(game.pending!==null&&game.pending!==undefined){
+  if(game.phase!=="choose"||!["hand","draw"].includes(game.pending.step)||
+    !Array.isArray(game.pending.choices)||game.pending.choices.length!==2||
+    !game.pending.choices.every(x=>game.field.includes(x)))
+   throw Error("Invalid pending capture");
+  zones.push([game.pending.cardId]);
+ }else if(game.phase==="choose")throw Error("Missing pending card");
+ const seen=new Set();
+ for(const id of zones.flat()){
+  if(!legalCards.has(id)||seen.has(id))throw Error("Duplicate or unknown card in checkpoint");
+  seen.add(id);
+ }
+ if(seen.size!==48)throw Error("Incomplete private deck checkpoint");
+ if(settled!==(game.phase==="ended"))throw Error("Inconsistent checkpoint scoring");
+ // A JSON round trip eliminates aliases to mutable caller-owned state.
+ return JSON.parse(JSON.stringify(input));
+}
+export function createAuthoritativeMatch({rounds=12,rng=secureRandom,restore=null}={}) {
+ const checkpoint=restore?validateHostCheckpoint(restore):null;
+ if(checkpoint)rounds=checkpoint.rounds;
  if(![3,6,12].includes(rounds))throw Error("Match must have 3, 6 or 12 rounds");
- let round=1,scores=[0,0],revision=0;
- let dealer=chooseInitialDealer(rng).dealer;
- let game=startRound({dealer,rng});
- let settled=false;
- const events=[];
+ let round=checkpoint?.round??1;
+ let scores=checkpoint?.scores.slice()??[0,0];
+ let revision=checkpoint?.revision??0;
+ let dealer=checkpoint?.game.dealer??chooseInitialDealer(rng).dealer;
+ let game=checkpoint?checkpoint.game:startRound({dealer,rng});
+ let settled=checkpoint?.settled??false;
+ const events=checkpoint?.events.slice()??[];
  function settleOnce(){
   if(game.phase!=="ended"||settled)return;
   settled=true;
@@ -99,6 +143,11 @@ export function createAuthoritativeMatch({rounds=12,rng=secureRandom}={}) {
   events.push({kind:"new-round",seat:dealer,round});
   return snapshot(0);
  }
+ function hostCheckpoint(){
+  // Private! Includes the host's and guest's full hands plus the secret deck.
+  return validateHostCheckpoint({format:1,round,rounds,scores:scores.slice(),
+   revision,game,events:events.slice(),settled});
+ }
  settleOnce();
- return Object.freeze({snapshot,send,nextRound});
+ return Object.freeze({snapshot,send,nextRound,hostCheckpoint});
 }
