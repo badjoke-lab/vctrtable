@@ -62,4 +62,5 @@ jobs:
             dist/poker-pvp-felt-*.png
             dist/poker-river-*.png
             dist/poker-solo-motion-*.png
+            dist/poker-solo-result-*.png
           if-no-files-found: ignore
