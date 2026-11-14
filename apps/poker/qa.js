@@ -483,7 +483,7 @@ function drive(){
    if(table.hand.number<=3){
     const lines=["nice hand!","gg","ty!"];
     notifyChat("Seat "+(2+(table.hand.number-1)%Math.max(1,table.players.length-1)),
-     lines[table.hand.number-1],{id:"qa-demo-end-"+table.hand.number});
+     lines[table.hand.number-1],{id:"qa-demo-end-"+table.hand.number,notify:false});
    }
   }
   resetClock();render();
@@ -581,7 +581,7 @@ $("qa-form").addEventListener("submit",e=>{
   paused=false;chatterHand=0;lastTurnKey="";storageNotice="";raiseOpen=false;
   demoChat.messages.length=0;demoChat.unread=0;demoChat.opened=false;chatFocused=false;
   $("qa-setup").hidden=true;$("qa-table").hidden=false;
-  notifyChat("Seat 2","gl hf",{id:"qa-demo-start"});
+  notifyChat("Seat 2","gl hf",{id:"qa-demo-start",notify:false});
   drive();render();
  }catch(error){window.alert(error.message||t("invalid"));}
 });
