@@ -78,3 +78,14 @@ dialog{border:2px solid #e1bd7d;border-radius:13px;background:#1b3528;color:#f8e
 #fallbackPvE{display:inline-flex;align-items:center;justify-content:center;
  text-decoration:none;padding:10px 14px;margin-top:6px;min-height:44px;
  width:100%;max-width:380px}
+
+/* Host-only match recovery sits in the lobby, never above the active table.
+   Keep touch targets readable on both Android and Vector Web. */
+.resume-panel{margin:12px 0;padding:12px 14px;border:1px solid #b7a36b;
+ border-radius:10px;background:#263e2d}
+.resume-panel p{margin:0 0 10px;font-size:12px;line-height:1.55;color:#ffeab4}
+.resume-panel .actions button{min-height:44px}
+@media(max-width:520px){
+ .resume-panel .actions{flex-direction:column}
+ .resume-panel .actions button{width:100%}
+}

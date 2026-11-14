@@ -1,5 +1,5 @@
 import {cardById,scoreCards} from "../../packages/hanafuda/koikoi.js";
-import {createAuthoritativeMatch,matchingTargets} from "../../packages/hanafuda/pvp-core.js";
+import {createAuthoritativeMatch,matchingTargets,validateHostCheckpoint} from "../../packages/hanafuda/pvp-core.js";
 import {publicYakuOutlook} from "../../packages/hanafuda/guide.js";
 import {createEphemeralIdentity,deriveKey,pairingCode,sealMessage,openMessage} from "../../packages/hanafuda/pvp-crypto.js";
 
@@ -34,7 +34,11 @@ const STR={
   ownOutlook:"Your yaku",theirOutlook:"Opponent's public yaku",
   blocked:"Impossible (required card already captured)",held:"A required card is in your hand",
   soon:"One card away",ready:"Completed",progress:"In progress",
-  reconnect:"Network reconnect requested. If the host was closed/reloaded, the current QA match cannot be recovered.",
+  reconnect:"Sync requested. After a host reload, use Resume saved match and ask the guest to rejoin with a NEW pairing code.",
+  resumeDescription:"Host-only local save detected. The full secret deck is stored on this device, not sent to the chat. Ask your friend to reopen the same Mini App, Join and compare a NEW code. Local storage may be cleared by Vector.",
+  resumeSaved:"Resume saved match",discardSaved:"Discard local save",
+  resumeWaiting:"Saved match loaded. Ask your friend to reopen the Mini App, Join, and verify the new code.",
+  saveUnavailable:"Local save is unavailable in this Vector environment. Keep the hosting app open; full reload loses the match.",
   error:"Action rejected",trust:"The host still knows the full deck. Pairing encryption does not make dealing provably fair."
  },
  ja:{
@@ -65,7 +69,11 @@ const STR={
   ownOutlook:"自分の役",theirOutlook:"相手の役の状況",
   blocked:"成立不可（必要札が取られている）",held:"必要札をあなたが手札に所持",
   soon:"あと1枚",ready:"成立済み",progress:"進行中",
-  reconnect:"再同期を要求しました。親が画面を閉じて再読み込みした場合、このQA対局は復元できません。",
+  reconnect:"再同期を要求しました。親が再起動した場合は「保存した対局を再開」を選び、相手も開き直して新しい照合番号を確認してください。",
+  resumeDescription:"親端末に保存した対局が見つかりました。秘密の山札と双方の手札はこの端末だけに保存され、チャットには送られません。相手も同じMini Appを開き直し、参加して新しい照合番号を確認してください。Vectorが端末保存を消去する場合があります。",
+  resumeSaved:"保存した対局を再開",discardSaved:"端末の保存を削除",
+  resumeWaiting:"保存した対局を読み込みました。相手にMini Appを開き直して参加してもらい、新しい照合番号を確認してください。",
+  saveUnavailable:"このVector環境では端末内保存が使えません。親が完全に再起動すると対局は復元できません。",
   error:"操作エラー",trust:"親は山札全体を知っています。暗号化だけで公平な配札になるわけではありません。"
  }
 };
@@ -84,6 +92,39 @@ let room=null,me=null,approved=false,peerApproved=false,connected=false;
 let hostMatch=null,visible=null,revision=-1,hostSeq=0,lastHostSeq=0,guestSeq=0,lastGuestSeq=0;
 let outstanding=null,selected=null,target=null,hints=false,offeredCode="",lastSeen=Date.now();
 let updating=false,interval=null,sessionLost=false,needsResync=false;
+// Host-only local persistence. WebXDC sendUpdate broadcasts to EVERY participant
+// and cannot contain the host checkpoint (both hands and ordered draw pile).
+// The sandbox's localStorage is device-local and is NOT a durable cloud backup.
+const localHostKey=()=> "hanafuda:host-save:v1:"+
+ String(window.webxdc?.selfAddr||"local-instance");
+function readHostSave(){
+ try{
+  const raw=window.localStorage?.getItem(localHostKey());
+  if(!raw)return null;
+  const input=JSON.parse(raw);
+  return validateHostCheckpoint(input?.checkpoint);
+ }catch{
+  // Malformed/expired data must never revive a partly corrupted game.
+  return null;
+ }
+}
+function saveHostMatch(){
+ if(mode!=="host"||!hostMatch)return;
+ try{
+  if(!window.localStorage)throw Error("Storage is disabled");
+  const checkpoint=hostMatch.hostCheckpoint();
+  window.localStorage.setItem(localHostKey(),JSON.stringify({
+   version:1,updatedAt:Date.now(),checkpoint
+  }));
+ }catch{
+  showStatus(tx("saveUnavailable"));
+ }
+}
+function refreshResumeButton(){
+ const available=!!readHostSave();
+ $("resumePanel").hidden=!available||!!mode;
+ $("resumeSaved").disabled=!available||!isAvailable();
+}
 const tx=k=>STR[lang][k]||k;
 const yaku=key=>lang==="ja"?(Y[key]?.[0]||key):
  (Y[key]?Y[key][0]+" ("+Y[key][1]+" — "+Y[key][2]+")":key);
@@ -101,7 +142,8 @@ function localize(){
   yourCapturedLabel:"yourCaptured",yourHandLabel:"hand",
   confirm:"confirm",cancel:"cancel",stop:"stop",koi:"koi",
   nextRound:"next",hints:hints?"hintsOn":"hintsOff",
-  guide:"guide",closeGuide:"close",sync:"sync",guideNote:"guideNote"
+  guide:"guide",closeGuide:"close",sync:"sync",guideNote:"guideNote",
+  resumeDescription:"resumeDescription",resumeSaved:"resumeSaved",discardSaved:"discardSaved"
  };
  for(const [id,k] of Object.entries(ids))setText(id,k);
  if(mode===null)$("supportStatus").textContent=isAvailable()?tx("available"):tx("unavailable");
@@ -209,9 +251,10 @@ function showPairing(){
 async function hostConnectIfReady(){
  if(!approved||!peerApproved||connected||!key)return;
  connected=true;$("pairing").hidden=true;
- $("startMatch").hidden=false;
+ $("startMatch").hidden=!!hostMatch;
  showStatus(tx("connected"));
  await sendSecure({kind:"connected"});
+ if(hostMatch)await shareState();
 }
 async function onHostMessage(data){
  if(data?.kind==="ready"){
@@ -229,6 +272,7 @@ async function onHostMessage(data){
     throw Error("Stale turn. Resync and retry.");
    hostMatch.send(1,data.intent);
    lastGuestSeq=seq;
+   saveHostMatch();
    await shareState();
   }catch(e){
    lastGuestSeq=seq;
@@ -266,6 +310,7 @@ async function commit(intent){
  try{
   if(mode==="host"){
    hostMatch.send(0,intent);
+   saveHostMatch();
    await shareState();
   }else{
    outstanding={kind:"intent",seq:++guestSeq,baseRevision:revision,intent};
@@ -393,6 +438,24 @@ function showGuide(){
  $("guideDialog").showModal?.();
 }
 $("lang").addEventListener("change",()=>{lang=$("lang").value;localize();});
+$("resumeSaved").addEventListener("click",()=>{
+ const checkpoint=readHostSave();
+ if(!checkpoint)return refreshResumeButton();
+ try{
+  hostMatch=createAuthoritativeMatch({restore:checkpoint});
+  hostSeq=0;lastGuestSeq=0;lastHostSeq=0;
+  guestSeq=0;outstanding=null;visible=null;revision=-1;
+  $("resumePanel").hidden=true;
+  void begin("host").then(()=>{
+   showStatus(tx("resumeWaiting"));
+  }).catch(e=>showStatus(tx("error")+": "+e.message));
+ }catch(e){showStatus(tx("error")+": "+e.message);}
+});
+$("discardSaved").addEventListener("click",()=>{
+ try{window.localStorage?.removeItem(localHostKey());}
+ catch{showStatus(tx("saveUnavailable"));}
+ refreshResumeButton();
+});
 $("host").addEventListener("click",()=>{void begin("host").catch(e=>showStatus(e.message));});
 $("join").addEventListener("click",()=>{void begin("guest").catch(e=>showStatus(e.message));});
 $("approve").addEventListener("click",()=>{
@@ -406,6 +469,7 @@ $("startMatch").addEventListener("click",()=>{
  if(mode!=="host"||!connected||hostMatch)return;
  try{
   hostMatch=createAuthoritativeMatch({rounds:Number($("rounds").value)});
+  saveHostMatch();
   freshBoard();void shareState();
  }catch(e){showStatus(e.message);}
 });
@@ -420,7 +484,7 @@ $("stop").addEventListener("click",()=>{void commit({kind:"decide",choice:"stop"
 $("koi").addEventListener("click",()=>{void commit({kind:"decide",choice:"koi"});});
 $("nextRound").addEventListener("click",()=>{
  if(mode!=="host"||!hostMatch)return;
- try{hostMatch.nextRound();void shareState();}
+ try{hostMatch.nextRound();saveHostMatch();void shareState();}
  catch(e){showStatus(e.message);}
 });
 $("sync").addEventListener("click",()=>{
@@ -473,4 +537,4 @@ document.addEventListener("visibilitychange",()=>{
  relayout();
 });
 $("host").disabled=!isAvailable();$("join").disabled=!isAvailable();
-localize();
+localize();refreshResumeButton();

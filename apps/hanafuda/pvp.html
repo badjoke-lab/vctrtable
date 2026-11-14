@@ -26,6 +26,14 @@
    <select id="rounds"><option value="3">3</option><option value="6">6</option><option value="12" selected>12</option></select>
   </label>
   <p id="connectionStatus"></p>
+  <div id="resumePanel" class="resume-panel" hidden>
+    <p id="resumeDescription">A locally saved host match was found. Your friend must reopen this same Mini App and verify a new pairing code.</p>
+    <div class="actions">
+      <button id="resumeSaved" class="primary" type="button">Resume saved match</button>
+      <button id="discardSaved" class="secondary" type="button">Discard local save</button>
+    </div>
+  </div>
+
   <a id="fallbackPvE" href="./index.html" class="secondary fallback-pve">Play against computer · PvE</a>
   <div id="pairing" hidden class="pairing">
    <p id="pairingText">Compare this code with your friend:</p>
