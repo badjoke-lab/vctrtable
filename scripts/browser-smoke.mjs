@@ -46,6 +46,42 @@ let browser;
 try{
  browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
  const errors=[];
+ // A second, NORMAL-MOTION browser proves choreography is visible to
+ // actual players. The bulk geometry suite uses reduced motion for speed.
+ {
+  const context=await browser.newContext({viewport:{width:360,height:740},
+   isMobile:true,hasTouch:true,deviceScaleFactor:1,reducedMotion:"no-preference"});
+  const page=await context.newPage();
+  page.on("pageerror",error=>errors.push("solo-motion: "+error.message));
+  await page.goto(base+"/",{waitUntil:"networkidle"});
+  await page.locator("#qa-practice-details summary").click();
+  await page.locator("#qa-seats").fill("6");
+  await page.locator("#qa-seconds").fill("0");
+  await page.locator("#qa-form button[type=submit]").click();
+  await page.locator("#qa-table").waitFor({state:"visible"});
+  await page.waitForTimeout(125);
+  assert.equal(await page.locator("#qa-felt-action").textContent(),"NEW HAND",
+   "Opening deal must remain on screen long enough to see");
+  const activeCards=await page.locator("#qa-hero-cards img.vcard").evaluateAll(cards=>
+   cards.filter(c=>c.getAnimations().some(a=>a.playState==="running")).length);
+  assert.ok(activeCards>=1,
+   "Actual non-reduced player must see moving deal animation");
+  const botActions=()=>page.locator("#qa-recent-actions .qa-action-tick")
+   .filter({hasText:/Seat [2-6] · (?:CALL|CHECK|RAISE)/}).count();
+  const start=Date.now();
+  if(await page.locator("#qa-check").isEnabled())await page.locator("#qa-check").click();
+  else if(await page.locator("#qa-call").isEnabled())await page.locator("#qa-call").click();
+  await page.waitForTimeout(225);
+  assert.equal(await botActions(),0,
+   "Scripted bots must not execute a whole table round instantaneously");
+  await page.waitForFunction(()=>
+   [...document.querySelectorAll("#qa-recent-actions .qa-action-tick")].some(x=>
+    /Seat [2-6] · (CALL|CHECK|RAISE)/.test(x.textContent)),{timeout:5000});
+  assert.ok(Date.now()-start>=560,"Computer actions must be visibly paced");
+  assert.equal(await page.locator("#qa-felt-callout").isVisible(),true);
+  await page.screenshot({path:path.join(dist,"poker-solo-motion-360.png")});
+  await context.close();
+ }
  for(const view of [
   {width:430,height:932,seats:6},{width:390,height:844,seats:6},{width:360,height:740,seats:6},
   {width:320,height:640,seats:6},{width:320,height:640,seats:2}
