@@ -231,6 +231,34 @@ try{
   actions++;
   await sleep(600);
  }
+
+ // Vector v0.5 browser/PWA restoration: pagehide invalidates a realtime
+ // channel, and a persisted pageshow must join again and recover the session.
+ const guestStateBefore=await evaluate2("document.getElementById('roundLabel').textContent");
+ await evaluate2("window.dispatchEvent(new PageTransitionEvent('pagehide',{persisted:true}))");
+ await evaluate2("window.dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true}))");
+ await until(async()=>{
+  const packets=await evaluate2("window.__wire.filter(x=>{try{return JSON.parse(new TextDecoder().decode(new Uint8Array(x))).kind==='sealed'}catch{return false}}).length");
+  return packets>=5;
+ },"guest restores encrypted channel after BFCache",8000);
+ if(await evaluate2("document.getElementById('roundLabel').textContent")!==guestStateBefore)
+  throw Error("PvP round was reset by BFCache return");
+ await evaluate("window.dispatchEvent(new PageTransitionEvent('pagehide',{persisted:true}))");
+ await evaluate("window.dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true}))");
+ await until(async()=>{
+  const isAlive=await evaluate("!document.getElementById('match').hidden");
+  const guestAlive=await evaluate2("!document.getElementById('match').hidden");
+  return isAlive&&guestAlive;
+ },"host returns from BFCache with same match",8000);
+ // v0.5 landscape and desktop width changes must recompute the card rows
+ // without discarding a game or revealing hidden opponent hands.
+ await run2("Emulation.setDeviceMetricsOverride",{
+  width:740,height:420,deviceScaleFactor:1,mobile:false
+ });
+ await evaluate2("window.dispatchEvent(new Event('resize'))");
+ const rowCount=await evaluate2("document.getElementById('field').style.getPropertyValue('--rows')");
+ if(!/^[2-9]\d*$/.test(rowCount))throw Error("Landscape field grid did not resize");
+
  if(actions<3)throw Error("Real connected browser pair could not progress at least three actions");
  const shot=await run("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
  await fsp.writeFile(path.join(output,"pvp-host.png"),Buffer.from(shot.data,"base64"));
