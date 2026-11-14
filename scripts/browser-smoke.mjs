@@ -133,6 +133,8 @@ try{
   assert.equal(await page.locator("#qa-hero-cards .vcard").count(),2);
   assert.match(await page.locator("#qa-top-story-title").textContent(),/^(NEW HAND|CALL|CHECK|RAISE|FLOP|TURN|RIVER)$/,
     "The first viewport must show the current real game event");
+  assert.doesNotMatch(await page.locator("#qa-top-story-detail").textContent(),/[\u3040-\u30ff\u4e00-\u9fff]/,
+    "English narration should not mix Japanese into the first viewport");
   assert.match(await page.locator("#qa-story-title").textContent(),/^(NEW HAND|CALL|CHECK|RAISE|FLOP|TURN|RIVER)$/,
     "Solo practice must identify the current engine state");
   assert.equal(await page.locator("#qa-hero-cards img.vcard.is-dealt").count(),2,
