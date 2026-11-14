@@ -34,11 +34,23 @@ try{
  for(const label of ["alpha","beta"]){
   const ctx=await browser.newContext({viewport:{width:360,height:740},isMobile:true,hasTouch:true});
   await ctx.addInitScript(name=>{
-   const out=[];window.__probeSim={out,receiver:null};
+   const out=[],rtOut=[];
+   window.__probeSim={out,receiver:null,rtOut,rtListener:null,rtJoined:false};
    window.webxdc={
     selfAddr:name,selfName:name,sendUpdateInterval:1000,sendUpdateMaxSize:128000,
     sendUpdate(packet){out.push(packet);return Promise.resolve();},
-    setUpdateListener(listener){window.__probeSim.receiver=listener;return Promise.resolve();}
+    setUpdateListener(listener){window.__probeSim.receiver=listener;return Promise.resolve();},
+    joinRealtimeChannel(){
+     window.__probeSim.rtJoined=true;
+     return {
+      setListener(listener){window.__probeSim.rtListener=listener;},
+      send(bytes){
+       if(!window.__probeSim.rtJoined)throw Error("left channel");
+       rtOut.push(Array.from(bytes));
+      },
+      leave(){window.__probeSim.rtJoined=false;window.__probeSim.rtListener=null;}
+     };
+    }
    };
   },label);
   const page=await ctx.newPage();
@@ -84,9 +96,58 @@ try{
  assert.equal(await beta.locator("#probe-ack").isEnabled(),true);
  await beta.locator("#probe-ack").click();await flush();
  await alpha.waitForFunction(()=>document.getElementById("probe-roundtrip").textContent.includes("Public round trip received"));
+ // New Vector 0.5 realtime API is a separate ephemeral byte channel.
+ // It must not send through shared persisted WebXDC updates or be treated as
+ // authenticated proof of Vector account identity.
+ const flushRealtime=async()=>{
+  let count=0;
+  for(const from of peers){
+   const packets=await from.page.evaluate(()=>window.__probeSim.rtOut.splice(0));
+   for(const bytes of packets){
+    const data=JSON.parse(new TextDecoder().decode(Uint8Array.from(bytes)));
+    assert.equal(data.app,"vctrtable-transport-diagnostic");
+    for(const secret of ["hole","deck","nsec","ownHole","privateKey","token","npub"]){
+     assert.equal(JSON.stringify(data).includes('"'+secret+'"'),false,"Realtime leak: "+secret);
+    }
+    assert.ok(bytes.length<=1024);
+    for(const to of peers){
+     if(to.label===from.label)continue;
+     await to.page.evaluate(b=>{
+      if(window.__probeSim.rtJoined&&window.__probeSim.rtListener)
+       window.__probeSim.rtListener(Uint8Array.from(b));
+     },bytes);
+    }
+    count++;
+   }
+  }
+  return count;
+ };
+ assert.equal(await alpha.locator("#probe-rt-send").isEnabled(),false);
+ await alpha.locator("#probe-rt-join").click();
+ await beta.locator("#probe-rt-join").click();
+ assert.equal(await alpha.locator("#probe-rt-send").isEnabled(),true);
+ assert.equal(await beta.locator("#probe-rt-ack").isEnabled(),false);
+ const beforeHistory=history.length;
+ await alpha.locator("#probe-rt-send").click();
+ assert.equal(await flushRealtime(),1,"Realtime ping not emitted");
+ await beta.waitForFunction(()=>!document.getElementById("probe-rt-ack").disabled);
+ assert.match(await beta.locator("#probe-rt-inbound").textContent(),/Realtime test received/);
+ await beta.locator("#probe-rt-ack").click();
+ assert.equal(await flushRealtime(),1,"Realtime acknowledgement not emitted");
+ await alpha.waitForFunction(()=>
+  document.getElementById("probe-rt-roundtrip").textContent.includes("Realtime round trip received"));
+ const rtResult=await alpha.locator("#probe-rt-roundtrip").textContent();
+ assert.match(rtResult,/unauthenticated/);
+ assert.equal(history.length,beforeHistory,
+  "Realtime packets were wrongly persisted as WebXDC shared history");
+ await alpha.locator("#probe-rt-leave").click();
+ assert.equal(await alpha.locator("#probe-rt-send").isEnabled(),false,
+  "Leaving realtime should disable all realtime sends");
+ await alpha.locator("#probe-rt-join").click();
+ assert.equal(await alpha.locator("#probe-rt-send").isEnabled(),true);
  assert.deepEqual(errors,[]);
  for(const c of peers)await c.ctx.close();
- console.log("WebXDC public two-peer diagnostic smoke PASS: manual ping/ack, serial gaps, strict no-secret envelopes, replay/dedup and second run");
+ console.log("WebXDC public two-peer diagnostic smoke PASS: manual ping/ack, serial gaps, strict no-secret envelopes, replay/dedup, second run and Vector 0.5 realtime ping/ack");
 }finally{
  await browser?.close();
  await new Promise(resolve=>server.close(resolve));
