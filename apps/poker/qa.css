@@ -968,3 +968,173 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
  color:#f5d6a1;background:#483b29;white-space:nowrap;
 }
 .qa-main .qa-top-story-line strong{min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+/* Solo play — real mobile game table, not boxed development seat cards.
+   All changes are presentation-only and preserve the validated PNG cards. */
+.qa-main .poker-arena{
+ background:radial-gradient(ellipse at 50% 5%,#1e3335,#091719 72%)!important;
+ border:1px solid #3b534c!important;
+ padding:8px 6px 13px!important;border-radius:23px!important;
+ box-shadow:0 16px 42px #0007,inset 0 1px 0 #87a49d28!important;
+}
+.qa-main .felt{
+ border:7px solid #82613a!important;
+ outline:3px solid #2b2017!important;outline-offset:-9px!important;
+ border-radius:46% / 41%!important;
+ background:
+ radial-gradient(ellipse at 49% 43%,#146a4a 0%,#10533e 44%,#073829 83%,#052c24 100%)!important;
+ box-shadow:inset 0 0 0 2px #e2bd745a,inset 0 0 28px #031b16af,
+  0 0 0 4px #2b2420,0 9px 27px #0007!important;
+}
+.qa-main .felt-mark{font-size:92px;color:#3b936f20;top:28%}
+.qa-main .poker-seat{
+ box-sizing:border-box;
+ width:clamp(73px,24vw,91px);min-width:0;
+ min-height:72px;
+ padding:5px 5px 4px;
+ border-radius:13px;
+ background:linear-gradient(160deg,#183b35f7,#092822f9)!important;
+ border:1px solid #64917b!important;
+ box-shadow:0 8px 18px #00150f9c,inset 0 1px 0 #a0ccaf21!important;
+ backdrop-filter:none;
+ display:flex;flex-direction:column;align-items:center;gap:2px;
+}
+.qa-main .poker-seat.active{
+ border:1px solid #f2d184!important;
+ box-shadow:0 0 0 2px #e8be6368,0 3px 16px #000a!important;
+}
+.qa-main .poker-seat.winner{
+ border-color:#f2d184!important;box-shadow:0 0 0 2px #f6cc796e,0 5px 19px #0009!important;
+}
+.qa-main .poker-seat-avatar{
+ position:absolute;left:5px;top:5px;
+ width:19px;height:19px;border-radius:50%;
+ display:flex;align-items:center;justify-content:center;
+ font-family:Georgia,serif;font-size:12px;font-weight:800;
+ color:#ffdf9a;background:linear-gradient(140deg,#5c6551,#203c39);
+ border:1px solid #bc976a;box-shadow:0 2px 5px #0007;
+}
+.qa-main .pos-top .poker-seat-avatar,.qa-main .pos-mid-right .poker-seat-avatar{
+ background:linear-gradient(140deg,#6f5869,#383442);color:#ffe5e3;
+}
+.qa-main .pos-top-right .poker-seat-avatar{background:linear-gradient(140deg,#5a7285,#284459)}
+.qa-main .poker-seat-name{
+ width:100%;max-width:100%;
+ padding:3px 0 0 20px;min-height:19px;box-sizing:border-box;
+ text-align:left;color:#f5f7ed;font-size:10px;letter-spacing:.01em;
+ white-space:nowrap;text-overflow:ellipsis;overflow:hidden;line-height:1.25;
+}
+.qa-main .poker-seat-stack{font-size:12px;line-height:1.15;color:#e9d8aa;margin:0;font-weight:850;font-variant-numeric:tabular-nums}
+.qa-main .poker-seat-tags{display:flex;justify-content:center;gap:2px;min-height:0;margin:0}
+.qa-main .poker-seat-badge{font-size:8px;line-height:1.1;border-radius:3px;padding:1px 4px;margin:0}
+.qa-main .poker-seat-cards{min-height:23px;display:flex;align-items:center;justify-content:center;gap:2px;margin:1px 0 0}
+.qa-main .poker-seat img.vcard.vcard-small{
+ width:17px!important;height:24px!important;flex:0 0 17px!important;
+ border-radius:2px!important;box-shadow:0 2px 4px #0009!important;
+}
+.qa-main .poker-seat-card-index:not(.hand-rank){font-size:9px;min-height:0}
+.qa-main .poker-seat-bet{
+ color:#f4cc87;font-size:10px;font-weight:850;line-height:1.25;
+ max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+}
+.qa-main .poker-seat.pos-top-left{left:19%;top:17%}
+.qa-main .poker-seat.pos-top{left:50%;top:16%}
+.qa-main .poker-seat.pos-top-right{left:81%;top:17%}
+.qa-main .poker-seat.pos-mid-left{left:8%;top:73%;width:58px!important;max-width:58px;padding:5px 2px!important}
+.qa-main .poker-seat.pos-mid-right{left:92%;top:73%;width:58px!important;max-width:58px;padding:5px 2px!important}
+.qa-main .pos-mid-left .poker-seat-name,.qa-main .pos-mid-right .poker-seat-name{padding-left:0;text-align:center;padding-top:22px}
+.qa-main .pos-mid-left .poker-seat-avatar,.qa-main .pos-mid-right .poker-seat-avatar{left:50%;transform:translateX(-50%);top:4px}
+.qa-main .pos-mid-left img.vcard.vcard-small,.qa-main .pos-mid-right img.vcard.vcard-small{width:15px!important;flex-basis:15px!important;height:21px!important}
+.qa-main .pos-mid-left .poker-seat-stack,.qa-main .pos-mid-right .poker-seat-stack{font-size:11px}
+.qa-main .poker-center{top:36%;width:94%;gap:6px;z-index:1}
+.qa-main #qa-pot{
+ background:linear-gradient(160deg,#182e25,#0a201b);
+ padding:5px 17px;border:1px solid #c4a069;
+ border-radius:99px;box-shadow:0 6px 17px #0007;
+ color:#ffdc95;font-size:17px;font-variant-numeric:tabular-nums;
+}
+.qa-main .street-label{color:#e9d6a5;font-weight:800;letter-spacing:.2em;font-size:10px}
+.qa-main .community-cards{gap:4px;align-items:center;justify-content:center}
+.qa-main .community-cards img.vcard{
+ width:clamp(34px,10.6vw,44px)!important;height:auto!important;
+ flex:0 0 clamp(34px,10.6vw,44px)!important;
+ border-radius:3px!important;box-shadow:0 4px 9px #0008!important;
+}
+.qa-main .community-cards .vcard-empty{
+ width:clamp(34px,10.6vw,44px)!important;
+ flex:0 0 clamp(34px,10.6vw,44px)!important;
+ border:1px solid #a7c1a17a;background:#06443055;
+}
+.qa-main .hero-spot{bottom:2.2%;width:59%;gap:5px}
+.qa-main .hero-hand{gap:5px;isolation:isolate}
+.qa-main .hero-hand img.vcard{
+ width:clamp(58px,18.6vw,78px)!important;height:auto!important;
+ flex:0 0 clamp(58px,18.6vw,78px)!important;
+ border-radius:4px!important;box-shadow:0 7px 19px #000a!important;
+}
+.qa-main .hero-info{
+ background:linear-gradient(140deg,#132923,#091d1b)!important;
+ border:1px solid #d5ac68!important;
+ box-shadow:0 4px 15px #0009!important;
+ color:#fff7d9;min-width:0;width:min(100%,235px);gap:8px;min-height:29px;
+ padding:5px 9px;border-radius:999px;font-size:11px;
+}
+.qa-main #qa-my-stack{font-weight:900;color:#f7d287;font-variant-numeric:tabular-nums}
+.qa-main #qa-timer{font-size:12px;color:#9cf5c1}
+.qa-main .qa-felt-callout{
+ position:absolute;left:50%;top:63%;z-index:5;
+ transform:translate(-50%,-50%);min-width:98px;max-width:51%;
+ border:1px solid #d9bc83;border-radius:9px;
+ background:linear-gradient(125deg,#202c25ed,#182a24fa);
+ padding:6px 9px;text-align:center;
+ box-shadow:0 5px 18px #000a;pointer-events:none;
+ display:flex;align-items:center;flex-direction:column;gap:2px;
+}
+.qa-main .qa-felt-callout[hidden]{display:none!important}
+.qa-main .qa-felt-callout span{
+ display:block;color:#f4d28c;font-size:10px;font-weight:950;letter-spacing:.095em;
+ white-space:nowrap;
+}
+.qa-main .qa-felt-callout strong{
+ display:block;max-width:100%;font-size:10px;color:#e9f5e6;
+ font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.qa-main .qa-felt-callout[data-kind="street"]{
+ background:linear-gradient(130deg,#74552c,#1a3c30);
+ border-color:#f3d68e;
+}
+.qa-main .qa-felt-callout[data-kind="settlement"]{
+ background:linear-gradient(130deg,#8b6233,#25382c);
+}
+.qa-main .qa-felt-callout.is-on{
+ animation:solo-felt-cue 660ms cubic-bezier(.17,.8,.18,1) both;
+}
+.qa-main .qa-chip-flight{position:absolute;inset:0;z-index:6;overflow:visible;pointer-events:none}
+.qa-main .qa-flying-chip{
+ position:absolute;display:block;width:20px;height:20px;
+ display:flex;justify-content:center;align-items:center;
+ border:3px dashed #fff0b1;border-radius:50%;
+ background:radial-gradient(circle,#c02a35 0 60%,#8c1e31 61% 100%);
+ font-size:8px;color:#f0c79b;box-shadow:0 3px 7px #0009;
+ will-change:transform,opacity;
+}
+@keyframes solo-felt-cue{
+ from{opacity:.2;filter:brightness(1.8)}
+ 50%{opacity:1;filter:brightness(1.45)}
+ to{opacity:1;filter:none}
+}
+/* Keep a small portion of the real table visible above the fixed action
+   dock on short Android WebViews; never enlarge the cards over other seats. */
+@media(max-width:370px){
+ .qa-main .felt{height:clamp(350px,113vw,410px)}
+ .qa-main .poker-seat{width:clamp(70px,23vw,82px)}
+ .qa-main .poker-seat.pos-top-left{left:18%}
+ .qa-main .poker-seat.pos-top-right{left:82%}
+ .qa-main .community-cards img.vcard,
+ .qa-main .community-cards .vcard-empty{width:clamp(33px,10.6vw,39px)!important;flex-basis:clamp(33px,10.6vw,39px)!important}
+ .qa-main .qa-felt-callout{max-width:56%;top:61%;padding:4px 7px}
+}
+@media(prefers-reduced-motion:reduce){
+ .qa-main .qa-felt-callout.is-on{animation:none!important}
+ .qa-main .qa-flying-chip{display:none!important}
+}
