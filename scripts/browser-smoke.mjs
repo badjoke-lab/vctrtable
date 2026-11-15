@@ -630,6 +630,28 @@ try{
   await page.locator("#qa-seconds").fill("0");
   await page.locator("#qa-form button[type=submit]").click();
   await page.locator("#qa-table").waitFor({state:"visible"});
+  await page.screenshot({path:path.join(dist,"poker-desktop-live-"+view.width+".png"),fullPage:true});
+  assert.equal(await page.locator("#qa-top-story-title").isVisible(),true);
+  assert.equal(await page.locator(".qa-solo-label").textContent(),"SOLO");
+  assert.equal(await page.locator("#qa-players .poker-seat-avatar").count(),5);
+  const live=await page.evaluate(()=>{
+   const r=(node)=>{const q=node.getBoundingClientRect();return {left:q.left,right:q.right,top:q.top,bottom:q.bottom,w:q.width,h:q.height};};
+   const select=s=>r(document.querySelector(s));
+   return {felt:select(".felt"),hero:select(".hero-spot"),dock:select("#qa-controls"),
+    seats:[...document.querySelectorAll("#qa-players .poker-seat")].map(r),
+    hand:[...document.querySelectorAll("#qa-hero-cards img")].map(r),
+    board:[...document.querySelectorAll("#qa-board-cards > *")].map(r)};
+  });
+  assert.ok(live.seats.every(x=>x.w<=100&&x.h<=110),
+   "Desktop still renders large prototype boxes: "+JSON.stringify({view,live}));
+  const overlap=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*
+   Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));
+  for(const seat of live.seats)for(const card of [...live.hand,...live.board])
+   assert.ok(overlap(seat,card)<=1,"Desktop seat/card overlap: "+JSON.stringify({view,live}));
+  for(const card of live.board)for(const own of live.hand)
+   assert.ok(overlap(card,own)<=1,"Desktop board/hand overlap: "+JSON.stringify({view,live}));
+  assert.ok(live.felt.h<=620,"Desktop still wastes height: "+JSON.stringify({view,live}));
+  assert.ok(overlap(live.dock,live.hero)<=1,"Desktop actions obstruct own hand: "+JSON.stringify({view,live}));
   let turns=0;
   while(!await page.locator("#qa-end").isVisible()){
    await page.waitForFunction(()=>
