@@ -1310,6 +1310,7 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
    Existing mobile 2–6-seat layout remains untouched below 800px. */
 @media (min-width:800px){
  .qa-main{
+  width:100%!important; /* override old 680px width, not just its max-width */
   max-width:1100px!important;
   padding:17px clamp(16px,2vw,28px) 26px!important;
  }
@@ -1365,7 +1366,7 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
   left:87%!important;top:75%!important;
  }
  .qa-main #qa-table:not(.chat-stage) .poker-center{
-  top:33%!important;width:90%!important;gap:9px;
+  top:35%!important;width:90%!important;gap:9px;
  }
  .qa-main #qa-table:not(.chat-stage) .community-cards img.vcard,
  .qa-main #qa-table:not(.chat-stage) .community-cards .vcard-empty{
