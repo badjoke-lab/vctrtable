@@ -57,6 +57,8 @@ jobs:
           path: |
             dist/poker-mobile-*.png
             dist/poker-landing-*.png
+            dist/poker-desktop-live-*.png
+            dist/poker-desktop-showdown-*.png
             dist/poker-shared-lobby-*.png
             dist/poker-pvp-two-clients-*.png
             dist/poker-pvp-felt-*.png
