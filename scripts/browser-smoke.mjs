@@ -617,7 +617,7 @@ try{
  // Desktop regression from 2026-10-26 Vector screenshot: the result
  // containers and buttons must stay in normal top-to-bottom document flow.
  for(const view of [{width:960,height:800},{width:1440,height:900}]){
-  const ctx=await browser.newContext({viewport:view,deviceScaleFactor:1});
+  const ctx=await browser.newContext({viewport:view,deviceScaleFactor:1,reducedMotion:"reduce"});
   await ctx.addInitScript(()=>{Math.random=()=>0.5;});
   const page=await ctx.newPage();
   page.on("pageerror",error=>errors.push("desktop-"+view.width+": "+error.message));
