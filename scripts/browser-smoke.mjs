@@ -651,6 +651,8 @@ try{
   for(const card of live.board)for(const own of live.hand)
    assert.ok(overlap(card,own)<=1,"Desktop board/hand overlap: "+JSON.stringify({view,live}));
   assert.ok(live.felt.h<=620,"Desktop still wastes height: "+JSON.stringify({view,live}));
+  assert.ok(live.dock.left>=live.felt.right+7,
+   "Desktop betting controls must sit alongside the felt: "+JSON.stringify({view,live}));
   assert.ok(overlap(live.dock,live.hero)<=1,"Desktop actions obstruct own hand: "+JSON.stringify({view,live}));
   let turns=0;
   while(!await page.locator("#qa-end").isVisible()){
@@ -709,8 +711,10 @@ try{
    "Desktop action buttons must stay compact: "+JSON.stringify(layout));
   assert.ok(layout.end.bottom<=layout.history.top+2,
    "History or another section overlaps the result panel: "+JSON.stringify(layout));
-  assert.ok(layout.main.w<=682&&layout.overflow<=2,
-   "Desktop table must not overflow or stretch across entire browser: "+JSON.stringify(layout));
+  assert.ok(layout.main.w<=1100&&layout.main.w>=800&&layout.overflow<=2,
+   "Desktop stage should fit viewport without retaining narrow 520px QA column: "+JSON.stringify(layout));
+  assert.ok(layout.end.x>layout.felt.right+7,
+   "Desktop result must appear alongside table: "+JSON.stringify(layout));
   await page.screenshot({path:path.join(dist,"poker-desktop-showdown-"+view.width+".png"),fullPage:true});
   await ctx.close();
  }
