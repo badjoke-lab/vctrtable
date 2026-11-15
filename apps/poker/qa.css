@@ -1304,3 +1304,142 @@ img.vcard{border-radius:6% / 4.3%!important;overflow:hidden!important}
   animation:none!important;filter:none!important;transform:none!important;
  }
 }
+
+/* Desktop game stage. A desktop window is NOT a stretched 520px phone:
+   keep the board as the main visual surface and betting in its own rail.
+   Existing mobile 2–6-seat layout remains untouched below 800px. */
+@media (min-width:800px){
+ .qa-main{
+  max-width:1100px!important;
+  padding:17px clamp(16px,2vw,28px) 26px!important;
+ }
+ .qa-main #qa-table:not(.chat-stage){
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) clamp(228px,25vw,270px);
+  grid-template-areas:
+   "meta meta"
+   "table side"
+   "info side"
+   "chat chat"
+   "history history"
+   "storage storage"
+   "tools tools";
+  column-gap:clamp(12px,1.6vw,20px);
+  row-gap:9px;
+  align-items:start;
+ }
+ .qa-main #qa-table:not(.chat-stage) > .qa-meta{
+  grid-area:meta;
+  margin:3px 2px 4px!important;
+ }
+ .qa-main #qa-table:not(.chat-stage) > #qa-chat-hud{
+  display:none!important;
+ }
+ .qa-main #qa-table:not(.chat-stage) > .poker-arena{
+  grid-area:table;
+  min-width:0;
+  padding:10px!important;
+  border-radius:22px!important;
+ }
+ .qa-main #qa-table:not(.chat-stage) .felt{
+  height:clamp(470px,52vw,560px)!important;
+  border-radius:45% / 40%!important;
+ }
+ .qa-main #qa-table:not(.chat-stage) .poker-seat{
+  width:clamp(82px,8.8vw,100px)!important;
+  height:clamp(86px,9vw,108px)!important;
+ }
+ .qa-main #qa-table:not(.chat-stage) .poker-seat.pos-top-left{
+  left:19%!important;top:16%!important;
+ }
+ .qa-main #qa-table:not(.chat-stage) .poker-seat.pos-top{
+  left:50%!important;top:16%!important;
+ }
+ .qa-main #qa-table:not(.chat-stage) .poker-seat.pos-top-right{
+  left:81%!important;top:16%!important;
+ }
+ .qa-main #qa-table:not(.chat-stage) .poker-seat.pos-mid-left{
+  left:13%!important;top:75%!important;
+ }
+ .qa-main #qa-table:not(.chat-stage) .poker-seat.pos-mid-right{
+  left:87%!important;top:75%!important;
+ }
+ .qa-main #qa-table:not(.chat-stage) .poker-center{
+  top:33%!important;width:90%!important;gap:9px;
+ }
+ .qa-main #qa-table:not(.chat-stage) .community-cards img.vcard,
+ .qa-main #qa-table:not(.chat-stage) .community-cards .vcard-empty{
+  width:clamp(48px,5.5vw,64px)!important;
+  flex:0 0 clamp(48px,5.5vw,64px)!important;
+ }
+ .qa-main #qa-table:not(.chat-stage) .community-cards{gap:7px}
+ .qa-main #qa-table:not(.chat-stage) .hero-spot{
+  bottom:2.6%!important;width:47%!important;
+ }
+ .qa-main #qa-table:not(.chat-stage) .hero-hand img.vcard{
+  width:clamp(72px,7.4vw,94px)!important;
+  flex:0 0 clamp(72px,7.4vw,94px)!important;
+ }
+ .qa-main #qa-table:not(.chat-stage) #qa-info{
+  grid-area:info;margin:0!important;min-width:0;
+ }
+ .qa-main #qa-table:not(.chat-stage) #qa-controls{
+  grid-area:side;
+  position:sticky!important;top:12px!important;bottom:auto!important;
+  left:auto!important;right:auto!important;transform:none!important;
+  width:100%!important;max-width:none!important;
+  box-sizing:border-box;
+  align-self:start;
+  border-radius:16px!important;
+  padding:13px!important;
+  margin:0!important;
+  box-shadow:0 12px 28px #0008!important;
+  backdrop-filter:none!important;
+ }
+ .qa-main #qa-table:not(.chat-stage) #qa-controls .action-primary{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:9px!important;
+ }
+ .qa-main #qa-table:not(.chat-stage) #qa-controls .action-primary button{
+  min-height:57px!important;
+  font-size:14px!important;
+  padding:10px 4px!important;
+  border-radius:10px!important;
+ }
+ .qa-main #qa-table:not(.chat-stage) #qa-controls .qa-raise-details:not([hidden]){
+  margin-top:12px!important;
+ }
+ .qa-main #qa-table:not(.chat-stage) #qa-end{
+  grid-area:side;
+  margin:0!important;
+  min-width:0;
+ }
+ .qa-main #qa-table:not(.chat-stage) #qa-chat{
+  grid-area:chat;min-width:0;
+ }
+ .qa-main #qa-table:not(.chat-stage) #qa-history-panel{grid-area:history}
+ .qa-main #qa-table:not(.chat-stage) #qa-storage-panel{grid-area:storage}
+ .qa-main #qa-table:not(.chat-stage) > .qa-toolrow{grid-area:tools}
+ .qa-main #qa-table:not(.chat-stage) #qa-chat-toast:not([hidden]){
+  position:fixed;
+ }
+ .qa-main #qa-table:not(.chat-stage) #qa-end .qa-result-hero{
+  flex-direction:column;align-items:start;gap:5px;
+ }
+ .qa-main #qa-table:not(.chat-stage) #qa-end .qa-result-subline{
+  flex-direction:column;gap:6px;
+ }
+ .qa-main #qa-table:not(.chat-stage) #qa-end .qa-end-actions{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ }
+ .qa-main #qa-table:not(.chat-stage) #qa-end .qa-end-actions button{
+  font-size:11px!important;min-height:44px!important;
+ }
+ .qa-main #qa-table:not(.chat-stage) #qa-end #qa-result{
+  font-size:11px!important;
+ }
+ /* The mobile fixed-dock spacer otherwise leaves a large blank PC footer. */
+ .qa-main:not(.qa-inline-reading) #qa-table:not(.chat-stage) ~ footer{
+  margin-top:8px;
+ }
+}
