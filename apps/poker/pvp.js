@@ -11,6 +11,7 @@ import {serializeSession,restoreSession,sessionAction} from "./session.js";
 import {reconcileTurnClock,timeoutAction} from "./pvp-turn-clock.js";
 import {SeatActionOutbox} from "./pvp-action-outbox.js";
 import {describePokerTransition,stageFor,POKER_STAGES} from "./pvp-story.js";
+import {pvpSetupProgress} from "./pvp-setup-progress.js";
 import {saveHostCheckpoint,loadHostCheckpoint} from "./pvp-host-checkpoint.js";
 import {makeCard} from "./cards.js";
 const $=id=>document.getElementById(id),api=window.webxdc;
@@ -19,7 +20,7 @@ const live=Boolean(api?.selfAddr&&typeof api.sendUpdate==="function"&&
 const me=live?api.selfAddr:"",updates=new Map(),peers=new Map(),seen=new Set();
 let keys=null,hostSession=null,game=null,hole=null,seq=0,turnClock=null,queue=Promise.resolve();
 let keySent=false,pending=false,errorMessage="",hostRecovered=false,hostProposalId=null;
-let activeTableId=null,outboundInFlight=false,lastPaintedRevision=null;
+let activeTableId=null,outboundInFlight=false,lastPaintedRevision=null,lastSetupStamp="";
 const actionOutbox=new SeatActionOutbox();
 function room(){
  return deriveSharedTable([...updates.values()].map(x=>({event:x.payload,serial:x.serial}))
@@ -30,6 +31,52 @@ const unanimous=r=>Boolean(r.table&&r.seats.has(me)&&r.seats.size>=2&&
 function draw(motion=null){
  const r=room(),host=r.table?.host===me;
  const root=document.querySelector(".pvp");
+ const readiness=pvpSetupProgress({
+  connected:live,hasTable:Boolean(r.table),seated:r.seats.has(me),
+  seatCount:r.seats.size,readyCount:r.ready.size,
+  rulesApproved:Boolean(r.proposal&&r.proposal.approvals.size===r.seats.size),
+  keyCount:[...r.seats.keys()].filter(id=>peers.has(id)).length,
+  host,gameActive:Boolean(game)
+ });
+ // This is onboarding only. Do NOT use it as a new action authorization gate.
+ // The signed session and existing unanimous lobby rules remain authoritative.
+ const stamp=JSON.stringify(readiness.steps.map(s=>s.complete))+":"+readiness.steps.map(s=>s.progress||"").join("|")+":"+host;
+ if(stamp!==lastSetupStamp){
+  lastSetupStamp=stamp;
+  const list=$("pvp-setup-steps");
+  list.replaceChildren();
+  for(const step of readiness.steps){
+   const item=document.createElement("li");
+   item.className="pvp-setup-step"+(step.complete?" is-done":
+    readiness.next?.id===step.id?" is-next":"");
+   item.dataset.step=step.id;
+   item.dataset.status=step.complete?"done":readiness.next?.id===step.id?"next":"pending";
+   const status=document.createElement("span");
+   status.className="pvp-step-status";
+   status.textContent=step.complete?"✓":readiness.next?.id===step.id?"➜":"·";
+   status.setAttribute("aria-hidden","true");
+   const body=document.createElement("div");
+   body.className="pvp-step-body";
+   const heading=document.createElement("strong");
+   heading.textContent=step.name+" / "+step.ja;
+   const detail=document.createElement("span");
+   detail.className="pvp-step-detail";
+   detail.textContent=step.complete?"Completed / 完了":
+    step.instruction+" / "+step.instructionJa;
+   body.append(heading,detail);
+   if(step.progress){
+    const count=document.createElement("em");
+    count.className="pvp-step-count";
+    count.textContent=step.progress;
+    body.append(count);
+   }
+   item.append(status,body);list.append(item);
+  }
+ }
+ $("pvp-setup-count").textContent=readiness.completed+" / "+readiness.total;
+ $("pvp-next-action").textContent=readiness.next?
+  "NEXT: "+readiness.next.instruction+" / "+readiness.next.instructionJa:
+  "Table is active / 対戦中";
  root.classList.toggle("is-playing",Boolean(game));
  root.classList.toggle("is-betting",game?.status==="betting");
  root.classList.toggle("is-complete",game?.status==="complete");
