@@ -303,3 +303,66 @@ body{background:radial-gradient(ellipse at 48% -20%,#17302b 0%,#0b1518 50%,#070d
  .pvp-own-cards img.vcard.is-dealt,#pvp-pot.is-bumping,
  .pvp-seat.is-updated .pvp-avatar{animation:none!important;transform:none!important;filter:none!important}
 }
+
+/* Multiplayer onboarding — local public state ONLY, never identity proof. */
+.pvp-setup-guide{
+ margin:12px 0 14px;padding:14px;
+ background:linear-gradient(135deg,#142c28 0%,#102126 100%);
+ border:1px solid #3d6355;border-radius:13px;color:#dceee0;
+}
+.pvp.is-playing .pvp-setup-guide{display:none}
+.pvp-setup-heading{
+ display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.pvp-setup-heading small{
+ display:block;font-size:10px;letter-spacing:.14em;color:#d9bc7f;font-weight:800;
+}
+.pvp-setup-heading h2{margin:4px 0 0;font-size:20px;line-height:1.15}
+#pvp-setup-count{
+ color:#ffdc9b;background:#1e3b31;border:1px solid #608064;
+ border-radius:99px;white-space:nowrap;padding:5px 10px;
+ font-variant-numeric:tabular-nums;font-weight:800;
+}
+.pvp-next-action{
+ margin:11px 0!important;padding:10px 12px;
+ background:#22483b;border-left:3px solid #d7b16d;
+ border-radius:6px;font-size:13px;line-height:1.45;
+}
+.pvp-setup-steps{
+ margin:0;padding:0;list-style:none;
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
+}
+.pvp-setup-step{
+ display:flex;align-items:flex-start;gap:9px;min-width:0;
+ background:#13282a;border:1px solid #36514b;border-radius:9px;padding:9px 10px;
+}
+.pvp-setup-step.is-done{border-color:#345d47;background:#153026}
+.pvp-setup-step.is-next{border-color:#d6ae69;background:#2a3529}
+.pvp-step-status{
+ flex:0 0 23px;width:23px;height:23px;display:flex;align-items:center;
+ justify-content:center;background:#243638;border-radius:50%;
+ color:#a7c6b6;font-weight:850;line-height:1;
+}
+.pvp-setup-step.is-done .pvp-step-status{background:#346d4c;color:#f0f8e9}
+.pvp-setup-step.is-next .pvp-step-status{background:#d9af69;color:#172923}
+.pvp-step-body{display:flex;flex-direction:column;gap:3px;min-width:0}
+.pvp-step-body strong{font-size:12px;line-height:1.3;color:#eaf2e8}
+.pvp-step-detail{font-size:11px;line-height:1.4;color:#a8c0b5}
+.pvp-step-count{font-size:10px;color:#f3d28c;font-style:normal;font-variant-numeric:tabular-nums}
+.pvp-lobby-link{
+ display:inline-flex;margin-top:12px;align-items:center;
+ border:1px solid #c99f5d;border-radius:8px;padding:10px 13px;
+ color:#fff1d0;text-decoration:none;font-weight:800;font-size:12px;
+ background:#283727;
+}
+.pvp-lobby-link:hover{background:#3d4e33}
+.pvp-setup-caveat{margin:11px 0 0!important;font-size:10px;line-height:1.5;color:#9cb2aa}
+@media(max-width:630px){
+ .pvp-setup-guide{padding:11px}
+ .pvp-setup-heading h2{font-size:17px}
+ .pvp-setup-steps{grid-template-columns:minmax(0,1fr);gap:5px}
+ .pvp-setup-step{padding:8px 9px}
+ .pvp-step-detail{font-size:10px}
+ .pvp-next-action{font-size:12px}
+ .pvp-lobby-link{width:100%;justify-content:center;text-align:center}
+}
