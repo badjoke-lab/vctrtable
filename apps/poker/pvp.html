@@ -27,6 +27,25 @@
        / ホストには全カードが見えます。Vectorの本人認証はありません。金銭を賭けないでください。</p>
   </details>
   <p id="pvp-status" role="status" aria-live="polite">Connecting to shared table…</p>
+  <section id="pvp-setup-guide" class="pvp-setup-guide" aria-labelledby="pvp-setup-title">
+    <div class="pvp-setup-heading">
+      <div><small id="pvp-setup-kicker">BEFORE THE FIRST HAND</small><h2 id="pvp-setup-title">Table setup</h2></div>
+      <div class="pvp-setup-tools">
+        <label for="pvp-guide-language">Guide</label>
+        <select id="pvp-guide-language" aria-label="Setup language"><option value="en">English</option><option value="ja">日本語</option></select>
+        <span id="pvp-setup-count" aria-label="Setup steps completed">0 / 8</span>
+      </div>
+    </div>
+    <p id="pvp-next-action" class="pvp-next-action" role="status" aria-live="polite">
+      Checking this Vector table…
+    </p>
+    <details id="pvp-setup-details" class="pvp-setup-details">
+      <summary id="pvp-setup-details-label">View all 8 setup steps</summary>
+      <ol id="pvp-setup-steps" class="pvp-setup-steps" aria-label="Steps to start multiplayer"></ol>
+    </details>
+    <a href="lobby.html" id="pvp-lobby-link" class="pvp-lobby-link">Open Lobby to create, join or approve</a>
+    <p id="pvp-setup-caveat" class="pvp-setup-caveat">Table setup does not verify Vector identity, peer delivery or fair dealing. No cash or prizes.</p>
+  </section>
 
   <section class="pvp-room" aria-label="Shared table setup">
     <div class="pvp-room-title">
