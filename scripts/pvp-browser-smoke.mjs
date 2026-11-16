@@ -133,6 +133,12 @@ try{
  assert.equal(await host.locator('[data-step="deal"]').getAttribute("data-status"),"next");
  assert.match(await host.locator("#pvp-next-action").textContent(),/Tap Host: Deal hand/);
  assert.match(await guest.locator("#pvp-next-action").textContent(),/Ask the host to deal/);
+ assert.equal(await guest.locator("#pvp-setup-details").evaluate(el=>el.open),false,
+  "Mobile setup must show the next action immediately, without eight expanded cards");
+ await guest.locator("#pvp-guide-language").selectOption("ja");
+ assert.match(await guest.locator("#pvp-next-action").textContent(),/ホストが配札するまで/);
+ assert.equal(await guest.locator('[data-step="deal"] strong').textContent(),"ホストの配札待ち");
+ await guest.locator("#pvp-guide-language").selectOption("en");
  await host.screenshot({path:path.resolve("dist/poker-pvp-setup-host-360.png"),fullPage:true});
  await guest.screenshot({path:path.resolve("dist/poker-pvp-setup-guest-360.png"),fullPage:true});
  assert.equal(await host.locator("#pvp-start").isEnabled(),true,
