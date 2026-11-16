@@ -20,7 +20,7 @@ const live=Boolean(api?.selfAddr&&typeof api.sendUpdate==="function"&&
 const me=live?api.selfAddr:"",updates=new Map(),peers=new Map(),seen=new Set();
 let keys=null,hostSession=null,game=null,hole=null,seq=0,turnClock=null,queue=Promise.resolve();
 let keySent=false,pending=false,errorMessage="",hostRecovered=false,hostProposalId=null;
-let activeTableId=null,outboundInFlight=false,lastPaintedRevision=null,lastSetupStamp="";
+let activeTableId=null,outboundInFlight=false,lastPaintedRevision=null,lastSetupStamp="",guideLocale="en";
 const actionOutbox=new SeatActionOutbox();
 function room(){
  return deriveSharedTable([...updates.values()].map(x=>({event:x.payload,serial:x.serial}))
@@ -40,7 +40,7 @@ function draw(motion=null){
  });
  // This is onboarding only. Do NOT use it as a new action authorization gate.
  // The signed session and existing unanimous lobby rules remain authoritative.
- const stamp=JSON.stringify(readiness.steps.map(s=>s.complete))+":"+readiness.steps.map(s=>s.progress||"").join("|")+":"+host;
+ const stamp=JSON.stringify(readiness.steps.map(s=>s.complete))+":"+readiness.steps.map(s=>s.progress||"").join("|")+":"+host+":"+guideLocale;
  if(stamp!==lastSetupStamp){
   lastSetupStamp=stamp;
   const list=$("pvp-setup-steps");
@@ -58,11 +58,11 @@ function draw(motion=null){
    const body=document.createElement("div");
    body.className="pvp-step-body";
    const heading=document.createElement("strong");
-   heading.textContent=step.name+" / "+step.ja;
+   heading.textContent=guideLocale==="ja"?step.ja:step.name;
    const detail=document.createElement("span");
    detail.className="pvp-step-detail";
-   detail.textContent=step.complete?"Completed / 完了":
-    step.instruction+" / "+step.instructionJa;
+   detail.textContent=step.complete?(guideLocale==="ja"?"完了":"Completed"):
+    guideLocale==="ja"?step.instructionJa:step.instruction;
    body.append(heading,detail);
    if(step.progress){
     const count=document.createElement("em");
@@ -74,9 +74,18 @@ function draw(motion=null){
   }
  }
  $("pvp-setup-count").textContent=readiness.completed+" / "+readiness.total;
+ $("pvp-setup-title").textContent=guideLocale==="ja"?"対戦の準備":"Table setup";
+ $("pvp-setup-kicker").textContent=guideLocale==="ja"?"最初の配札まで":"BEFORE THE FIRST HAND";
+ $("pvp-setup-details-label").textContent=guideLocale==="ja"?"準備手順をすべて表示":"View all 8 setup steps";
+ $("pvp-lobby-link").textContent=guideLocale==="ja"?
+  "ロビーで参加・ルール承認":"Open Lobby to create, join or approve";
+ $("pvp-setup-caveat").textContent=guideLocale==="ja"?
+  "この準備状況はVectorの本人確認・実機間の配信・不正のない配札を保証しません。現金や賞品は禁止です。":
+  "Table setup does not verify Vector identity, peer delivery or fair dealing. No cash or prizes.";
  $("pvp-next-action").textContent=readiness.next?
-  "NEXT: "+readiness.next.instruction+" / "+readiness.next.instructionJa:
-  "Table is active / 対戦中";
+  (guideLocale==="ja"?"次の操作：":"NEXT: ")+
+   (guideLocale==="ja"?readiness.next.instructionJa:readiness.next.instruction):
+  (guideLocale==="ja"?"対戦中":"Table is active");
  root.classList.toggle("is-playing",Boolean(game));
  root.classList.toggle("is-betting",game?.status==="betting");
  root.classList.toggle("is-complete",game?.status==="complete");
@@ -430,6 +439,11 @@ $("pvp-retry").addEventListener("click",async()=>{
 });
 for(const action of ["fold","check","call","raise"])
  $("pvp-"+action).addEventListener("click",()=>playerAction(action));
+$("pvp-guide-language").addEventListener("change",e=>{
+ guideLocale=e.target.value==="ja"?"ja":"en";
+ lastSetupStamp="";
+ draw();
+});
 if(live){
  seatKeys("seat:"+me).then(local=>{
   keys=local;
