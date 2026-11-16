@@ -65,6 +65,13 @@ try{
   clients.push({who,ctx,page});
  }
  const host=clients[0].page,guest=clients[1].page;
+ // The initial instructions are visible BEFORE the lobby sends anything.
+ for(const page of [host,guest]){
+  assert.equal(await page.locator("#pvp-setup-steps li").count(),8);
+  assert.equal(await page.locator('[data-step="transport"]').getAttribute("data-status"),"done");
+  assert.equal(await page.locator('[data-step="table"]').getAttribute("data-status"),"next");
+  assert.match(await page.locator("#pvp-next-action").textContent(),/Create a table/);
+ }
  const history=[];let serial=0,sequence=0,privateStatePackets=0;
  let guestDisconnected=false;
  async function deliver(e){
@@ -106,7 +113,13 @@ try{
   at:1000+sequence,tableId:"room-qa-bridge",...extra
  });
  await deliver(mk("table-create","host",{name:"Host",maxPlayers:2}));
+ assert.equal(await host.locator('[data-step="seat"]').getAttribute("data-status"),"done",
+  "Creating a table automatically seats the host");
+ assert.equal(await guest.locator('[data-step="seat"]').getAttribute("data-status"),"next",
+  "Guest must explicitly join the same table");
  await deliver(mk("seat-join","guest",{name:"Guest"}));
+ assert.equal(await guest.locator('[data-step="players"]').getAttribute("data-status"),"done");
+ assert.equal(await guest.locator('[data-step="ready"]').getAttribute("data-status"),"next");
  await deliver(mk("seat-ready","host",{ready:true}));
  await deliver(mk("seat-ready","guest",{ready:true}));
  const proposal=mk("rules","host",{settings:{chips:1000,sb:5,bb:10,timer:30,rebuy:true},
@@ -115,6 +128,11 @@ try{
  await deliver(mk("vote","host",{target:proposal.id}));
  await deliver(mk("vote","guest",{target:proposal.id}));
  await cycles();
+ assert.equal(await host.locator('[data-step="keys"]').getAttribute("data-status"),"done",
+  "Both session keys must be present before the hand starts");
+ assert.equal(await host.locator('[data-step="deal"]').getAttribute("data-status"),"next");
+ assert.match(await host.locator("#pvp-next-action").textContent(),/Tap Host: Deal hand/);
+ assert.match(await guest.locator("#pvp-next-action").textContent(),/Ask the host to deal/);
  assert.equal(await host.locator("#pvp-start").isEnabled(),true,
   "Host cannot start after both session keys enrolled");
  assert.match(await host.locator("#pvp-key-status").textContent(),/private keys/);
@@ -122,6 +140,9 @@ try{
  assert.equal(privateStatePackets>=1,true,"No encrypted state was broadcast");
  assert.equal(await host.locator("#pvp-game").isVisible(),true);
  assert.equal(await guest.locator("#pvp-game").isVisible(),true);
+ assert.equal(await host.locator("#pvp-setup-guide").isVisible(),false,
+  "Once gameplay begins, onboarding must no longer push down the felt");
+ assert.equal(await guest.locator("#pvp-setup-guide").isVisible(),false);
  const hCards=await host.locator("#pvp-hole img").evaluateAll(xs=>xs.map(x=>x.dataset.card));
  const gCards=await guest.locator("#pvp-hole img").evaluateAll(xs=>xs.map(x=>x.dataset.card));
  assert.equal(hCards.length,2);assert.equal(gCards.length,2);
