@@ -133,6 +133,8 @@ try{
  assert.equal(await host.locator('[data-step="deal"]').getAttribute("data-status"),"next");
  assert.match(await host.locator("#pvp-next-action").textContent(),/Tap Host: Deal hand/);
  assert.match(await guest.locator("#pvp-next-action").textContent(),/Ask the host to deal/);
+ await host.screenshot({path:path.resolve("dist/poker-pvp-setup-host-360.png"),fullPage:true});
+ await guest.screenshot({path:path.resolve("dist/poker-pvp-setup-guest-360.png"),fullPage:true});
  assert.equal(await host.locator("#pvp-start").isEnabled(),true,
   "Host cannot start after both session keys enrolled");
  assert.match(await host.locator("#pvp-key-status").textContent(),/private keys/);
