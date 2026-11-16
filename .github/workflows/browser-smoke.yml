@@ -61,6 +61,7 @@ jobs:
             dist/poker-desktop-showdown-*.png
             dist/poker-shared-lobby-*.png
             dist/poker-pvp-two-clients-*.png
+            dist/poker-pvp-setup-*.png
             dist/poker-pvp-felt-*.png
             dist/poker-river-*.png
             dist/poker-solo-motion-*.png
