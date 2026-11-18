@@ -38,10 +38,15 @@ try{
    const nativeNow=Date.now.bind(Date);
    let offset=0;
    Date.now=()=>nativeNow()+offset;
-   window.__sim={out,receive:null,rejectNextAction:false,dropNextAction:false,
+   window.__sim={out,receive:null,rejectNextAction:false,dropNextAction:false,rejectNextPause:false,rejectedPauseId:null,
     advanceTime(ms){offset+=ms;}};
    window.webxdc={selfAddr:name,selfName:name,
     sendUpdate(payload){
+     if(payload?.payload?.kind==="pause"&&window.__sim.rejectNextPause){
+      window.__sim.rejectNextPause=false;
+      window.__sim.rejectedPauseId=payload.payload.id;
+      return Promise.reject(Error("Simulated pause send failure"));
+     }
      if(payload?.payload?.kind==="action"){
       if(window.__sim.rejectNextAction){
        window.__sim.rejectNextAction=false;
@@ -107,27 +112,41 @@ try{
    await flush();
   }
  }
- const mk=(kind,by,extra={})=>({
-  v:["table-create","seat-join","seat-leave","seat-ready","table-close"].includes(kind)?2:1,
-  app:"poker",kind,id:"evt"+String(++sequence).padStart(8,"0"),by,
-  at:1000+sequence,tableId:"room-qa-bridge",...extra
- });
- await deliver(mk("table-create","host",{name:"Host",maxPlayers:2}));
- assert.equal(await host.locator('[data-step="seat"]').getAttribute("data-status"),"done",
-  "Creating a table automatically seats the host");
- assert.equal(await guest.locator('[data-step="seat"]').getAttribute("data-status"),"next",
-  "Guest must explicitly join the same table");
- await deliver(mk("seat-join","guest",{name:"Guest"}));
- assert.equal(await guest.locator('[data-step="players"]').getAttribute("data-status"),"done");
- assert.equal(await guest.locator('[data-step="ready"]').getAttribute("data-status"),"next");
- await deliver(mk("seat-ready","host",{ready:true}));
- await deliver(mk("seat-ready","guest",{ready:true}));
- const proposal=mk("rules","host",{settings:{chips:1000,sb:5,bb:10,timer:30,rebuy:true},
-  seats:["host","guest"]});
- await deliver(proposal);
- await deliver(mk("vote","host",{target:proposal.id}));
- await deliver(mk("vote","guest",{target:proposal.id}));
+ // The complete user journey must cross the actual packaged root and lobby.
+ // Only the messenger transport is simulated; do not fabricate setup events.
+ for(const page of [host,guest]){
+  await page.goto(base+"/index.html",{waitUntil:"networkidle"});
+  await page.locator("a.qa-primary-mode").click();
+  await page.waitForURL("**/lobby.html");
+  await page.waitForFunction(()=>typeof window.__sim?.receive==="function");
+ }
+ await host.locator("#max-players").selectOption("2");
+ await host.locator("#table-create button").click();await cycles(2);
+ assert.equal(await host.locator("#seats .seat").count(),1);
+ assert.equal(await guest.locator("#join").isEnabled(),true);
+ const tableId=history.find(x=>x.payload.kind==="table-create")?.payload.tableId;
+ assert.ok(tableId,"Create Table UI did not emit the room event");
+ await guest.locator("#join").click();await cycles(2);
+ assert.equal(await host.locator("#seats .seat").count(),2);
+ await host.locator("#ready").click();await cycles(2);
+ await guest.locator("#ready").click();await cycles(2);
+ assert.match(await host.locator("#table-status").textContent(),/Ready 2\/2/);
+ await host.locator("#rules-form button").click();await cycles(2);
+ await host.locator("#proposal button").click();await cycles(2);
+ await guest.locator("#proposal button").click();await cycles(2);
+ assert.match(await guest.locator("#proposal").textContent(),/2\/2 Approved/);
+ for(const page of [host,guest]){
+  await page.locator(".pvp-entry a").click();
+  await page.waitForURL("**/pvp.html");
+  await page.waitForFunction(()=>typeof window.__sim?.receive==="function");
+  for(const event of history)await page.evaluate(x=>window.__sim.receive(x),event);
+ }
  await cycles();
+ // Fault injection remains intentional for the late-deadline cases below.
+ const mk=(kind,by,extra={})=>({
+  v:1,app:"poker",kind,id:"evt"+String(++sequence).padStart(8,"0"),by,
+  at:1000+sequence,tableId,...extra
+ });
  assert.equal(await host.locator('[data-step="keys"]').getAttribute("data-status"),"done",
   "Both session keys must be present before the hand starts");
  assert.equal(await host.locator('[data-step="deal"]').getAttribute("data-status"),"next");
@@ -244,19 +263,32 @@ try{
  // The agreed 30-second timer must freeze ONLY on unanimous pause. Advancing
  // the host clock does not require a 30-second wall-time sleep in CI.
  await host.locator("#pvp-start").click();await cycles();
- const pause=mk("pause","host",{action:"pause",seats:["host","guest"]});
- await deliver(pause);
- await deliver(mk("pause-vote","guest",{target:pause.id}));
- await cycles();
+ await host.evaluate(()=>{window.__sim.rejectNextPause=true;});
+ await host.locator("#pvp-pause-request").click();await cycles(3);
+ assert.equal(await host.locator("#pvp-pause-request").textContent(),"Resend request");
+ assert.match(await guest.locator("#pvp-pause-status").textContent(),/Pause only after/);
+ const rejectedPauseId=await host.evaluate(()=>window.__sim.rejectedPauseId);
+ assert.ok(rejectedPauseId);
+ await host.locator("#pvp-pause-request").click();await cycles(3);
+ const sentPause=history.filter(e=>e.payload.kind==="pause").at(-1);
+ assert.equal(sentPause?.payload.id,rejectedPauseId,"Retry must resend exactly the original pause request");
+ assert.match(await guest.locator("#pvp-pause-status").textContent(),/Pause approval 1\/2/);
+ assert.match(await guest.locator("#pvp-pause-status").textContent(),/clock still running/);
+ assert.doesNotMatch(await host.locator("#pvp-turn").textContent(),/CLOCK PAUSED/);
+ await guest.locator("#pvp-pause-approve").click();await cycles();
+ assert.equal(await host.locator("#pvp-fold").isDisabled(),true);
+ assert.equal(await guest.locator("#pvp-fold").isDisabled(),true);
+ assert.equal(await host.locator("#pvp-pause-request").textContent(),"Request resume");
+ await host.screenshot({path:path.resolve("dist/poker-pvp-setup-paused-360.png"),fullPage:true});
  assert.match(await host.locator("#pvp-turn").textContent(),/CLOCK PAUSED/);
  await host.evaluate(()=>window.__sim.advanceTime(31000));
  await cycles();
  assert.notEqual(await host.locator("#pvp-turn").textContent(),"Hand complete",
   "Unanimously paused hand expired");
- const resume=mk("pause","guest",{action:"resume",seats:["host","guest"]});
- await deliver(resume);
- await deliver(mk("pause-vote","host",{target:resume.id}));
- await cycles();
+ await guest.locator("#pvp-pause-request").click();await cycles(3);
+ assert.match(await host.locator("#pvp-pause-status").textContent(),/Resume approval 1\/2/);
+ assert.match(await host.locator("#pvp-turn").textContent(),/CLOCK PAUSED/);
+ await host.locator("#pvp-pause-approve").click();await cycles();
  assert.doesNotMatch(await host.locator("#pvp-turn").textContent(),/CLOCK PAUSED/);
  await host.evaluate(()=>window.__sim.advanceTime(31000));
  await cycles();

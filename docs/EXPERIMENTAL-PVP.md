@@ -237,3 +237,23 @@ and the 3/6-seat browser suite checks fresh private deals,
 three/one/one community-card reveals, progress stages and verified
 settlement. Browser test pass does not establish real Vector account
 identity or a fair independent dealer.
+
+
+## Live-table pause and actual lobby journey — 2026-11-18
+
+Players can request pause or resume and approve the outstanding request
+directly in the playing view. Nobody needs to leave the host's game page
+to find the lobby buttons. The display gives the approval count and makes
+clear whether the clock is still running. A paused table cannot deal a
+new hand until resumed. The same public lobby rules remain authoritative;
+these controls do not authenticate Vector accounts or secure the dealer
+against cheating. A failed local send exposes retry of the original event
+ID, not a new request. Pending requests do not freeze the clock.
+
+The two-client packaged-XDC browser test now enters the multiplayer
+lobby through the actual landing screen, creates and joins a table,
+sets Ready, proposes and approves rules, opens PvP, then deals and plays
+from the UI. It exercises pause and resume using the live-table buttons.
+Fault injection and simulating the WebXDC message bus are still used for
+delivery failure and deadline tests. This is not an actual Vector
+network or device test.

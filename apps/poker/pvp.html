@@ -120,6 +120,11 @@
             <input id="pvp-raise-amount" type="number" min="1" step="1" inputmode="numeric" aria-label="Raise target">
           </label>
         </div>
+        <div id="pvp-pause-panel" class="pvp-pause-panel" hidden>
+          <p id="pvp-pause-status" role="status" aria-live="polite"></p>
+          <button id="pvp-pause-request" type="button" class="secondary">Request pause</button>
+          <button id="pvp-pause-approve" type="button" class="secondary" hidden>Approve pause</button>
+        </div>
         <p id="pvp-result" aria-live="polite"></p>
       </aside>
     </div>
