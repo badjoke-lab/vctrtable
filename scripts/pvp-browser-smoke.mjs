@@ -38,10 +38,15 @@ try{
    const nativeNow=Date.now.bind(Date);
    let offset=0;
    Date.now=()=>nativeNow()+offset;
-   window.__sim={out,receive:null,rejectNextAction:false,dropNextAction:false,
+   window.__sim={out,receive:null,rejectNextAction:false,dropNextAction:false,rejectNextPause:false,rejectedPauseId:null,
     advanceTime(ms){offset+=ms;}};
    window.webxdc={selfAddr:name,selfName:name,
     sendUpdate(payload){
+     if(payload?.payload?.kind==="pause"&&window.__sim.rejectNextPause){
+      window.__sim.rejectNextPause=false;
+      window.__sim.rejectedPauseId=payload.payload.id;
+      return Promise.reject(Error("Simulated pause send failure"));
+     }
      if(payload?.payload?.kind==="action"){
       if(window.__sim.rejectNextAction){
        window.__sim.rejectNextAction=false;
@@ -258,7 +263,15 @@ try{
  // The agreed 30-second timer must freeze ONLY on unanimous pause. Advancing
  // the host clock does not require a 30-second wall-time sleep in CI.
  await host.locator("#pvp-start").click();await cycles();
+ await host.evaluate(()=>{window.__sim.rejectNextPause=true;});
  await host.locator("#pvp-pause-request").click();await cycles(3);
+ assert.equal(await host.locator("#pvp-pause-request").textContent(),"Resend request");
+ assert.match(await guest.locator("#pvp-pause-status").textContent(),/Pause only after/);
+ const rejectedPauseId=await host.evaluate(()=>window.__sim.rejectedPauseId);
+ assert.ok(rejectedPauseId);
+ await host.locator("#pvp-pause-request").click();await cycles(3);
+ const sentPause=history.filter(e=>e.payload.kind==="pause").at(-1);
+ assert.equal(sentPause?.payload.id,rejectedPauseId,"Retry must resend exactly the original pause request");
  assert.match(await guest.locator("#pvp-pause-status").textContent(),/Pause approval 1\/2/);
  assert.match(await guest.locator("#pvp-pause-status").textContent(),/clock still running/);
  assert.doesNotMatch(await host.locator("#pvp-turn").textContent(),/CLOCK PAUSED/);
