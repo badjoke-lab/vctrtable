@@ -395,3 +395,8 @@ body{background:radial-gradient(ellipse at 48% -20%,#17302b 0%,#0b1518 50%,#070d
  #pvp-guide-language{max-width:75px;font-size:10px}
  .pvp-setup-details .pvp-setup-steps{max-height:50vh}
 }
+
+/* Compact consent controls within the existing action panel. */
+.pvp-pause-panel{display:flex; flex-wrap:wrap; align-items:center;gap:6px;margin-top:9px;padding-top:8px;border-top:1px solid #35554b}
+.pvp-pause-panel p{flex:1 1 130px;margin:0;color:#b9cfc3;font-size:11px;line-height:1.4}
+.pvp-pause-panel button{width:auto;max-width:100%;font-size:11px;min-height:32px;padding:6px 9px;flex:0 0 auto}
