@@ -259,7 +259,7 @@ function drawPause(r){
  if(pausePending){
   $("pvp-pause-status").textContent+=" · "+(pausePending.sentAt===null?"Sending…":
    "Awaiting update");
-  if(pausePending.failed||Date.now()-pausePending.sentAt>=5000){
+  if(pausePending.sentAt!==null&&(pausePending.failed||Date.now()-pausePending.sentAt>=5000)){
    const target=pausePending.packet.kind==="pause-vote"?approve:request;
    target.hidden=false;target.disabled=!unanimous(r);
    target.textContent="Resend "+(pausePending.packet.kind==="pause-vote"?"approval":"request");
@@ -284,7 +284,9 @@ async function sendPause(vote){
  const attempt=pausePending;
  attempt.sentAt=null;attempt.failed=false;draw();
  try{await send(attempt.packet);attempt.sentAt=Date.now();}
- catch(err){attempt.failed=true;attempt.sentAt=Date.now();errorMessage="Pause delivery failed: "+(err?.message||String(err));}
+ catch(err){
+  if(pausePending===attempt){attempt.failed=true;attempt.sentAt=Date.now();errorMessage="Pause delivery failed: "+(err?.message||String(err));}
+ }
  finally{draw();}
 }
 function fail(err){errorMessage=err?.message||String(err);pending=false;draw();}
@@ -341,7 +343,10 @@ async function accept(update){
  seen.add(e.id);
  if(validTableEvent(e)||validPublicEvent(e)){
   updates.set(e.id,{payload:e,serial});
-  if(pausePending?.packet.id===e.id)pausePending=null;
+  if(pausePending?.packet.id===e.id){
+   pausePending=null;
+   if(errorMessage.startsWith("Pause delivery failed:"))errorMessage="";
+  }
   const r=room();
   if(pausePending){
    const packet=pausePending.packet;
