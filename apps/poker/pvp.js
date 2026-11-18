@@ -22,6 +22,7 @@ let keys=null,hostSession=null,game=null,hole=null,seq=0,turnClock=null,queue=Pr
 let keySent=false,pending=false,errorMessage="",hostRecovered=false,hostProposalId=null;
 let activeTableId=null,outboundInFlight=false,lastPaintedRevision=null,lastSetupStamp="",guideLocale="en";
 const actionOutbox=new SeatActionOutbox();
+let pausePending=null;
 function room(){
  return deriveSharedTable([...updates.values()].map(x=>({event:x.payload,serial:x.serial}))
  .filter(x=>validPublicEvent(x.event)||validTableEvent(x.event)));
@@ -124,7 +125,7 @@ function draw(motion=null){
  const allKeys=r.table&&[...r.seats.keys()].every(id=>peers.has(id));
  const completed=game?.status==="complete";
  $("pvp-start").disabled=!live||!keys||!unanimous(r)||!allKeys||!host||
- pending||hostSession?.table.hand?.status==="betting"||
+ pending||r.paused||hostSession?.table.hand?.status==="betting"||
  (Boolean(game)&&!hostSession);
  $("pvp-start").textContent=completed?"Host: Next hand":"Host: Deal hand";
  $("pvp-game").hidden=!game;
@@ -214,6 +215,7 @@ function draw(motion=null){
   own.append(card);
  }
  } // End revision-guarded table repaint.
+ drawPause(r);
  const L=game.legal,turn=game.status==="betting"&&L?.playerId===me;
  const clock=game.turnClock,secondsLeft=clock&&!clock.paused&&
   Number.isSafeInteger(clock.deadlineAt)?
@@ -235,6 +237,55 @@ function draw(motion=null){
  $("pvp-result").textContent=game.status==="complete"?
   game.players.map((p,i)=>p.name+": "+(game.awards?.[i]??0)+" awarded").join(" · "):
   r.paused?"Paused unanimously; betting controls locked.":"";
+}
+// Pause uses the existing public lobby consent protocol. No navigation away
+// from the host WebView is necessary. Seat identities remain self-asserted.
+function drawPause(r){
+ const panel=$("pvp-pause-panel"),request=$("pvp-pause-request"),approve=$("pvp-pause-approve");
+ const consent=r.pauseRequest,member=r.seats.has(me);
+ const waiting=Boolean(pausePending);
+ const frozen=Boolean(r.paused);
+ panel.hidden=!member||(!frozen&&!consent&&game?.status!=="betting");
+ request.hidden=Boolean(consent)||(!frozen&&game?.status!=="betting");
+ request.disabled=waiting||!unanimous(r);
+ request.textContent=frozen?"Request resume":"Request pause";
+ approve.hidden=!consent||Boolean(consent.approvals.has(me));
+ approve.disabled=waiting||!unanimous(r);
+ approve.textContent=consent?.event.action==="resume"?"Approve resume":"Approve pause";
+ $("pvp-pause-status").textContent=consent?
+  (consent.event.action==="resume"?"Resume":"Pause")+" approval "+consent.approvals.size+"/"+r.seats.size+
+   (frozen?" · clock paused":" · clock still running"):
+  frozen?"Paused by all players":"Pause only after everyone agrees";
+ if(pausePending){
+  $("pvp-pause-status").textContent+=" · "+(pausePending.sentAt===null?"Sending…":
+   "Awaiting update");
+  if(pausePending.failed||Date.now()-pausePending.sentAt>=5000){
+   const target=pausePending.packet.kind==="pause-vote"?approve:request;
+   target.hidden=false;target.disabled=!unanimous(r);
+   target.textContent="Resend "+(pausePending.packet.kind==="pause-vote"?"approval":"request");
+  }
+ }
+}
+async function sendPause(vote){
+ const r=room();
+ if(!live||!unanimous(r)||!game)return;
+ const consent=r.pauseRequest;
+ if(pausePending){
+  if(pausePending.sentAt===null||(!pausePending.failed&&Date.now()-pausePending.sentAt<5000))return;
+ }else{
+  if(vote?(!consent||consent.approvals.has(me)):
+   (consent||(!r.paused&&game.status!=="betting")))return;
+  const packet={v:1,app:"poker",kind:vote?"pause-vote":"pause",
+   id:newNonce(),by:me,at:Date.now(),tableId:r.table.id,
+   ...(vote?{target:consent.event.id}:{action:r.paused?"resume":"pause",seats:[...r.seats.keys()].sort()})};
+  if(!validPublicEvent(packet))return;
+  pausePending={packet,sentAt:null,failed:false};
+ }
+ const attempt=pausePending;
+ attempt.sentAt=null;attempt.failed=false;draw();
+ try{await send(attempt.packet);attempt.sentAt=Date.now();}
+ catch(err){attempt.failed=true;attempt.sentAt=Date.now();errorMessage="Pause delivery failed: "+(err?.message||String(err));}
+ finally{draw();}
 }
 function fail(err){errorMessage=err?.message||String(err);pending=false;draw();}
 const send=e=>{if(!live)throw Error("WebXDC not connected");return Promise.resolve(api.sendUpdate({payload:e,info:""},""));};
@@ -290,7 +341,14 @@ async function accept(update){
  seen.add(e.id);
  if(validTableEvent(e)||validPublicEvent(e)){
   updates.set(e.id,{payload:e,serial});
+  if(pausePending?.packet.id===e.id)pausePending=null;
   const r=room();
+  if(pausePending){
+   const packet=pausePending.packet;
+   if(packet.tableId!==r.table?.id||!unanimous(r)||
+    (packet.kind==="pause-vote"&&r.pauseRequest?.event.id!==packet.target)||
+    (packet.kind==="pause"&&(r.pauseRequest||r.paused===(packet.action==="pause"))))pausePending=null;
+  }
   // The shared XDC stream can contain a succession of completed tables.
   // Seat keys and local authorizations are scoped to one table only.
   // Keeping old peers or keySent after close/recreate can mistakenly enroll
@@ -298,7 +356,7 @@ async function accept(update){
   const nextTableId=r.table?.id??null;
   if(nextTableId!==activeTableId){
    activeTableId=nextTableId;lastPaintedRevision=null;
-   peers.clear();keySent=false;actionOutbox.reset();outboundInFlight=false;
+   peers.clear();keySent=false;actionOutbox.reset();outboundInFlight=false;pausePending=null;
    game=null;hole=null;hostSession=null;turnClock=null;seq=0;
    hostProposalId=null;hostRecovered=false;pending=false;errorMessage="";
   }
@@ -392,7 +450,7 @@ async function hostTick(r=room()){
 $("pvp-start").addEventListener("click",async()=>{
  try{
   const r=room();
-  if(!unanimous(r)||r.table.host!==me||![...r.seats.keys()].every(id=>peers.has(id)))
+  if(!unanimous(r)||r.paused||r.table.host!==me||![...r.seats.keys()].every(id=>peers.has(id)))
    throw Error("Not all players have agreed or enrolled keys");
   if(!hostSession){
    if(game)throw Error("Old host session is unavailable; refusing to reset chips or re-deal");
@@ -429,6 +487,8 @@ async function playerAction(action){
   await transmitOwnAction();
  }catch(err){fail(err);}
 }
+$("pvp-pause-request").addEventListener("click",()=>sendPause(false));
+$("pvp-pause-approve").addEventListener("click",()=>sendPause(true));
 $("pvp-retry").addEventListener("click",async()=>{
  const r=room();
  if(!actionOutbox.canRetry({
